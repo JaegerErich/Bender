@@ -5,7 +5,7 @@ import streamlit as st
 import urllib.parse
 
 # Optional API mode (off by default)
-USE_API = os.getenv("BENDER_USE_API", "0").strip() in ("1", "true", "yes", "y")
+USE_API = os.getenv("BENDER_USE_API", "0").strip().lower() in ("1", "true", "yes", "y")
 API_BASE = os.getenv("BENDER_API_BASE", "http://127.0.0.1:8000").strip()
 
 if USE_API:
@@ -65,6 +65,39 @@ EMPHASIS_KEYS = list(STRENGTH_EMPHASIS_LABELS.keys())
 EMPHASIS_DISPLAY = [STRENGTH_EMPHASIS_LABELS[k] for k in EMPHASIS_KEYS]
 EMPHASIS_LABEL_TO_KEY = {STRENGTH_EMPHASIS_LABELS[k]: k for k in EMPHASIS_KEYS}
 
+# -----------------------------
+# Feedback (Google Form - auto-filled)
+# -----------------------------
+FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSd2bOUc6bJkZHzTglQ6KgOv8QkzJro-iFR9uLE_rpHw5G4I8g/viewform"
+
+ENTRY_ATHLETE = "entry.1733182497"
+ENTRY_MODE = "entry.379036262"
+ENTRY_LOCATION = "entry.2120495587"
+ENTRY_EMPHASIS = "entry.1294938744"
+ENTRY_RATING = "entry.591938645"
+ENTRY_NOTES = "entry.1295575438"
+
+
+def build_prefilled_feedback_url(
+    *,
+    athlete: str,
+    mode_label: str,
+    location_label: str,
+    emphasis_key: str,
+    rating: int = 4,
+    notes: str = ""
+) -> str:
+    params = {
+        "usp": "pp_url",
+        ENTRY_ATHLETE: athlete or "",
+        ENTRY_MODE: mode_label or "",
+        ENTRY_LOCATION: location_label or "",
+        ENTRY_EMPHASIS: emphasis_key or "",
+        ENTRY_RATING: str(int(rating)),
+        ENTRY_NOTES: notes or "",
+    }
+    return FORM_BASE + "?" + urllib.parse.urlencode(params)
+
 
 def clear_last_output():
     st.session_state.last_output_text = None
@@ -78,7 +111,7 @@ def _load_engine_data():
     This still respects athlete history because history is file-based per athlete_id.
     """
     if ENGINE is None:
-        raise RuntimeError("Engine import failed")
+        raise RuntimeError(f"Engine import failed: {ENGINE_IMPORT_ERROR}")
     return ENGINE.load_all_data(data_dir="data")
 
 
@@ -97,7 +130,6 @@ def _generate_via_engine(payload: dict) -> dict:
     age = int(payload["age"])
     athlete_id = payload["athlete_id"]
 
-    # Map UI payload -> engine args
     focus = payload.get("focus", None)
 
     # Strength-specific tokens
@@ -156,56 +188,7 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 st.set_page_config(page_title="Bender MVP", layout="centered")
 st.title("Bender – Web MVP")
-
-# -----------------------------
-# Feedback (Google Form - auto-filled)
-# -----------------------------
-import urllib.parse
-
-FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSd2bOUc6bJkZHzTglQ6KgOv8QkzJro-iFR9uLE_rpHw5G4I8g/viewform"
-
-ENTRY_ATHLETE   = "entry.1733182497"
-ENTRY_MODE      = "entry.379036262"
-ENTRY_LOCATION  = "entry.2120495587"
-ENTRY_EMPHASIS  = "entry.1294938744"
-ENTRY_RATING    = "entry.591938645"
-ENTRY_NOTES     = "entry.1295575438"
-
-def build_prefilled_feedback_url(*, athlete: str, mode_label: str, location_label: str, emphasis_key: str, rating: int = 4, notes: str = "") -> str:
-    params = {
-        "usp": "pp_url",
-        ENTRY_ATHLETE: athlete or "",
-        ENTRY_MODE: mode_label or "",
-        ENTRY_LOCATION: location_label or "",
-        ENTRY_EMPHASIS: emphasis_key or "",
-        ENTRY_RATING: str(int(rating)),
-        ENTRY_NOTES: notes or "",
-    }
-    return FORM_BASE + "?" + urllib.parse.urlencode(params)
-
-# Always show a fallback button
-st.link_button("Leave Feedback", FORM_BASE)
-
-# If a workout was generated, also show an auto-filled button
-if st.session_state.get("last_output_text"):
-    mode_label_for_form = mode_label  # your display label
-    if mode in ("strength", "conditioning"):
-        location_label_for_form = "Gym" if location == "gym" else "No Gym"
-    else:
-        location_label_for_form = "No Gym"  # or "N/A" if your form has that option
-
-    emphasis_for_form = strength_emphasis if mode == "strength" else ""
-
-    prefill_url = build_prefilled_feedback_url(
-        athlete=athlete_id.strip(),
-        mode_label=mode_label_for_form,
-        location_label=location_label_for_form,
-        emphasis_key=emphasis_for_form,
-        rating=4,
-        notes="",
-    )
-    st.link_button("Leave Feedback (auto-filled)", prefill_url)
-
+st.caption("Bender beta — build 2026-02-05")
 
 # Session state init
 if "last_session_id" not in st.session_state:
@@ -223,7 +206,7 @@ minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
 mode = LABEL_TO_MODE[mode_label]
 
-# Location only relevant for strength/conditioning (matches earlier)
+# Location only relevant for strength/conditioning
 if mode in ("strength", "conditioning"):
     location = st.selectbox("Location", ["gym", "no_gym"])
 else:
@@ -254,7 +237,6 @@ if mode == "strength":
 
         skate_within_24h = st.checkbox("Skate within 24h?", value=False)
     else:
-        # No-gym: circuits only; no extra prompts
         strength_day_type = "leg"
         strength_emphasis = "strength"
         skate_within_24h = False
@@ -283,17 +265,16 @@ conditioning_type = None
 
 if mode == "strength":
     conditioning = st.checkbox("Post-lift conditioning?", value=False)
-
     if conditioning:
         if location == "gym":
             conditioning_type = st.selectbox(
                 "Post-lift conditioning type (gym)",
-                ["bike", "treadmill", "surprise"]
+                ["bike", "treadmill", "surprise"],
             )
         else:
             conditioning_type = st.selectbox(
                 "Post-lift conditioning type (no gym)",
-                ["cones"]
+                ["cones"],
             )
 
 # Auto-clear old output if key inputs change
@@ -333,12 +314,10 @@ if st.button("Generate"):
             "mode": mode,
             "focus": focus,  # controlled tokens only
             "location": location,
-
             # Strength tokens
             "strength_day_type": strength_day_type,
             "strength_emphasis": strength_emphasis,
             "skate_within_24h": skate_within_24h,
-
             # Post-lift conditioning
             "conditioning": conditioning,
             "conditioning_type": conditioning_type,
@@ -366,15 +345,49 @@ if st.session_state.last_output_text:
         share_url = f"{API_BASE}/s/{st.session_state.last_session_id}"
         st.write("Share:", share_url)
 
-    # Feedback only in API mode (since engine-direct has no endpoint)
+    st.divider()
+    st.subheader("Feedback")
+
+    # Always-visible fallback
+    st.link_button("Leave Feedback", FORM_BASE)
+
+    # Auto-filled feedback link (uses current UI selections)
+    FORM_MODE_VALUE = {
+        "skills_only": "Shooting & Stickhandling",
+        "shooting": "Shooting",
+        "stickhandling": "Stickhandling",
+        "strength": "Strength",
+        "conditioning": "Conditioning",
+        "mobility": "Mobility",
+        "movement": "Movement",
+    }.get(mode, mode_label)
+
+    if mode in ("strength", "conditioning"):
+        location_label_for_form = "Gym" if location == "gym" else "No Gym"
+    else:
+        # Your form uses "No Gym" and your UI doesn't ask location for these modes.
+        location_label_for_form = "No Gym"
+
+    emphasis_for_form = strength_emphasis if mode == "strength" else ""
+
+    prefill_url = build_prefilled_feedback_url(
+        athlete=athlete_id.strip(),
+        mode_label=FORM_MODE_VALUE,
+        location_label=location_label_for_form,
+        emphasis_key=emphasis_for_form,
+        rating=4,
+        notes="",
+    )
+    st.link_button("Leave Feedback (auto-filled)", prefill_url)
+
+    # Optional: API feedback endpoint (only if you still want it)
     if USE_API and st.session_state.last_session_id:
-        st.divider()
-        st.subheader("Feedback")
+        st.caption("API feedback (internal)")
 
-        rating = st.slider("Rating", 1, 5, 4, key="rating")
-        notes = st.text_area("Notes", "", key="notes")
+        rating = st.slider("Rating (API)", 1, 5, 4, key="rating_api")
+        notes = st.text_area("Notes (API)", "", key="notes_api")
 
-        if st.button("Submit feedback"):
+        if st.button("Submit feedback (API)"):
             fr = requests.post(
                 f"{API_BASE}/api/feedback",
                 json={
@@ -385,6 +398,9 @@ if st.session_state.last_output_text:
                 timeout=30,
             )
             if fr.status_code == 200:
-                st.success("Saved feedback")
+                st.success("Saved feedback (API)")
             else:
                 st.error(fr.text)
+else:
+    # Show a simple always-visible feedback link even before generation
+    st.link_button("Leave Feedback", FORM_BASE)
