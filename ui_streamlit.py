@@ -132,6 +132,102 @@ def clear_last_output():
     st.session_state.last_output_text = None
     st.session_state.last_session_id = None
 
+# -----------------------------
+# Pretty workout renderer (UI only)
+# -----------------------------
+_SECTION_RE = re.compile(
+    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|mobility)\b",
+    re.IGNORECASE,
+)
+
+def _is_section_header(line: str) -> bool:
+    s = (line or "").strip()
+    if not s:
+        return False
+    if s.startswith("-"):
+        return False
+    # Most of your headers start with one of these keywords
+    return bool(_SECTION_RE.match(s))
+
+def _header_style(title: str) -> str:
+    t = title.lower()
+    if "warmup" in t:
+        return "Warm-up"
+    if "speed" in t or "power" in t:
+        return "Speed / Power"
+    if "high fatigue" in t:
+        return "High Fatigue"
+    if "block a" in t:
+        return "Block A"
+    if "block b" in t:
+        return "Block B"
+    if "strength circuits" in t or "circuit a" in t or "circuit b" in t:
+        return "Strength Circuits"
+    if "shooting" in t:
+        return "Shooting"
+    if "stickhandling" in t:
+        return "Stickhandling"
+    if "conditioning" in t:
+        return "Conditioning"
+    if "mobility" in t:
+        return "Mobility"
+    return "Section"
+
+def render_workout_readable(text: str) -> None:
+    """
+    Renders engine text into clean sections:
+    - Section headers become bold titles inside bordered cards
+    - Drill lines stay as bullets
+    - Other guidance lines become small text
+    """
+    if not text:
+        return
+
+    lines = text.splitlines()
+
+    # Strip the very first banner line(s) if desired (optional)
+    # We'll keep everything as-is for now.
+
+    current_title = None
+    buffer = []
+
+    def flush_section(title: str, body_lines: list[str]) -> None:
+        if not title and not body_lines:
+            return
+
+        with st.container(border=True):
+            if title:
+                tag = _header_style(title)
+                st.markdown(f"**{title}**  \n<span style='opacity:.75'>{tag}</span>", unsafe_allow_html=True)
+
+            # Render body: bullets and small notes
+            for ln in body_lines:
+                s = ln.strip()
+                if not s:
+                    continue
+                if s.startswith("-"):
+                    # Drill line
+                    st.markdown(s)
+                else:
+                    # Coach guidance / format lines
+                    st.caption(s)
+
+    for ln in lines:
+        s = ln.strip()
+
+        # Start new section when we see a header
+        if _is_section_header(s):
+            # flush previous
+            flush_section(current_title or "", buffer)
+            current_title = s
+            buffer = []
+            continue
+
+        # Otherwise collect line
+        buffer.append(ln)
+
+    # final flush
+    flush_section(current_title or "", buffer)
 
 @st.cache_resource
 def _load_engine_data():
@@ -370,22 +466,24 @@ if st.button("Generate"):
 # -----------------------------
 if st.session_state.last_output_text:
     st.divider()
+    st.subheader("Your Workout")
+    # Pretty, readable display
+    render_workout_readable(st.session_state.last_output_text)
 
-    with st.container(border=True):
-        st.subheader("Your Workout")
-        st.caption("Scroll-friendly view • copyable • printable")
-        render_workout_pretty(st.session_state.last_output_text)
+    st.divider()
 
-    # Raw text version for easy copy/paste
-    with st.expander("Copy workout (raw text)"):
-        st.code(st.session_state.last_output_text)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        st.download_button(
+            label="Download workout (.txt)",
+            data=st.session_state.last_output_text,
+            file_name="bender_workout.txt",
+            mime="text/plain",
+        )
+    with col2:
+        with st.expander("Copy workout (raw text)"):
+            st.code(st.session_state.last_output_text)
 
-    st.download_button(
-        label="Download workout (.txt)",
-        data=st.session_state.last_output_text,
-        file_name="bender_workout.txt",
-        mime="text/plain",
-    )
 
     # Share link only makes sense in API mode (since API stores sessions)
     if USE_API and st.session_state.last_session_id:
