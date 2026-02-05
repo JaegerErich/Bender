@@ -160,6 +160,8 @@ st.title("Bender – Web MVP")
 # -----------------------------
 # Feedback (Google Form - auto-filled)
 # -----------------------------
+import urllib.parse
+
 FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSd2bOUc6bJkZHzTglQ6KgOv8QkzJro-iFR9uLE_rpHw5G4I8g/viewform"
 
 ENTRY_ATHLETE   = "entry.1733182497"
@@ -181,18 +183,17 @@ def build_prefilled_feedback_url(*, athlete: str, mode_label: str, location_labe
     }
     return FORM_BASE + "?" + urllib.parse.urlencode(params)
 
-# Only show after a workout has been generated
-if st.session_state.last_output_text:
-    # Mode label should match what humans understand (your UI display label)
-    mode_label_for_form = mode_label  # e.g., "Shooting Only", "Strength", etc.
+# Always show a fallback button
+st.link_button("Leave Feedback", FORM_BASE)
 
-    # Location only applies to strength/conditioning; otherwise set to "N/A"
+# If a workout was generated, also show an auto-filled button
+if st.session_state.get("last_output_text"):
+    mode_label_for_form = mode_label  # your display label
     if mode in ("strength", "conditioning"):
         location_label_for_form = "Gym" if location == "gym" else "No Gym"
     else:
-        location_label_for_form = "N/A"
+        location_label_for_form = "No Gym"  # or "N/A" if your form has that option
 
-    # Strength emphasis only applies to strength; otherwise blank
     emphasis_for_form = strength_emphasis if mode == "strength" else ""
 
     prefill_url = build_prefilled_feedback_url(
@@ -203,9 +204,8 @@ if st.session_state.last_output_text:
         rating=4,
         notes="",
     )
-
     st.link_button("Leave Feedback (auto-filled)", prefill_url)
-    st.caption("Opens the feedback form with athlete/mode/location pre-filled.")
+
 
 # Session state init
 if "last_session_id" not in st.session_state:
