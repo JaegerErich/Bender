@@ -156,6 +156,15 @@ def _generate_via_api(payload: dict) -> dict:
 st.set_page_config(page_title="Bender MVP", layout="centered")
 st.title("Bender – Web MVP")
 
+# -----------------------------
+# Feedback (Google Form link)
+# -----------------------------
+FEEDBACK_URL = "https://forms.gle/VGivthADWh3pvgCw8"
+
+st.link_button("Leave Feedback", FEEDBACK_URL)
+st.caption("Use this after generating a workout — include athlete name + what felt off.")
+
+
 if ENGINE_IMPORT_ERROR and not USE_API:
     st.error(
         "Engine import failed. Fix this before deploying Streamlit Cloud.\n\n"
