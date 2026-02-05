@@ -1,8 +1,10 @@
 # ui_streamlit.py
 import os
 import random
+import re
 import streamlit as st
 import urllib.parse
+
 
 # Optional API mode (off by default)
 USE_API = os.getenv("BENDER_USE_API", "0").strip().lower() in ("1", "true", "yes", "y")
