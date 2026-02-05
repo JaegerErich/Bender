@@ -10,6 +10,35 @@ API_BASE = os.getenv("BENDER_API_BASE", "http://127.0.0.1:8000").strip()
 
 if USE_API:
     import requests
+# -----------------------------
+# Pretty workout renderer (UI only)
+# -----------------------------
+def render_workout_pretty(text: str) -> None:
+    """
+    Light formatting for engine output:
+    - SECTION HEADERS: uppercase lines rendered as headers
+    - Drill lines kept monospace for easy copy
+    """
+    if not text:
+        return
+
+    lines = text.splitlines()
+
+    for line in lines:
+        s = line.strip()
+
+        # Section headers (e.g. WARMUP, BLOCK A, SHOOTING)
+        if s and s == s.upper() and not s.startswith("-") and len(s) <= 60:
+            st.markdown(f"### {s}")
+            continue
+
+        # Blank spacing
+        if not s:
+            st.write("")
+            continue
+
+        # Everything else stays copy-friendly
+        st.markdown(f"`{line}`")
 
 # -----------------------------
 # Import engine (direct mode)
@@ -336,12 +365,20 @@ if st.button("Generate"):
         except Exception as e:
             st.error(str(e))
 
+# -----------------------------
 # Display last generated workout
+# -----------------------------
 if st.session_state.last_output_text:
+    st.divider()
+
     with st.container(border=True):
         st.subheader("Your Workout")
-        st.caption("Copy/paste friendly")
-        st.text(st.session_state.last_output_text)
+        st.caption("Scroll-friendly view • copyable • printable")
+        render_workout_pretty(st.session_state.last_output_text)
+
+    # Raw text version for easy copy/paste
+    with st.expander("Copy workout (raw text)"):
+        st.code(st.session_state.last_output_text)
 
     st.download_button(
         label="Download workout (.txt)",
@@ -349,7 +386,6 @@ if st.session_state.last_output_text:
         file_name="bender_workout.txt",
         mime="text/plain",
     )
-
 
     # Share link only makes sense in API mode (since API stores sessions)
     if USE_API and st.session_state.last_session_id:
