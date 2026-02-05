@@ -338,7 +338,18 @@ if st.button("Generate"):
 
 # Display last generated workout
 if st.session_state.last_output_text:
-    st.code(st.session_state.last_output_text)
+    with st.container(border=True):
+        st.subheader("Your Workout")
+        st.caption("Copy/paste friendly")
+        st.text(st.session_state.last_output_text)
+
+    st.download_button(
+        label="Download workout (.txt)",
+        data=st.session_state.last_output_text,
+        file_name="bender_workout.txt",
+        mime="text/plain",
+    )
+
 
     # Share link only makes sense in API mode (since API stores sessions)
     if USE_API and st.session_state.last_session_id:
