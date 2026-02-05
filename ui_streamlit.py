@@ -2,6 +2,7 @@
 import os
 import random
 import streamlit as st
+import urllib.parse
 
 # Optional API mode (off by default)
 USE_API = os.getenv("BENDER_USE_API", "0").strip() in ("1", "true", "yes", "y")
@@ -157,21 +158,54 @@ st.set_page_config(page_title="Bender MVP", layout="centered")
 st.title("Bender – Web MVP")
 
 # -----------------------------
-# Feedback (Google Form link)
+# Feedback (Google Form - auto-filled)
 # -----------------------------
-FEEDBACK_URL = "https://forms.gle/VGivthADWh3pvgCw8"
+FORM_BASE = "https://docs.google.com/forms/d/e/1FAIpQLSd2bOUc6bJkZHzTglQ6KgOv8QkzJro-iFR9uLE_rpHw5G4I8g/viewform"
 
-st.link_button("Leave Feedback", FEEDBACK_URL)
-st.caption("Use this after generating a workout — include athlete name + what felt off.")
+ENTRY_ATHLETE   = "entry.1733182497"
+ENTRY_MODE      = "entry.379036262"
+ENTRY_LOCATION  = "entry.2120495587"
+ENTRY_EMPHASIS  = "entry.1294938744"
+ENTRY_RATING    = "entry.591938645"
+ENTRY_NOTES     = "entry.1295575438"
 
+def build_prefilled_feedback_url(*, athlete: str, mode_label: str, location_label: str, emphasis_key: str, rating: int = 4, notes: str = "") -> str:
+    params = {
+        "usp": "pp_url",
+        ENTRY_ATHLETE: athlete or "",
+        ENTRY_MODE: mode_label or "",
+        ENTRY_LOCATION: location_label or "",
+        ENTRY_EMPHASIS: emphasis_key or "",
+        ENTRY_RATING: str(int(rating)),
+        ENTRY_NOTES: notes or "",
+    }
+    return FORM_BASE + "?" + urllib.parse.urlencode(params)
 
-if ENGINE_IMPORT_ERROR and not USE_API:
-    st.error(
-        "Engine import failed. Fix this before deploying Streamlit Cloud.\n\n"
-        f"Error: {ENGINE_IMPORT_ERROR}\n\n"
-        "Expected file: bender_generate_v8_1.py in the repo root."
+# Only show after a workout has been generated
+if st.session_state.last_output_text:
+    # Mode label should match what humans understand (your UI display label)
+    mode_label_for_form = mode_label  # e.g., "Shooting Only", "Strength", etc.
+
+    # Location only applies to strength/conditioning; otherwise set to "N/A"
+    if mode in ("strength", "conditioning"):
+        location_label_for_form = "Gym" if location == "gym" else "No Gym"
+    else:
+        location_label_for_form = "N/A"
+
+    # Strength emphasis only applies to strength; otherwise blank
+    emphasis_for_form = strength_emphasis if mode == "strength" else ""
+
+    prefill_url = build_prefilled_feedback_url(
+        athlete=athlete_id.strip(),
+        mode_label=mode_label_for_form,
+        location_label=location_label_for_form,
+        emphasis_key=emphasis_for_form,
+        rating=4,
+        notes="",
     )
-    st.stop()
+
+    st.link_button("Leave Feedback (auto-filled)", prefill_url)
+    st.caption("Opens the feedback form with athlete/mode/location pre-filled.")
 
 # Session state init
 if "last_session_id" not in st.session_state:
