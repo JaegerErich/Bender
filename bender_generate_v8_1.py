@@ -16,8 +16,11 @@ import time
 import re
 from typing import Any, Dict, List, Optional, Tuple
 
-DATA_DIR = "data"
-TEMPLATE_DIR = "templates"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Default dirs (absolute, so Streamlit Cloud cwd doesn't matter)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates")
 
 # ------------------------------
 # Runtime memory globals (set inside generate_session)
@@ -222,7 +225,13 @@ def load_category(filename: str) -> List[Dict[str, Any]]:
 
 def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, Any]]]:
     global DATA_DIR
-    DATA_DIR = data_dir
+
+    # Allow passing "data" or an absolute path
+    if os.path.isabs(data_dir):
+        DATA_DIR = data_dir
+    else:
+        DATA_DIR = os.path.join(BASE_DIR, data_dir)
+
     return {
         "warmup": load_category("warmup.json"),
         "movement": load_category("movement.json"),
