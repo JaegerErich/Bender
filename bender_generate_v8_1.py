@@ -2347,14 +2347,13 @@ def generate_session(
             elif dt not in ("leg", "upper", "full"):
                 dt = "leg"
 
+            # Enforce minimum strength session length
+            session_len_min = max(20, session_len_min)
 
             include_finisher = include_post_lift_conditioning
             if skate_within_24h:
                 include_finisher = False
                 include_post_lift_conditioning = False
-            # Enforce minimum strength session length
-            if session_mode == "strength":
-                session_len_min = max(20, session_len_min)
             strength_lines = build_hockey_strength_session(
                 strength_drills=data["strength"],
                 warmups=data["warmup"],
