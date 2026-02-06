@@ -6,78 +6,6 @@
       "mode": "conditioning",
       "len_min": 45,
       "drill_ids": [
-        "CD_008",
-        "CD_005",
-        "SMR_027",
-        "SMR_026"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
-        "CD_010",
-        "CD_017",
-        "SMR_007",
-        "SMR_009"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
-        "CD_015",
-        "CD_002",
-        "SMR_010",
-        "SMR_025"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
-        "CD_011",
-        "CD_014",
-        "SMR_018",
-        "SMR_024"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
-        "CD_010",
-        "CD_002",
-        "SMR_011",
-        "SMR_021"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
-        "CD_009",
-        "CD_019",
-        "SMR_011",
-        "SMR_023"
-      ],
-      "circuit_ids": []
-    },
-    {
-      "ts": "2026-02-05",
-      "mode": "conditioning",
-      "len_min": 45,
-      "drill_ids": [
         "CD_012",
         "CD_001",
         "SMR_023",
@@ -786,6 +714,107 @@
         "SMR_004",
         "SMR_013",
         "SMR_005"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "strength",
+      "len_min": 45,
+      "drill_ids": [
+        "WU_001",
+        "WU_002",
+        "WU_003",
+        "WU_004",
+        "WU_005",
+        "WU_006",
+        "WU_007",
+        "WU_008",
+        "WU_009",
+        "WU_010",
+        "WU_011",
+        "WU_012",
+        "WU_013",
+        "WU_014",
+        "WU_015",
+        "LS_014",
+        "PL_001",
+        "LS_032",
+        "LS_011",
+        "SMR_003",
+        "SMR_027",
+        "SMR_023"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "shooting",
+      "len_min": 45,
+      "drill_ids": [
+        "SHO_010",
+        "SHO_023",
+        "SHO_002",
+        "SHO_007"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "stickhandling",
+      "len_min": 45,
+      "drill_ids": [
+        "SH_015",
+        "SH_047",
+        "SH_045",
+        "SH_003",
+        "SH_017",
+        "SH_002"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "skills_only",
+      "len_min": 45,
+      "drill_ids": [
+        "SH_018",
+        "SH_020",
+        "SH_001",
+        "SH_015",
+        "SH_011",
+        "SH_002",
+        "SHO_014",
+        "SHO_004",
+        "SHO_007",
+        "SHO_003",
+        "SHO_002"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "conditioning",
+      "len_min": 45,
+      "drill_ids": [
+        "CD_016",
+        "CD_014",
+        "SMR_009",
+        "SMR_005"
+      ],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-06",
+      "mode": "mobility",
+      "len_min": 45,
+      "drill_ids": [
+        "SMR_005",
+        "SMR_027",
+        "SMR_012",
+        "SMR_023",
+        "SMR_013",
+        "SMR_019"
       ],
       "circuit_ids": []
     }

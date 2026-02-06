@@ -1733,6 +1733,9 @@ def build_hockey_strength_session(
 
     # RESILIENCE pool (not region-limited)
     res_pool = [d for d in pool if norm(get(d, "id", "")) not in used_ids and is_stability_candidate(d)]
+    # Always define resilience picks (prevents NameError)
+    res_a: List[Dict[str, Any]] = []
+    res_b: List[Dict[str, Any]] = []
     rnd.shuffle(res_pool)
 
     sec_a: List[Dict[str, Any]] = []
