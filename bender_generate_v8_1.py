@@ -432,6 +432,35 @@ def _std_level(x: Any) -> str:
         return "low"
     return s
 
+def _upper_subpattern(d: Dict[str, Any]) -> str:
+    """
+    Classifies upper push/pull variety buckets.
+    Uses tags/name keywords if present; safe fallbacks.
+    """
+    mp = movement_pattern(d)
+    name = norm(get(d, "name", default="")).lower()
+    tags = norm(get(d, "tags", default="")).lower()
+
+    # Push variety
+    if mp == "push":
+        if "incline" in name or "incline" in tags:
+            return "push_incline"
+        if "overhead" in name or "ohp" in name or "shoulder press" in name or "vertical" in tags:
+            return "push_vertical"
+        if "dip" in name or "dip" in tags:
+            return "push_dip"
+        return "push_horizontal"
+
+    # Pull variety
+    if mp == "pull":
+        if "pullup" in name or "chin" in name or "lat pulldown" in name or "pulldown" in name or "vertical" in tags:
+            return "pull_vertical"
+        if "row" in name or "row" in tags:
+            return "pull_horizontal"
+        return "pull_other"
+
+    return mp or "other"
+
 def _upper_direction(d: Dict[str, Any]) -> Optional[str]:
     """
     Classifies upper lifts as horizontal or vertical.
@@ -1647,6 +1676,7 @@ def build_hockey_strength_session(
 
     used_ids: set = set()
     upper_strength_picks: List[Dict[str, Any]] = []
+    used_upper_subpatterns: set = set()
 
     # SPEED / POWER (1–2)
     speed_pool = [d for d in day_pool if strength_focus(d) == "power" and norm(get(d, "id", "")) not in used_ids]
@@ -1716,6 +1746,9 @@ def build_hockey_strength_session(
     hf_pick = _pick_by_filter(hf_candidates, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
     if hf_pick and _is_upper_day(day_type):
         upper_strength_picks.append(hf_pick[0])
+    if hf_pick and _is_upper_day(day_type):
+        used_upper_subpatterns.add(_upper_subpattern(hf_pick[0]))
+
     hf_dir = _upper_direction(hf_pick[0]) if hf_pick and _is_upper_day(day_type) else None
 
     lines.append("\nHIGH FATIGUE (1 exercise)")
@@ -1781,24 +1814,35 @@ def build_hockey_strength_session(
     sec_a: List[Dict[str, Any]] = []
     sec_b: List[Dict[str, Any]] = []
 
-    # --- SEC A ---
-    if _is_upper_day(day_type) and needed_mp:
-        sec_pool_needed = [
-            d for d in sec_pool
-            if movement_pattern(d) == needed_mp
-            and _upper_direction(d) != hf_dir
-        ]
-        sec_a = (
-            _pick_by_filter(sec_pool_needed, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-            or _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-        )
-    else:
-        sec_a = _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+# --- SEC A ---
+if _is_upper_day(day_type) and needed_mp:
+    sec_pool_needed = [
+        d for d in sec_pool
+        if movement_pattern(d) == needed_mp
+        and _upper_direction(d) != hf_dir
+        and _upper_subpattern(d) not in used_upper_subpatterns
+    ]
+    sec_pool_needed_fallback = [
+        d for d in sec_pool
+        if movement_pattern(d) == needed_mp
+        and _upper_direction(d) != hf_dir
+    ]
+
+    sec_a = (
+        _pick_by_filter(sec_pool_needed, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+        or _pick_by_filter(sec_pool_needed_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+        or _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    )
+else:
+    sec_a = _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
 
     if sec_a:
         used_ids.add(norm(get(sec_a[0], "id", "")))
     if sec_a and _is_upper_day(day_type):
         upper_strength_picks.append(sec_a[0])
+    if sec_a and _is_upper_day(day_type):
+        used_upper_subpatterns.add(_upper_subpattern(sec_a[0]))
+
 
     # Upper day: check push/pull coverage so far (HF + SEC A)
     have_push = False
@@ -1827,19 +1871,37 @@ def build_hockey_strength_session(
             missing_mp = "pull"
 
         if missing_mp:
-            sec_pool_missing = [d for d in sec_pool_b if movement_pattern(d) == missing_mp]
+            # Prefer missing push/pull AND a new upper subpattern if possible
+            sec_pool_missing = [
+                d for d in sec_pool_b
+                if movement_pattern(d) == missing_mp
+                and _upper_subpattern(d) not in used_upper_subpatterns
+            ]
+            sec_pool_missing_fallback = [
+                d for d in sec_pool_b
+                if movement_pattern(d) == missing_mp
+            ]
+
             sec_b = (
                 _pick_by_filter(sec_pool_missing, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                or _pick_by_filter(sec_pool_missing_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
                 or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
             )
+
         else:
-            # otherwise, differ from SEC A when possible
+            # otherwise, differ from SEC A when possible (push vs pull)
             mp_a = movement_pattern(sec_a[0]) if sec_a else ""
             sec_pool_diff = _avoid_movement_pattern(sec_pool_b, mp_a) if mp_a else sec_pool_b
+
+            # Then prefer a NEW upper subpattern (horizontal/vertical/etc)
+            sec_pool_diff_var = [d for d in sec_pool_diff if _upper_subpattern(d) not in used_upper_subpatterns]
+
             sec_b = (
-                _pick_by_filter(sec_pool_diff, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                _pick_by_filter(sec_pool_diff_var, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                or _pick_by_filter(sec_pool_diff, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
                 or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
             )
+
     else:
         # original behavior for non-upper days
         sec_b = _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids) or sec_a
@@ -1848,6 +1910,7 @@ def build_hockey_strength_session(
         used_ids.add(norm(get(sec_b[0], "id", "")))
     if sec_b and _is_upper_day(day_type):
         upper_strength_picks.append(sec_b[0])
+        used_upper_subpatterns.add(_upper_subpattern(sec_b[0]))
 
     # Render Blocks
     lines.append("\nBLOCK A (Secondary + Resilience)")
