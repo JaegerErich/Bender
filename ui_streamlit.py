@@ -327,7 +327,8 @@ if "last_inputs_fingerprint" not in st.session_state:
 
 # Core inputs
 athlete_id = st.text_input("Athlete Name", value="")
-age = st.number_input("Age", min_value=6, max_value=60, value=16)
+age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
+age = int(age)
 minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
