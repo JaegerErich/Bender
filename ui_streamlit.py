@@ -464,90 +464,70 @@ if st.button("Generate"):
             st.error(str(e))
 
 # -----------------------------
-# Display last generated workout
+# Display last generated workout (Tabbed)
 # -----------------------------
 if st.session_state.last_output_text:
     st.divider()
-    st.subheader("Your Workout")
-    # Pretty, readable display
-    render_workout_readable(st.session_state.last_output_text)
 
-    st.divider()
+    tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
+    # -------------------------
+    # TAB 1: Workout
+    # -------------------------
+    with tab_workout:
+        st.subheader("Your Workout")
+        render_workout_readable(st.session_state.last_output_text)
+
+    # -------------------------
+    # TAB 2: Download / Copy
+    # -------------------------
+    with tab_download:
         st.download_button(
             label="Download workout (.txt)",
             data=st.session_state.last_output_text,
             file_name="bender_workout.txt",
             mime="text/plain",
         )
-    with col2:
+
+        st.write("")
+
         with st.expander("Copy workout (raw text)"):
             st.code(st.session_state.last_output_text)
 
+    # -------------------------
+    # TAB 3: Feedback (Google Form)
+    # -------------------------
+    with tab_feedback:
+        st.write("Leave feedback so I can improve workouts.")
 
-    # Share link only makes sense in API mode (since API stores sessions)
-    if USE_API and st.session_state.last_session_id:
-        share_url = f"{API_BASE}/s/{st.session_state.last_session_id}"
-        st.write("Share:", share_url)
+        # Map your internal mode token to the form’s expected label
+        form_mode_value = {
+            "skills_only": "Shooting & Stickhandling",
+            "shooting": "Shooting",
+            "stickhandling": "Stickhandling",
+            "strength": "Strength",
+            "conditioning": "Conditioning",
+            "mobility": "Mobility",
+            "movement": "Movement",
+        }.get(mode, mode_label)
 
-    st.divider()
-    st.subheader("Feedback")
+        # Location label: only meaningful for strength/conditioning
+        if mode in ("strength", "conditioning"):
+            form_location_value = "Gym" if location == "gym" else "No Gym"
+        else:
+            form_location_value = "No Gym"  # or "N/A" if your form supports that
 
-    # Always-visible fallback
-    st.link_button("Leave Feedback", FORM_BASE)
+        form_emphasis_value = strength_emphasis if mode == "strength" else ""
 
-    # Auto-filled feedback link (uses current UI selections)
-    FORM_MODE_VALUE = {
-        "skills_only": "Shooting & Stickhandling",
-        "shooting": "Shooting",
-        "stickhandling": "Stickhandling",
-        "strength": "Strength",
-        "conditioning": "Conditioning",
-        "mobility": "Mobility",
-        "movement": "Movement",
-    }.get(mode, mode_label)
+        prefill_url = build_prefilled_feedback_url(
+            athlete=athlete_id.strip(),
+            mode_label=form_mode_value,
+            location_label=form_location_value,
+            emphasis_key=form_emphasis_value,
+            rating=4,
+            notes="",
+        )
 
-    if mode in ("strength", "conditioning"):
-        location_label_for_form = "Gym" if location == "gym" else "No Gym"
-    else:
-        # Your form uses "No Gym" and your UI doesn't ask location for these modes.
-        location_label_for_form = "No Gym"
+        st.link_button("Leave Feedback (auto-filled)", prefill_url)
+        st.link_button("Open Feedback Form (blank)", FORM_BASE)
 
-    emphasis_for_form = strength_emphasis if mode == "strength" else ""
-
-    prefill_url = build_prefilled_feedback_url(
-        athlete=athlete_id.strip(),
-        mode_label=FORM_MODE_VALUE,
-        location_label=location_label_for_form,
-        emphasis_key=emphasis_for_form,
-        rating=4,
-        notes="",
-    )
-    st.link_button("Leave Feedback (auto-filled)", prefill_url)
-
-    # Optional: API feedback endpoint (only if you still want it)
-    if USE_API and st.session_state.last_session_id:
-        st.caption("API feedback (internal)")
-
-        rating = st.slider("Rating (API)", 1, 5, 4, key="rating_api")
-        notes = st.text_area("Notes (API)", "", key="notes_api")
-
-        if st.button("Submit feedback (API)"):
-            fr = requests.post(
-                f"{API_BASE}/api/feedback",
-                json={
-                    "session_id": st.session_state.last_session_id,
-                    "rating": rating,
-                    "notes": notes,
-                },
-                timeout=30,
-            )
-            if fr.status_code == 200:
-                st.success("Saved feedback (API)")
-            else:
-                st.error(fr.text)
-else:
-    # Show a simple always-visible feedback link even before generation
-    st.link_button("Leave Feedback", FORM_BASE)
