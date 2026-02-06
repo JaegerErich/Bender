@@ -1755,11 +1755,28 @@ def build_hockey_strength_session(
     needed_mp = _opposing_push_pull(hf_mp) if _is_upper_day(day_type) else None
 
     # RESILIENCE pool (not region-limited)
-    res_pool = [d for d in pool if norm(get(d, "id", "")) not in used_ids and is_stability_candidate(d)]
-    # Always define resilience picks (prevents NameError)
-    res_a: List[Dict[str, Any]] = []
-    res_b: List[Dict[str, Any]] = []
+    res_pool = [
+        d for d in pool
+        if norm(get(d, "id", "")) not in used_ids
+        and is_stability_candidate(d)
+    ]
+
+    # Upper day: keep scap/shoulder-health accessories OUT of resilience pool
+    # (scap accessory is guaranteed later in its own section)
+    if _is_upper_day(day_type):
+        res_pool = [d for d in res_pool if not is_scap_accessory(d)]
+
     rnd.shuffle(res_pool)
+
+    # Pick resilience A + B (and mark used so we don't repeat)
+    res_a: List[Dict[str, Any]] = _pick_by_filter(res_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if res_a:
+        used_ids.add(norm(get(res_a[0], "id", "")))
+
+    res_pool_b = [d for d in res_pool if norm(get(d, "id", "")) not in used_ids]
+    res_b: List[Dict[str, Any]] = _pick_by_filter(res_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if res_b:
+        used_ids.add(norm(get(res_b[0], "id", "")))
 
     sec_a: List[Dict[str, Any]] = []
     sec_b: List[Dict[str, Any]] = []
