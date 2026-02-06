@@ -423,6 +423,32 @@ def _std_level(x: Any) -> str:
         return "low"
     return s
 
+def _upper_direction(d: Dict[str, Any]) -> Optional[str]:
+    """
+    Classifies upper lifts as horizontal or vertical.
+    Used ONLY for upper-day balancing.
+    """
+    mp = movement_pattern(d)
+    name = norm(get(d, "name", "")).lower()
+    tags = norm(get(d, "tags", "")).lower()
+
+    if mp == "push":
+        if "bench" in name or "chest" in tags:
+            return "horizontal"
+        return "vertical"
+
+    if mp == "pull":
+        if "row" in name:
+            return "horizontal"
+        return "vertical"
+
+    return None
+
+def _is_heavy_vertical(d: Dict[str, Any]) -> bool:
+    return (
+        _upper_direction(d) == "vertical"
+        and fatigue_cost_level(d) == "high"
+    )
 
 def strength_focus(d: Dict[str, Any]) -> str:
     sf = norm(get(d, "strength_focus", default="")).lower()
@@ -461,40 +487,53 @@ def fatigue_cost_level(d: Dict[str, Any]) -> str:
         return "medium"
     return "low"
 
+def is_scap_accessory(d: Dict[str, Any]) -> bool:
+    return (
+        strength_focus(d) == "stability"
+        and lift_role(d) == "accessory"
+        and primary_region(d) == "upper"
+    )
 
 def is_stability_candidate(d: Dict[str, Any]) -> bool:
-    for key in ("strength_bucket", "movement_bucket", "bucket", "category", "lift_type", "lift_role", "strength_focus"):
+    """
+    Canonical rule:
+      - If strength_focus is explicitly 'stability' -> True
+    Compatibility fallback:
+      - For older/dirty data, allow limited token + name-based detection
+        so nothing breaks during migration.
+    """
+    # 1) Canonical (preferred)
+    sf = norm(get(d, "strength_focus", default="")).lower()
+    if sf == "stability":
+        return True
+
+    # 2) Compatibility fallback (keep SMALL and predictable)
+    # Only check a couple legacy fields that you might still have in older JSON
+    for key in ("lift_role", "movement_pattern", "tags"):
         v = norm(get(d, key, default="")).lower()
-        if any(tok in v for tok in ("stability", "core", "groin", "resilience", "anti-rotation", "anti rotation")):
+        if any(tok in v for tok in ("anti-rotation", "anti rotation", "core", "groin", "copenhagen", "carry")):
             return True
 
+    # 3) Last-resort name fallback (minimal keywords)
     name = norm(get(d, "name", "")).lower()
-    keywords = [
+    keywords = (
         "pallof",
         "dead bug",
         "deadbug",
         "bird dog",
         "birddog",
         "side plank",
-        "plank",
         "copenhagen",
-        "adductor",
-        "groin",
-        "anti-rotation",
-        "anti rotation",
-        "rotation hold",
         "suitcase carry",
-        "farmer",
-        "carry",
-        "march",
+        "farmer carry",
         "overhead carry",
-        "hollow",
-        "stir the pot",
+        "carry",
         "ab wheel",
         "rollout",
-        "band walk",
-    ]
+        "stir the pot",
+    )
     return any(k in name for k in keywords)
+
 
 def _is_lower_day(day_type: str) -> bool:
     dt = (day_type or "").strip().lower()
@@ -526,6 +565,16 @@ def _region_ok_for_day(d: Dict[str, Any], day_type: str) -> bool:
 
 def _is_push_pull(mp: str) -> bool:
     return (mp or "").strip().lower() in ("push", "pull")
+
+def _count_push_pull(drills: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = {"push": 0, "pull": 0}
+    for d in drills:
+        mp = movement_pattern(d)
+        if mp == "push":
+            counts["push"] += 1
+        elif mp == "pull":
+            counts["pull"] += 1
+    return counts
 
 def _opposing_push_pull(mp: str) -> Optional[str]:
     mp = (mp or "").strip().lower()
@@ -1574,6 +1623,7 @@ def build_hockey_strength_session(
         return lines
 
     used_ids: set = set()
+    upper_strength_picks: List[Dict[str, Any]] = []
 
     # SPEED / POWER (1–2)
     speed_pool = [d for d in day_pool if strength_focus(d) == "power" and norm(get(d, "id", "")) not in used_ids]
@@ -1621,19 +1671,29 @@ def build_hockey_strength_session(
     high_fatigue = [d for d in hf_pool if fatigue_cost_level(d) == "high"]
     compound = [d for d in hf_pool if movement_pattern(d) in ("squat", "hinge", "push", "pull", "lunge", "carry")]
 
-    # Upper day: strongly prefer push/pull for the high-fatigue lift when possible
+    # Upper day: prefer real upper push/pull strength/power for the high-fatigue lift when possible
     if _is_upper_day(day_type):
-        upper_hf_pp = [d for d in high_fatigue if _is_push_pull(movement_pattern(d))]
-        upper_comp_pp = [d for d in compound if _is_push_pull(movement_pattern(d))]
-        hf_candidates = upper_hf_pp or upper_comp_pp or high_fatigue or compound or hf_pool
+        upper_hf = [
+            d for d in hf_pool  
+            if _is_push_pull(movement_pattern(d))
+            and strength_focus(d) in ("max_strength", "power", "strength")
+        ]
+        upper_hf_high = [d for d in upper_hf if fatigue_cost_level(d) == "high"]
+        upper_hf_comp = [d for d in upper_hf if movement_pattern(d) in ("push", "pull")]
+
+        hf_candidates = upper_hf_high or upper_hf or high_fatigue or compound or hf_pool
     else:
         hf_candidates = high_fatigue or compound or hf_pool
+
 
 
     mp_avoid = movement_pattern(speed_picks[-1]) if speed_picks else ""
     hf_candidates = _avoid_movement_pattern(hf_candidates, mp_avoid)
 
     hf_pick = _pick_by_filter(hf_candidates, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if hf_pick and _is_upper_day(day_type):
+        upper_strength_picks.append(hf_pick[0])
+    hf_dir = _upper_direction(hf_pick[0]) if hf_pick and _is_upper_day(day_type) else None
 
     lines.append("\nHIGH FATIGUE (1 exercise)")
     if not hf_pick:
@@ -1647,6 +1707,17 @@ def build_hockey_strength_session(
         else:
             reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_HIGH, rx["reps"])
             lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=180))
+
+    # SCAP / SHOULDER HEALTH (upper days only)
+    scap_pool: List[Dict[str, Any]] = []
+    if _is_upper_day(day_type):
+        scap_pool = [
+            d for d in pool
+            if is_scap_accessory(d)
+            and norm(get(d, "id", "")) not in used_ids
+        ]
+        rnd.shuffle(scap_pool)
+
 
     # SECONDARY pool
     sec_pool = [d for d in day_pool if norm(get(d, "id", "")) not in used_ids]
@@ -1669,7 +1740,11 @@ def build_hockey_strength_session(
 
     # --- SEC A ---
     if _is_upper_day(day_type) and needed_mp:
-        sec_pool_needed = [d for d in sec_pool if movement_pattern(d) == needed_mp]
+        sec_pool_needed = [
+            d for d in sec_pool
+            if movement_pattern(d) == needed_mp
+            and _upper_direction(d) != hf_dir
+        ]
         sec_a = (
             _pick_by_filter(sec_pool_needed, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
             or _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
@@ -1679,6 +1754,8 @@ def build_hockey_strength_session(
 
     if sec_a:
         used_ids.add(norm(get(sec_a[0], "id", "")))
+    if sec_a and _is_upper_day(day_type):
+        upper_strength_picks.append(sec_a[0])
 
     # Upper day: check push/pull coverage so far (HF + SEC A)
     have_push = False
@@ -1694,6 +1771,10 @@ def build_hockey_strength_session(
 
     # --- SEC B ---
     sec_pool_b = [d for d in sec_pool if norm(get(d, "id", "")) not in used_ids]
+    # Upper day: cap heavy vertical stress
+    if _is_upper_day(day_type) and hf_pick:
+        if _is_heavy_vertical(hf_pick[0]):
+            sec_pool_b = [d for d in sec_pool_b if not _is_heavy_vertical(d)]
 
     if _is_upper_day(day_type):
         missing_mp = None
@@ -1722,7 +1803,8 @@ def build_hockey_strength_session(
 
     if sec_b:
         used_ids.add(norm(get(sec_b[0], "id", "")))
-
+    if sec_b and _is_upper_day(day_type):
+        upper_strength_picks.append(sec_b[0])
 
     # Render Blocks
     lines.append("\nBLOCK A (Secondary + Resilience)")
@@ -1758,6 +1840,63 @@ def build_hockey_strength_session(
         rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
         reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
         lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
+
+    # SCAP / SHOULDER HEALTH ACCESSORY (guaranteed 1 on upper days)
+    if _is_upper_day(day_type):
+        lines.append("\nSCAP / SHOULDER HEALTH")
+        if not scap_pool:
+            lines.append("- [No scap / shoulder-health accessory found]")
+        else:
+            d = scap_pool[0]
+            used_ids.add(norm(get(d, "id", "")))
+
+            # Use resilience-style RX (low stress, controlled)
+            rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
+
+            lines.append(
+                format_strength_drill_with_prescription(
+                    d,
+                    sets=rx["sets"],
+                    reps=reps,
+                    rest_sec=45
+                )
+            )
+ 
+    # PUSH / PULL SAFETY NET (upper days only)
+    if _is_upper_day(day_type):
+        counts = _count_push_pull(upper_strength_picks)
+
+        if counts["push"] == 0 or counts["pull"] == 0:
+            missing_mp = "pull" if counts["push"] > 0 else "push"
+
+            fallback_pool = [
+                d for d in pool
+                if movement_pattern(d) == missing_mp
+                and not is_stability_candidate(d)
+                and norm(get(d, "id", "")) not in used_ids
+            ]
+
+            rnd.shuffle(fallback_pool)
+
+            if fallback_pool:
+                d = fallback_pool[0]
+                used_ids.add(norm(get(d, "id", "")))
+                upper_strength_picks.append(d)
+ 
+
+                rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
+
+                lines.append("\nPUSH / PULL BALANCE (auto-added)")
+                lines.append(
+                    format_strength_drill_with_prescription(
+                        d,
+                        sets=rx["sets"],
+                        reps=reps,
+                        rest_sec=75
+                    )
+                )
 
     # Optional Post-Lift Conditioning Finisher (Strength sessions only)
     if include_finisher and not skate_within_24h:
