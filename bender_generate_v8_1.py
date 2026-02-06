@@ -479,6 +479,20 @@ def movement_pattern(d: Dict[str, Any]) -> str:
     mp = norm(get(d, "movement_pattern", default="")).lower()
     return mp or "unknown"
 
+def lift_role(d: Dict[str, Any]) -> str:
+    """
+    Returns the drill's lift_role (e.g., primary/auxiliary/accessory),
+    normalized to lowercase. Safe if key is missing.
+    """
+    return norm(get(d, "lift_role", default="")).lower()
+
+
+def primary_region(d: Dict[str, Any]) -> str:
+    """
+    Returns the drill's primary_region (e.g., upper/lower/core/full),
+    normalized to lowercase. Safe if key is missing.
+    """
+    return norm(get(d, "primary_region", default="")).lower()
 
 def cns_load_level(d: Dict[str, Any]) -> str:
     return _std_level(get(d, "cns_load", default=get(d, "CNS_load", default="low")))

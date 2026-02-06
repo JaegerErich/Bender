@@ -231,15 +231,23 @@ def render_workout_readable(text: str) -> None:
     # final flush
     flush_section(current_title or "", buffer)
 
+CACHE_VERSION = "2026-02-06"  # bump this when data files change
+
 @st.cache_resource
-def _load_engine_data():
+def _load_engine_data(cache_version: str = CACHE_VERSION):
     """
     Cache drill DB in memory for Streamlit performance.
-    This still respects athlete history because history is file-based per athlete_id.
+    Cache invalidates automatically when CACHE_VERSION changes.
     """
     if ENGINE is None:
         raise RuntimeError(f"Engine import failed: {ENGINE_IMPORT_ERROR}")
+
+    # cache_version is intentionally unused inside the function
+    # it exists solely to invalidate Streamlit cache when changed
+    _ = cache_version
+
     return ENGINE.load_all_data(data_dir="data")
+
 
 
 def _generate_via_engine(payload: dict) -> dict:
