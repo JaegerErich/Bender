@@ -432,6 +432,13 @@ def _std_level(x: Any) -> str:
         return "low"
     return s
 
+def _is_bodyweightish(d: Dict[str, Any]) -> bool:
+    did = norm(get(d, "id", "")).upper()
+    if did.startswith("BW_"):
+        return True
+    eq = norm(get(d, "equipment", "")).lower()
+    return eq in ("", "none", "bodyweight", "no equipment")
+
 def _upper_subpattern(d: Dict[str, Any]) -> str:
     """
     Classifies upper push/pull variety buckets.
@@ -1669,6 +1676,10 @@ def build_hockey_strength_session(
 
     pool = [d for d in strength_drills if is_active(d) and age_ok(d, age)]
     day_pool = [d for d in pool if _region_ok_for_day(d, day_type)]
+
+    # Gym rule: avoid bodyweight lifts in main strength selections
+    day_pool = [d for d in day_pool if not _is_bodyweightish(d)]
+
     if not pool:
         lines.append("\nSTRENGTH")
         lines.append("- [No matching strength drills found — check strength.json]")
