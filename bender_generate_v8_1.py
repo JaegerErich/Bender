@@ -1814,45 +1814,46 @@ def build_hockey_strength_session(
     sec_a: List[Dict[str, Any]] = []
     sec_b: List[Dict[str, Any]] = []
 
-# --- SEC A ---
-if _is_upper_day(day_type) and needed_mp:
-    sec_pool_needed = [
-        d for d in sec_pool
-        if movement_pattern(d) == needed_mp
-        and _upper_direction(d) != hf_dir
-        and _upper_subpattern(d) not in used_upper_subpatterns
-    ]
-    sec_pool_needed_fallback = [
-        d for d in sec_pool
-        if movement_pattern(d) == needed_mp
-        and _upper_direction(d) != hf_dir
-    ]
+    # --- SEC A ---
+    if _is_upper_day(day_type) and needed_mp:
+        sec_pool_needed = [
+            d for d in sec_pool
+            if movement_pattern(d) == needed_mp
+            and _upper_direction(d) != hf_dir
+            and _upper_subpattern(d) not in used_upper_subpatterns
+        ]
+        sec_pool_needed_fallback = [
+            d for d in sec_pool
+            if movement_pattern(d) == needed_mp
+            and _upper_direction(d) != hf_dir
+        ]
 
-    sec_a = (
-        _pick_by_filter(sec_pool_needed, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-        or _pick_by_filter(sec_pool_needed_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-        or _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-    )
-else:
-    sec_a = _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+        sec_a = (
+            _pick_by_filter(sec_pool_needed, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+            or _pick_by_filter(sec_pool_needed_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+            or _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+        )
+    else:
+        sec_a = _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
 
+    # After SEC A is chosen, always mark used + track upper variety
     if sec_a:
         used_ids.add(norm(get(sec_a[0], "id", "")))
     if sec_a and _is_upper_day(day_type):
         upper_strength_picks.append(sec_a[0])
-    if sec_a and _is_upper_day(day_type):
         used_upper_subpatterns.add(_upper_subpattern(sec_a[0]))
-
 
     # Upper day: check push/pull coverage so far (HF + SEC A)
     have_push = False
     have_pull = False
+
     if _is_upper_day(day_type):
         chosen_mps = []
         if hf_pick:
             chosen_mps.append(movement_pattern(hf_pick[0]))
         if sec_a:
             chosen_mps.append(movement_pattern(sec_a[0]))
+
         have_push = any(mp == "push" for mp in chosen_mps)
         have_pull = any(mp == "pull" for mp in chosen_mps)
 
