@@ -432,6 +432,44 @@ def _std_level(x: Any) -> str:
         return "low"
     return s
 
+def _strength_time_profile(session_len_min: int, skate_within_24h: bool) -> Dict[str, int]:
+    m = int(session_len_min)
+
+    prof = {
+        "speed": 1,         # number of speed/power drills
+        "blocks": 2,        # number of (secondary+resilience) blocks
+        "accessory": 0,     # extra lifting after blocks
+        "mobility_n": 3,    # mobility drills
+        "finisher_min": 0,  # optional post-lift conditioning minutes
+        "warmup_cap": 10,   # max warmup drills to print
+    }
+
+    # FAST strength: 20–29 min
+    if m <= 29:
+        prof.update({
+            "speed": 0,          # NO power block
+            "blocks": 1,         # ONLY Block A
+            "accessory": 0,
+            "mobility_n": 2,
+            "finisher_min": 0,
+            "warmup_cap": 6,     # quick warmup
+        })
+    elif m <= 40:
+        prof.update({"speed": 1, "blocks": 1, "accessory": 0, "mobility_n": 2, "finisher_min": 0, "warmup_cap": 8})
+    elif m <= 55:
+        prof.update({"speed": 1, "blocks": 2, "accessory": 0, "mobility_n": 3, "finisher_min": 0, "warmup_cap": 10})
+    elif m <= 70:
+        prof.update({"speed": 2, "blocks": 2, "accessory": 1, "mobility_n": 3, "finisher_min": 6, "warmup_cap": 10})
+    else:  # 75–90
+        prof.update({"speed": 2, "blocks": 2, "accessory": 2, "mobility_n": 4, "finisher_min": 8, "warmup_cap": 10})
+
+    if skate_within_24h:
+        prof["speed"] = min(prof["speed"], 1)
+        prof["accessory"] = 0
+        prof["finisher_min"] = 0
+
+    return prof
+
 def _is_bodyweightish(d: Dict[str, Any]) -> bool:
     did = norm(get(d, "id", "")).upper()
     if did.startswith("BW_"):
@@ -1604,7 +1642,8 @@ def build_bw_strength_circuits(
 
     # optional post-lift conditioning (no-gym rules)
     if include_finisher:
-        fin_min = 8 if session_len_min >= 60 else 6
+        fin_min = prof["finisher_min"]
+        if include_finisher and fin_min > 0 and not skate_within_24h:
         cond_pool = filter_post_lift_conditioning_pool(conditioning_drills, full_gym=False, post_lift_conditioning_type=None)
         fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "conditioning"))
         lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
@@ -1667,12 +1706,14 @@ def build_hockey_strength_session(
 
     emphasis = _normalize_strength_emphasis(emphasis)
     lines: List[str] = []
+    prof = _strength_time_profile(session_len_min, skate_within_24h)
 
     # Warm-up
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
     lines.append(f"\nWARMUP (strength - {day_type} day)")
-    for d in warmup_drills_picked:
+    for d in warmup_drills_picked[:prof["warmup_cap"]]:
         lines.append(format_drill(d))
+
 
     pool = [d for d in strength_drills if is_active(d) and age_ok(d, age)]
     day_pool = [d for d in pool if _region_ok_for_day(d, day_type)]
@@ -1689,42 +1730,53 @@ def build_hockey_strength_session(
     upper_strength_picks: List[Dict[str, Any]] = []
     used_upper_subpatterns: set = set()
 
-    # SPEED / POWER (1–2)
-    speed_pool = [d for d in day_pool if strength_focus(d) == "power" and norm(get(d, "id", "")) not in used_ids]
-    if skate_within_24h:
-        speed_pool = [d for d in speed_pool if not _cns_is_high(d) and _fatigue_rank(fatigue_cost_level(d)) <= 2]
-
-    speed_count = 1 if session_len_min < 55 else 2
-    if skate_within_24h:
-        speed_count = 1
-
+    # SPEED / POWER (time-aware)
     speed_picks: List[Dict[str, Any]] = []
-    if speed_pool and speed_count > 0:
-        first = _pick_by_filter(speed_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-        if first:
-            speed_picks += first
-            used_ids.add(norm(get(first[0], "id", "")))
-        if speed_count > 1:
-            avoid_high = any(_cns_is_high(d) for d in speed_picks)
-            second_pool = [d for d in speed_pool if norm(get(d, "id", "")) not in used_ids]
-            if avoid_high:
-                second_pool = [d for d in second_pool if not _cns_is_high(d)]
-            second = _pick_by_filter(second_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-            if second:
-                speed_picks += second
-                used_ids.add(norm(get(second[0], "id", "")))
 
-    lines.append("\nSPEED / POWER (1–2 drills)")
-    if not speed_picks:
-        lines.append("- [No speed/power drills found — continuing]")
-    else:
-        for d in speed_picks:
-            role = _fatigue_role_for_speed_drill(d)
-            rx = _rx_for(emphasis, role)
-            if rx is None:
-                continue
-            reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
-            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=120))
+    if prof["speed"] > 0:
+        speed_pool = [
+            d for d in day_pool
+            if strength_focus(d) == "power"
+            and norm(get(d, "id", "")) not in used_ids
+        ]
+
+        if skate_within_24h:
+            speed_pool = [
+                d for d in speed_pool
+                if not _cns_is_high(d)
+            and _fatigue_rank(fatigue_cost_level(d)) <= 2
+            ]
+
+        speed_count = prof["speed"]
+
+        if speed_pool and speed_count > 0:
+            first = _pick_by_filter(speed_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+            if first:
+                speed_picks += first
+                used_ids.add(norm(get(first[0], "id", "")))
+
+            if speed_count > 1:
+                second_pool = [d for d in speed_pool if norm(get(d, "id", "")) not in used_ids]
+                second = _pick_by_filter(second_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                if second:
+                    speed_picks += second
+                    used_ids.add(norm(get(second[0], "id", "")))
+
+        lines.append("\nSPEED / POWER (1–2 drills)")
+        if not speed_picks:
+            lines.append("- [No speed/power drills found — continuing]")
+        else:
+            for d in speed_picks:
+                role = _fatigue_role_for_speed_drill(d)
+               rx = _rx_for(emphasis, role)
+                if rx:
+                    reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
+                    lines.append(
+                        format_strength_drill_with_prescription(
+                            d, sets=rx["sets"], reps=reps, rest_sec=120
+                        )
+                    )
+
 
     # HIGH FATIGUE (1)
     hf_pool = [d for d in day_pool if norm(get(d, "id", "")) not in used_ids]
@@ -1817,10 +1869,13 @@ def build_hockey_strength_session(
     if res_a:
         used_ids.add(norm(get(res_a[0], "id", "")))
 
-    res_pool_b = [d for d in res_pool if norm(get(d, "id", "")) not in used_ids]
-    res_b: List[Dict[str, Any]] = _pick_by_filter(res_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-    if res_b:
-        used_ids.add(norm(get(res_b[0], "id", "")))
+    res_b: List[Dict[str, Any]] = []
+
+    if prof["blocks"] >= 2:
+        res_pool_b = [d for d in res_pool if norm(get(d, "id", "")) not in used_ids]
+        res_b = _pick_by_filter(res_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+        if res_b:
+            used_ids.add(norm(get(res_b[0], "id", "")))
 
     sec_a: List[Dict[str, Any]] = []
     sec_b: List[Dict[str, Any]] = []
@@ -1868,61 +1923,62 @@ def build_hockey_strength_session(
         have_push = any(mp == "push" for mp in chosen_mps)
         have_pull = any(mp == "pull" for mp in chosen_mps)
 
-    # --- SEC B ---
-    sec_pool_b = [d for d in sec_pool if norm(get(d, "id", "")) not in used_ids]
-    # Upper day: cap heavy vertical stress
-    if _is_upper_day(day_type) and hf_pick:
-        if _is_heavy_vertical(hf_pick[0]):
-            sec_pool_b = [d for d in sec_pool_b if not _is_heavy_vertical(d)]
+    sec_b: List[Dict[str, Any]] = []
 
-    if _is_upper_day(day_type):
-        missing_mp = None
-        if not have_push:
-            missing_mp = "push"
-        elif not have_pull:
-            missing_mp = "pull"
+    if prof["blocks"] >= 2:
+        # --- SEC B ---
+        sec_pool_b = [d for d in sec_pool if norm(get(d, "id", "")) not in used_ids]
 
-        if missing_mp:
-            # Prefer missing push/pull AND a new upper subpattern if possible
-            sec_pool_missing = [
-                d for d in sec_pool_b
-                if movement_pattern(d) == missing_mp
-                and _upper_subpattern(d) not in used_upper_subpatterns
-            ]
-            sec_pool_missing_fallback = [
-                d for d in sec_pool_b
-                if movement_pattern(d) == missing_mp
-            ]
+        if _is_upper_day(day_type) and hf_pick:
+            if _is_heavy_vertical(hf_pick[0]):
+                sec_pool_b = [d for d in sec_pool_b if not _is_heavy_vertical(d)]
 
-            sec_b = (
-                _pick_by_filter(sec_pool_missing, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-                or _pick_by_filter(sec_pool_missing_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-                or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-            )
+        if _is_upper_day(day_type):
+            missing_mp = None
+            if not have_push:
+                missing_mp = "push"
+            elif not have_pull:
+                missing_mp = "pull"
+
+            if missing_mp:
+                sec_pool_missing = [
+                    d for d in sec_pool_b
+                    if movement_pattern(d) == missing_mp
+                    and _upper_subpattern(d) not in used_upper_subpatterns
+                ]
+                sec_pool_missing_fallback = [
+                    d for d in sec_pool_b
+                    if movement_pattern(d) == missing_mp
+                ]
+
+                sec_b = (
+                    _pick_by_filter(sec_pool_missing, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                    or _pick_by_filter(sec_pool_missing_fallback, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                    or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                )
+            else:
+                mp_a = movement_pattern(sec_a[0]) if sec_a else ""
+                sec_pool_diff = _avoid_movement_pattern(sec_pool_b, mp_a) if mp_a else sec_pool_b
+                sec_pool_diff_var = [
+                    d for d in sec_pool_diff
+                    if _upper_subpattern(d) not in used_upper_subpatterns
+                ]
+
+                sec_b = (
+                    _pick_by_filter(sec_pool_diff_var, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                    or _pick_by_filter(sec_pool_diff, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                    or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+                )
 
         else:
-            # otherwise, differ from SEC A when possible (push vs pull)
-            mp_a = movement_pattern(sec_a[0]) if sec_a else ""
-            sec_pool_diff = _avoid_movement_pattern(sec_pool_b, mp_a) if mp_a else sec_pool_b
+            sec_b = _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids) or sec_a
 
-            # Then prefer a NEW upper subpattern (horizontal/vertical/etc)
-            sec_pool_diff_var = [d for d in sec_pool_diff if _upper_subpattern(d) not in used_upper_subpatterns]
+        if sec_b:
+            used_ids.add(norm(get(sec_b[0], "id", "")))
+        if sec_b and _is_upper_day(day_type):
+            upper_strength_picks.append(sec_b[0])
+            used_upper_subpatterns.add(_upper_subpattern(sec_b[0]))
 
-            sec_b = (
-                _pick_by_filter(sec_pool_diff_var, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-                or _pick_by_filter(sec_pool_diff, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-                or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
-            )
-
-    else:
-        # original behavior for non-upper days
-        sec_b = _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids) or sec_a
-
-    if sec_b:
-        used_ids.add(norm(get(sec_b[0], "id", "")))
-    if sec_b and _is_upper_day(day_type):
-        upper_strength_picks.append(sec_b[0])
-        used_upper_subpatterns.add(_upper_subpattern(sec_b[0]))
 
     # Render Blocks
     lines.append("\nBLOCK A (Secondary + Resilience)")
@@ -1942,14 +1998,24 @@ def build_hockey_strength_session(
         reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
         lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
 
-    lines.append("\nBLOCK B (Secondary + Resilience)")
-    if not sec_b:
-        lines.append("- [No secondary strength lift found]")
-    else:
-        d = sec_b[0]
-        rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
-        reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
-        lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
+    if prof["blocks"] >= 2:
+        lines.append("\nBLOCK B (Secondary + Resilience)")
+
+        if not sec_b:
+            lines.append("- [No secondary strength lift found]")
+        else:
+            d = sec_b[0]
+            rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
+            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
+
+        if not res_b:
+            lines.append("- [No resilience drill found]")
+        else:
+            d = res_b[0]
+            rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
+            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
 
     if not res_b:
         lines.append("- [No resilience drill found]")
@@ -2032,7 +2098,7 @@ def build_hockey_strength_session(
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
     # Mobility Cooldown Circuit (Required)
-    m = pick_mobility_drills(mobility_drills, age, rnd, n=3, focus_rule=get_focus_rules(None, "mobility"))
+    m = pick_mobility_drills(mobility_drills, age, rnd, n=prof["mobility_n"], focus_rule=get_focus_rules(None, "mobility"))
     lines.append("\nMOBILITY COOLDOWN CIRCUIT")
     if not m:
         lines.append("- [No mobility drills found]")
@@ -2286,7 +2352,9 @@ def generate_session(
             if skate_within_24h:
                 include_finisher = False
                 include_post_lift_conditioning = False
-
+            # Enforce minimum strength session length
+            if session_mode == "strength":
+                session_len_min = max(20, session_len_min)
             strength_lines = build_hockey_strength_session(
                 strength_drills=data["strength"],
                 warmups=data["warmup"],
