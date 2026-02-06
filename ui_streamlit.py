@@ -45,17 +45,31 @@ def render_workout_pretty(text: str) -> None:
 # -----------------------------
 # Import engine (direct mode)
 # -----------------------------
+import sys
+import importlib
+
 ENGINE_IMPORT_ERROR = None
 ENGINE = None
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Cloud-safe: ensure the folder containing ui_streamlit.py is importable
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 try:
-    import bender_generate_v8_1 as ENGINE  # must be in repo root (or PYTHONPATH)
+    ENGINE = importlib.import_module("bender_generate_v8_1")
 except Exception as e:
     ENGINE_IMPORT_ERROR = e
 
 if ENGINE is None:
     st.error("Bender engine failed to import.")
-    st.exception(ENGINE_IMPORT_ERROR)
+    st.write("BASE_DIR:", BASE_DIR)
+    st.write("Files in BASE_DIR:", os.listdir(BASE_DIR))
+    st.write("sys.path (first 10):", sys.path[:10])
+    st.exception(ENGINE_IMPORT_ERROR)   # THIS will show the real error message
     st.stop()
+
 
 def get_mode_options():
     # Prefer decision tree list if available
