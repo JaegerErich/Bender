@@ -52,6 +52,10 @@ try:
 except Exception as e:
     ENGINE_IMPORT_ERROR = e
 
+if ENGINE is None:
+    st.error("Bender engine failed to import.")
+    st.exception(ENGINE_IMPORT_ERROR)
+    st.stop()
 
 def get_mode_options():
     # Prefer decision tree list if available
@@ -235,20 +239,12 @@ CACHE_VERSION = "2026-02-06"  # bump this when data files change
 
 @st.cache_resource
 def _load_engine_data(cache_version: str = CACHE_VERSION):
-    """
-    Cache drill DB in memory for Streamlit performance.
-    Cache invalidates automatically when CACHE_VERSION changes.
-    """
+    _ = cache_version
+
     if ENGINE is None:
         raise RuntimeError(f"Engine import failed: {ENGINE_IMPORT_ERROR}")
 
-    # cache_version is intentionally unused inside the function
-    # it exists solely to invalidate Streamlit cache when changed
-    _ = cache_version
-
     return ENGINE.load_all_data(data_dir="data")
-
-
 
 def _generate_via_engine(payload: dict) -> dict:
     """
