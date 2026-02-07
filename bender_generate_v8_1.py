@@ -1641,11 +1641,22 @@ def build_bw_strength_circuits(
                 lines.append(format_drill(d))
 
     # optional post-lift conditioning (no-gym rules)
-    if include_finisher:
-        fin_min = prof["finisher_min"]
-        if include_finisher and fin_min > 0 and not skate_within_24h:
-        cond_pool = filter_post_lift_conditioning_pool(conditioning_drills, full_gym=False, post_lift_conditioning_type=None)
-        fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "conditioning"))
+    fin_min = prof.get("finisher_min", 0)
+
+    if include_finisher and fin_min > 0 and not skate_within_24h:
+        cond_pool = filter_post_lift_conditioning_pool(
+            conditioning_drills,
+            full_gym=False,
+            post_lift_conditioning_type=None,
+        )
+        fin_drills = pick_conditioning_drills(
+            cond_pool,
+            age,
+            rnd,
+            fin_min,
+            focus_rule=get_focus_rules(None, "conditioning"),
+        )
+
         lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
         if not fin_drills:
             lines.append("- [No matching no-equipment conditioning drills found]")
