@@ -1717,7 +1717,7 @@ def build_hockey_strength_session(
 
     emphasis = _normalize_strength_emphasis(emphasis)
     lines: List[str] = []
-    prof = _strength_time_profile(session_len_min)
+    prof = _strength_time_profile(session_len_min, skate_within_24h)
 
     if skate_within_24h:
         prof = dict(prof)
