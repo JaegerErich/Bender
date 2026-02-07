@@ -1706,7 +1706,14 @@ def build_hockey_strength_session(
 
     emphasis = _normalize_strength_emphasis(emphasis)
     lines: List[str] = []
-    prof = _strength_time_profile(session_len_min, skate_within_24h)
+    prof = _strength_time_profile(session_len_min)
+
+    if skate_within_24h:
+        prof = dict(prof)
+        prof["speed"] = min(prof["speed"], 1)
+        prof["allow_finisher"] = False
+
+    lines: List[str] = []
 
     # Warm-up
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
@@ -1744,12 +1751,12 @@ def build_hockey_strength_session(
             speed_pool = [
                 d for d in speed_pool
                 if not _cns_is_high(d)
-            and _fatigue_rank(fatigue_cost_level(d)) <= 2
+                and _fatigue_rank(fatigue_cost_level(d)) <= 2
             ]
 
         speed_count = prof["speed"]
 
-        if speed_pool and speed_count > 0:
+        if speed_pool:
             first = _pick_by_filter(speed_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
             if first:
                 speed_picks += first
@@ -1762,7 +1769,21 @@ def build_hockey_strength_session(
                     speed_picks += second
                     used_ids.add(norm(get(second[0], "id", "")))
 
-        lines.append("\nSPEED / POWER (1–2 drills)")
+        lines.append("\nSPEED / POWER")
+        if not speed_picks:
+            lines.append("- [No speed/power drills found — continuing]")
+        else:
+            for d in speed_picks:
+                role = _fatigue_role_for_speed_drill(d)
+                rx = _rx_for(emphasis, role)
+                if rx:
+                    reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
+                    lines.append(
+                        format_strength_drill_with_prescription(
+                            d, sets=rx["sets"], reps=reps, rest_sec=120
+                        )
+                    )
+
         if not speed_picks:
             lines.append("- [No speed/power drills found — continuing]")
         else:
@@ -2008,14 +2029,6 @@ def build_hockey_strength_session(
             rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
             reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
             lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
-
-        if not res_b:
-            lines.append("- [No resilience drill found]")
-        else:
-            d = res_b[0]
-            rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
-            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
 
     if not res_b:
         lines.append("- [No resilience drill found]")
