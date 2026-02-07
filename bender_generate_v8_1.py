@@ -1780,7 +1780,7 @@ def build_hockey_strength_session(
                     speed_picks += second
                     used_ids.add(norm(get(second[0], "id", "")))
 
-        lines.append("\nSPEED / POWER")
+        lines.append("\nSPEED / POWER (1–2 drills)")
         if not speed_picks:
             lines.append("- [No speed/power drills found — continuing]")
         else:
@@ -1791,7 +1791,10 @@ def build_hockey_strength_session(
                     reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
                     lines.append(
                         format_strength_drill_with_prescription(
-                            d, sets=rx["sets"], reps=reps, rest_sec=120
+                            d,
+                            sets=rx["sets"],
+                            reps=reps,
+                            rest_sec=120,
                         )
                     )
 
@@ -1800,7 +1803,7 @@ def build_hockey_strength_session(
         else:
             for d in speed_picks:
                 role = _fatigue_role_for_speed_drill(d)
-               rx = _rx_for(emphasis, role)
+                rx = _rx_for(emphasis, role)
                 if rx:
                     reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
                     lines.append(
