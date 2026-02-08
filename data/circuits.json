@@ -29,7 +29,7 @@
       { "id": "BW_018", "role": "power" },
       { "id": "BW_019", "role": "power" },
       { "id": "BW_020", "role": "deceleration" },
-      { "id": "BW_021", "role": "speed" },
+      { "id": "BW_016", "role": "lower" },
       { "id": "BW_011", "role": "core" }
     ]
   },
@@ -111,7 +111,7 @@
     "age_max": 15,
     "format": { "style": "mixed", "rounds": 3 },
     "drills": [
-      { "id": "BW_021", "role": "speed" },
+      { "id": "BW_002", "role": "single_leg" },
       { "id": "BW_018", "role": "power" },
       { "id": "BW_013", "role": "lateral_power" },
       { "id": "BW_020", "role": "deceleration" },

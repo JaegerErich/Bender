@@ -194,6 +194,53 @@ def _header_style(title: str) -> str:
     return "Section"
 
 def render_workout_readable(text: str) -> None:
+    
+# -----------------------------
+# No-gym strength: circuits-only renderer
+# -----------------------------
+def render_no_gym_strength_circuits_only(text: str) -> None:
+    """
+    Render ONLY Circuit A / Circuit B for no-gym strength workouts.
+    Prevents section parser from splitting circuits into extra cards.
+    """
+    if not text:
+        return
+
+    lines = text.splitlines()
+
+    circuit_indices = [
+        i for i, ln in enumerate(lines)
+        if ln.strip() in ("CIRCUIT A", "CIRCUIT B")
+    ]
+
+    if not circuit_indices:
+        st.text(text)
+        return
+
+    circuit_indices.append(len(lines))
+
+    for idx in range(len(circuit_indices) - 1):
+        start = circuit_indices[idx]
+        end = circuit_indices[idx + 1]
+
+        body = lines[start + 1 : end]
+
+        # clean empty lines
+        body = [ln for ln in body if ln.strip()]
+
+        with st.container(border=True):
+            st.subheader(lines[start].strip())
+            st.caption("Strength Circuits")
+
+            for ln in body:
+                s = ln.strip()
+                if s.startswith("-"):
+                    st.markdown(s)
+                elif s.lower().startswith("format"):
+                    st.caption(s)
+                else:
+                    st.markdown(s)
+
     """
     Renders engine text into clean sections:
     - Section headers become bold titles inside bordered cards
@@ -495,7 +542,19 @@ if st.session_state.last_output_text:
     # -------------------------
     with tab_workout:
         st.subheader("Your Workout")
-        render_workout_readable(st.session_state.last_output_text)
+
+        if (
+            mode == "strength"
+            and location == "no_gym"
+            and "CIRCUIT A" in st.session_state.last_output_text
+        ):
+            render_no_gym_strength_circuits_only(
+                st.session_state.last_output_text
+            )
+        else:
+            render_workout_readable(
+                st.session_state.last_output_text
+            )
 
     # -------------------------
     # TAB 2: Download / Copy
