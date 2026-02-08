@@ -1152,29 +1152,29 @@ FATIGUE_ROLE_HIGH = "high_fatigue"
 FATIGUE_ROLE_SECONDARY = "secondary"
 FATIGUE_ROLE_RESILIENCE = "resilience"
 
+# Fixed (no ranges) RX table
 STRENGTH_RX_TABLE: Dict[str, Dict[str, Any]] = {
     "power": {
-        FATIGUE_ROLE_HIGH: {"sets": "4–6", "reps": "3–6", "intent": "Max speed and intent, full reset between reps"},
-        FATIGUE_ROLE_SECONDARY: {"sets": "3–4", "reps": "4–6", "intent": "Fast but controlled explosive work"},
-        FATIGUE_ROLE_RESILIENCE: {"sets": "2–3", "reps": "6–10", "intent": "Elastic, reactive, low fatigue"},
+        FATIGUE_ROLE_HIGH:      {"sets": 5, "reps": 4,  "rest_sec": 150},
+        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 5,  "rest_sec": 120},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 8,  "rest_sec": 60},
     },
     "strength": {
-        FATIGUE_ROLE_HIGH: {"sets": "4–6", "reps": "4–7", "intent": "Heavy, clean reps with full control"},
-        FATIGUE_ROLE_SECONDARY: {"sets": "3–4", "reps": "6–10", "intent": "Support strength, stability focus"},
-        FATIGUE_ROLE_RESILIENCE: {"sets": "2–3", "reps": "8–12", "intent": "Trunk, carries, unilateral control"},
+        FATIGUE_ROLE_HIGH:      {"sets": 5, "reps": 5,  "rest_sec": 180},
+        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 8,  "rest_sec": 90},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 10, "rest_sec": 45},
     },
     "hypertrophy": {
-        FATIGUE_ROLE_HIGH: {"sets": "3–5", "reps": "6–10", "intent": "Muscle + strength overlap"},
-        FATIGUE_ROLE_SECONDARY: {"sets": "3–4", "reps": "8–14", "intent": "Volume, joint-friendly loading"},
-        FATIGUE_ROLE_RESILIENCE: {"sets": "2–3", "reps": "12–20", "intent": "Tendons, balance, symmetry"},
+        FATIGUE_ROLE_HIGH:      {"sets": 4, "reps": 8,  "rest_sec": 150},
+        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 12, "rest_sec": 75},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 15, "rest_sec": 45},
     },
     "recovery": {
-        FATIGUE_ROLE_HIGH: None,
-        FATIGUE_ROLE_SECONDARY: {"sets": "2–3", "reps": "10–15", "intent": "Blood flow, light movement"},
-        FATIGUE_ROLE_RESILIENCE: {"sets": "2–3", "reps": "20–40s", "intent": "Calm, controlled, restore"},
+        FATIGUE_ROLE_HIGH:      None,
+        FATIGUE_ROLE_SECONDARY: {"sets": 3, "reps": 12, "rest_sec": 60},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 0,  "rest_sec": 0},  # use timed prescriptions if needed
     },
 }
-
 
 def _normalize_strength_emphasis(emphasis: Any) -> str:
     e = norm(emphasis).lower()
@@ -1719,12 +1719,23 @@ def build_hockey_strength_session(
     lines: List[str] = []
     prof = _strength_time_profile(session_len_min, skate_within_24h)
 
+    time_used_sec = 0
+
+    def add_line(s: str) -> None:
+        lines.append(s)
+
+    def add_strength_item(d: Dict[str, Any], rx: Dict[str, Any]) -> None:
+        nonlocal time_used_sec
+        rep_sec = _rep_seconds_for_drill(d)
+        est = estimate_strength_time_sec(rx["sets"], rx["reps"], rx["rest_sec"], rep_sec=rep_sec)
+        time_used_sec += est
+        add_line(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=rx["reps"], rest_sec=rx["rest_sec"]))
+
+
     if skate_within_24h:
         prof = dict(prof)
         prof["speed"] = min(prof["speed"], 1)
         prof["allow_finisher"] = False
-
-    lines: List[str] = []
 
     # Warm-up
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
@@ -1797,21 +1808,6 @@ def build_hockey_strength_session(
                             rest_sec=120,
                         )
                     )
-
-        if not speed_picks:
-            lines.append("- [No speed/power drills found — continuing]")
-        else:
-            for d in speed_picks:
-                role = _fatigue_role_for_speed_drill(d)
-                rx = _rx_for(emphasis, role)
-                if rx:
-                    reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
-                    lines.append(
-                        format_strength_drill_with_prescription(
-                            d, sets=rx["sets"], reps=reps, rest_sec=120
-                        )
-                    )
-
 
     # HIGH FATIGUE (1)
     hf_pool = [d for d in day_pool if norm(get(d, "id", "")) not in used_ids]
@@ -1957,13 +1953,13 @@ def build_hockey_strength_session(
 
         have_push = any(mp == "push" for mp in chosen_mps)
         have_pull = any(mp == "pull" for mp in chosen_mps)
-
     sec_b: List[Dict[str, Any]] = []
 
     if prof["blocks"] >= 2:
         # --- SEC B ---
         sec_pool_b = [d for d in sec_pool if norm(get(d, "id", "")) not in used_ids]
 
+        # Upper day: cap heavy vertical stress
         if _is_upper_day(day_type) and hf_pick:
             if _is_heavy_vertical(hf_pick[0]):
                 sec_pool_b = [d for d in sec_pool_b if not _is_heavy_vertical(d)]
@@ -1994,18 +1990,15 @@ def build_hockey_strength_session(
             else:
                 mp_a = movement_pattern(sec_a[0]) if sec_a else ""
                 sec_pool_diff = _avoid_movement_pattern(sec_pool_b, mp_a) if mp_a else sec_pool_b
-                sec_pool_diff_var = [
-                    d for d in sec_pool_diff
-                    if _upper_subpattern(d) not in used_upper_subpatterns
-                ]
+                sec_pool_diff_var = [d for d in sec_pool_diff if _upper_subpattern(d) not in used_upper_subpatterns]
 
                 sec_b = (
                     _pick_by_filter(sec_pool_diff_var, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
                     or _pick_by_filter(sec_pool_diff, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
                     or _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
                 )
-
         else:
+            # original behavior for non-upper days
             sec_b = _pick_by_filter(sec_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids) or sec_a
 
         if sec_b:
@@ -2013,6 +2006,7 @@ def build_hockey_strength_session(
         if sec_b and _is_upper_day(day_type):
             upper_strength_picks.append(sec_b[0])
             used_upper_subpatterns.add(_upper_subpattern(sec_b[0]))
+
 
 
     # Render Blocks
@@ -2044,13 +2038,13 @@ def build_hockey_strength_session(
             reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
             lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
 
-    if not res_b:
-        lines.append("- [No resilience drill found]")
-    else:
-        d = res_b[0]
-        rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
-        reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
-        lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
+        if not res_b:
+            lines.append("- [No resilience drill found]")
+        else:
+            d = res_b[0]
+            rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
+            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
 
     # SCAP / SHOULDER HEALTH ACCESSORY (guaranteed 1 on upper days)
     if _is_upper_day(day_type):
