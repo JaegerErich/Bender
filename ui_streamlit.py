@@ -199,6 +199,7 @@ def render_workout_readable(text: str) -> None:
 
 # -----------------------------
 # No-gym strength: circuits-only renderer
+# (Warmup first, then Circuit A/B only once)
 # -----------------------------
 def render_no_gym_strength_circuits_only(text: str) -> None:
     if not text:
@@ -206,35 +207,92 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
 
     lines = text.splitlines()
 
-    circuit_indices = [
-        i for i, ln in enumerate(lines)
-        if ln.strip() in ("CIRCUIT A", "CIRCUIT B")
-    ]
+    def find_first_index(options: tuple[str, ...]) -> int:
+        for i, ln in enumerate(lines):
+            if ln.strip() in options:
+                return i
+        return -1
 
-    if not circuit_indices:
-        st.text(text)
-        return
+    # ---- 1) Warmup block (if present) ----
+    warmup_start = find_first_index(("WARMUP", "WARMUP (Strength Circuits - leg)", "WARMUP (Strength Circuits - upper)", "WARMUP (Strength Circuits - full)"))
+    # End warmup when circuits begin
+    circuits_start = find_first_index(("STRENGTH CIRCUITS (Preset)", "STRENGTH CIRCUITS", "CIRCUIT A", "CIRCUIT B"))
 
-    circuit_indices.append(len(lines))
-
-    for idx in range(len(circuit_indices) - 1):
-        start = circuit_indices[idx]
-        end = circuit_indices[idx + 1]
-
-        body = lines[start + 1 : end]
-        body = [ln for ln in body if ln.strip()]
+    if warmup_start != -1:
+        warmup_end = circuits_start if circuits_start != -1 and circuits_start > warmup_start else len(lines)
+        warmup_body = [ln for ln in lines[warmup_start + 1 : warmup_end] if ln.strip()]
 
         with st.container(border=True):
-            st.subheader(lines[start].strip())
+            st.subheader("WARMUP")
             st.caption("Strength Circuits")
-
-            for ln in body:
+            for ln in warmup_body:
                 s = ln.strip()
                 if s.startswith("-"):
                     st.markdown(s)
                 else:
-                    st.markdown(s)
+                    st.caption(s)
 
+    # ---- 2) Circuits A/B: render only the FIRST occurrence of each ----
+    circuit_headers = ("CIRCUIT A", "CIRCUIT B")
+
+    # Find first CIRCUIT A, then first CIRCUIT B AFTER that
+    a_start = -1
+    b_start = -1
+
+    for i, ln in enumerate(lines):
+        if ln.strip() == "CIRCUIT A":
+            a_start = i
+            break
+
+    if a_start != -1:
+        for i in range(a_start + 1, len(lines)):
+            if lines[i].strip() == "CIRCUIT B":
+                b_start = i
+                break
+
+    # If no CIRCUIT A exists, fallback to raw text
+    if a_start == -1:
+        st.text(text)
+        return
+
+    # Helper: get section body until next header-like marker
+    def section_body(start_idx: int) -> list[str]:
+        out = []
+        for j in range(start_idx + 1, len(lines)):
+            s = lines[j].strip()
+            if s in circuit_headers:
+                break
+            # stop if a new major section begins
+            if s.startswith("MOBILITY") or s.startswith("POST-LIFT CONDITIONING") or s.startswith("SHOOTING") or s.startswith("STICKHANDLING"):
+                break
+            if s:
+                out.append(lines[j])
+        return out
+
+    # CIRCUIT A card
+    a_body = section_body(a_start)
+    with st.container(border=True):
+        st.subheader("CIRCUIT A")
+        st.caption("Strength Circuits")
+        for ln in a_body:
+            s = ln.strip()
+            if s.startswith("-"):
+                st.markdown(s)
+            else:
+                st.caption(s)
+
+    # CIRCUIT B card (only if found)
+    if b_start != -1:
+        b_body = section_body(b_start)
+        with st.container(border=True):
+            st.subheader("CIRCUIT B")
+            st.caption("Strength Circuits")
+            for ln in b_body:
+                s = ln.strip()
+                if s.startswith("-"):
+                    st.markdown(s)
+                else:
+                    st.caption(s)
 
     """
     Renders engine text into clean sections:
