@@ -1584,19 +1584,48 @@ def build_bw_strength_circuits(
                     )
 
     if presets:
-        lines.append("\nSTRENGTH CIRCUITS (Preset)")
-        for i, c in enumerate(presets, start=1):
-            lines.append("")
-            lines.append("CIRCUIT " + ("A" if i == 1 else "B"))
+        # Build all circuit lines first so we can avoid printing empty sections
+        preset_lines: List[str] = []
 
+        for i, c in enumerate(presets, start=1):
             cc = dict(c)
+
+            # If skating soon, cap rounds inside the preset format
             if skate_within_24h:
                 fmt = cc.get("format", {}) or {}
                 if "rounds" in fmt and isinstance(fmt.get("rounds"), int):
                     fmt["rounds"] = min(int(fmt.get("rounds", 2)), 2)
                 cc["format"] = fmt
 
-            lines.extend(render_preset_circuit(cc, strength_by_id))
+            rendered = render_preset_circuit(cc, strength_by_id) or []
+
+            # IMPORTANT:
+            # render_preset_circuit may already output headers like:
+            # "STRENGTH CIRCUITS (Preset)" and/or "CIRCUIT A/B"
+            # So we strip any header-ish lines and then add our own.
+            cleaned: List[str] = []
+            for ln in rendered:
+                s = (ln or "").strip().upper()
+                if s.startswith("STRENGTH CIRCUITS"):
+                    continue
+                if s.startswith("CIRCUIT "):
+                    continue
+                cleaned.append(ln)
+
+            # Only add this circuit if it actually has content
+            if any((ln or "").strip().startswith("-") for ln in cleaned):
+                preset_lines.append("")
+                preset_lines.append("CIRCUIT " + ("A" if i == 1 else "B"))
+                preset_lines.extend(cleaned)
+
+        # Only show the preset section if we actually rendered drills
+        if preset_lines:
+            lines.append("\nSTRENGTH CIRCUITS (Preset)")
+            lines.extend(preset_lines)
+        else:
+            lines.append("\nSTRENGTH CIRCUITS (Preset)")
+            lines.append("- [Preset circuits found, but no drills rendered (check drill IDs in circuits.json vs strength.json)]")
+
     else:
         bw_pool = [d for d in strength_drills if is_active(d) and age_ok(d, age) and is_bodyweight_strength_drill(d)]
         lines.append("\nSTRENGTH CIRCUITS")
@@ -1699,7 +1728,7 @@ def build_hockey_strength_session(
     full_gym: bool = True,
     post_lift_conditioning_type: Optional[str] = None,
     skate_within_24h: bool = False,
-) -> List[str]:
+) -> List[str]:    
     # No gym: circuits only
     if not full_gym:
         return build_bw_strength_circuits(
@@ -1716,6 +1745,7 @@ def build_hockey_strength_session(
             include_finisher=include_finisher,
             skate_within_24h=skate_within_24h,
         )
+
 
     emphasis = _normalize_strength_emphasis(emphasis)
     lines: List[str] = []
