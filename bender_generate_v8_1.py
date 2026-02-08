@@ -1541,6 +1541,8 @@ def build_bw_strength_circuits(
 ) -> List[str]:
     lines: List[str] = []
 
+    prof = _strength_time_profile(session_len_min, skate_within_24h)
+
     wu = build_strength_warmup(warmups, age, rnd, day_type=day_type)
     lines.append(f"\nWARMUP (Strength Circuits - {day_type})")
     if wu:
