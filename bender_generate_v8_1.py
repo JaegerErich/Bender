@@ -1791,23 +1791,9 @@ def build_hockey_strength_session(
                     speed_picks += second
                     used_ids.add(norm(get(second[0], "id", "")))
 
-        lines.append("\nSPEED / POWER (1–2 drills)")
-        if not speed_picks:
-            lines.append("- [No speed/power drills found — continuing]")
-        else:
-            for d in speed_picks:
-                role = _fatigue_role_for_speed_drill(d)
-                rx = _rx_for(emphasis, role)
-                if rx:
-                    reps = _apply_strength_emphasis_guardrails(emphasis, role, rx["reps"])
-                    lines.append(
-                        format_strength_drill_with_prescription(
-                            d,
-                            sets=rx["sets"],
-                            reps=reps,
-                            rest_sec=120,
-                        )
-                    )
+        # NOTE: Don't render SPEED/POWER here anymore.
+        # We'll render it after HIGH FATIGUE, paired as a superset.
+
 
     # HIGH FATIGUE (1)
     hf_pool = [d for d in day_pool if norm(get(d, "id", "")) not in used_ids]
@@ -1845,18 +1831,77 @@ def build_hockey_strength_session(
 
     hf_dir = _upper_direction(hf_pick[0]) if hf_pick and _is_upper_day(day_type) else None
 
-    lines.append("\nHIGH FATIGUE (1 exercise)")
-    if not hf_pick:
-        lines.append("- [No high-fatigue lift found]")
-    else:
-        d = hf_pick[0]
-        used_ids.add(norm(get(d, "id", "")))
-        rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
-        if rx is None:
-            lines.append("- [Recovery emphasis: skipping high-fatigue lift]")
+    # SPEED / POWER (A1) + HIGH FATIGUE (A2) — SUPERSET
+    speed_a1 = speed_picks[0] if speed_picks else None
+    hf_a2 = hf_pick[0] if hf_pick else None
+
+    if speed_a1 and hf_a2:
+        role_a1 = _fatigue_role_for_speed_drill(speed_a1)
+        rx_a1 = _rx_for(emphasis, role_a1)
+        rx_a2 = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+
+        lines.append("\nSPEED / POWER (A1) + HIGH FATIGUE (A2) — SUPERSET")
+        lines.append("- Alternate A1 → A2. Rest 90–120s after each round.")
+
+        if rx_a1 and rx_a2:
+            # Enforce equal sets
+            sets_common = min(int(rx_a1["sets"]), int(rx_a2["sets"]))
+
+            # A1 — Speed / Power
+            reps_a1 = rx_a1["reps"]
+            lines.append(
+                format_strength_drill_with_prescription(
+                    speed_a1,
+                    sets=sets_common,
+                    reps=reps_a1,
+                    rest_sec=0,
+                )
+            )
+            used_ids.add(norm(get(speed_a1, "id", "")))
+
+            # A2 — High Fatigue
+            reps_a2 = rx_a2["reps"]
+            lines.append(
+                format_strength_drill_with_prescription(
+                    hf_a2,
+                    sets=sets_common,
+                    reps=reps_a2,
+                    rest_sec=0,
+                )
+            )
+            used_ids.add(norm(get(hf_a2, "id", "")))
+
         else:
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_HIGH, rx["reps"])
-            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=180))
+            # Fallback: render high fatigue only
+            lines.append("\nHIGH FATIGUE (1 exercise)")
+            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+            if rx:
+                lines.append(
+                    format_strength_drill_with_prescription(
+                        hf_a2,
+                        sets=rx["sets"],
+                        reps=rx["reps"],
+                        rest_sec=180,
+                    )
+                )
+                used_ids.add(norm(get(hf_a2, "id", "")))
+
+    else:
+        # No speed available → normal HIGH FATIGUE
+        lines.append("\nHIGH FATIGUE (1 exercise)")
+        if hf_pick:
+            d = hf_pick[0]
+            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+            if rx:
+                lines.append(
+                    format_strength_drill_with_prescription(
+                        d,
+                        sets=rx["sets"],
+                        reps=rx["reps"],
+                        rest_sec=180,
+                    )
+                )
+                used_ids.add(norm(get(d, "id", "")))
 
     # SCAP / SHOULDER HEALTH (upper days only)
     scap_pool: List[Dict[str, Any]] = []
