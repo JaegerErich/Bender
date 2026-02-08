@@ -194,7 +194,9 @@ def _header_style(title: str) -> str:
     return "Section"
 
 def render_workout_readable(text: str) -> None:
-    
+    if not text:
+        return
+
 # -----------------------------
 # No-gym strength: circuits-only renderer
 # -----------------------------
