@@ -199,10 +199,6 @@ def render_workout_readable(text: str) -> None:
 # No-gym strength: circuits-only renderer
 # -----------------------------
 def render_no_gym_strength_circuits_only(text: str) -> None:
-    """
-    Render ONLY Circuit A / Circuit B for no-gym strength workouts.
-    Prevents section parser from splitting circuits into extra cards.
-    """
     if not text:
         return
 
@@ -224,8 +220,6 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
         end = circuit_indices[idx + 1]
 
         body = lines[start + 1 : end]
-
-        # clean empty lines
         body = [ln for ln in body if ln.strip()]
 
         with st.container(border=True):
@@ -236,10 +230,9 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 s = ln.strip()
                 if s.startswith("-"):
                     st.markdown(s)
-                elif s.lower().startswith("format"):
-                    st.caption(s)
                 else:
                     st.markdown(s)
+
 
     """
     Renders engine text into clean sections:
