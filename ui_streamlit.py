@@ -254,16 +254,40 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
 
     lines = text.splitlines()
 
-    def find_first_index(options: tuple[str, ...]) -> int:
-        for i, ln in enumerate(lines):
-            if ln.strip() in options:
+    def find_first_exact(targets: tuple[str, ...], start: int = 0) -> int:
+        for i in range(start, len(lines)):
+            if lines[i].strip() in targets:
                 return i
         return -1
 
-    # ---- 1) Warmup block (if present) ----
-    warmup_start = find_first_index(("WARMUP", "WARMUP (Strength Circuits - leg)", "WARMUP (Strength Circuits - upper)", "WARMUP (Strength Circuits - full)"))
-    # End warmup when circuits begin
-    circuits_start = find_first_index(("STRENGTH CIRCUITS (Preset)", "STRENGTH CIRCUITS", "CIRCUIT A", "CIRCUIT B"))
+    def grab_section(start_idx: int, stop_headers: set[str]) -> list[str]:
+        out: list[str] = []
+        for j in range(start_idx + 1, len(lines)):
+            s = lines[j].strip()
+            if s in stop_headers:
+                break
+            if s:
+                out.append(lines[j])
+        return out
+
+    # ---- headers we care about ----
+    CIRCUIT_HEADERS = {"CIRCUIT A", "CIRCUIT B"}
+    MOBILITY_HEADERS = {"MOBILITY COOLDOWN CIRCUIT", "MOBILITY"}
+    STOP_HEADERS = CIRCUIT_HEADERS | MOBILITY_HEADERS | {
+        "POST-LIFT CONDITIONING",
+        "SHOOTING",
+        "STICKHANDLING",
+        "CONDITIONING",
+    }
+
+    # ---- Warmup: render if present BEFORE circuits ----
+    warmup_start = -1
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("WARMUP"):
+            warmup_start = i
+            break
+
+    circuits_start = find_first_exact(("CIRCUIT A", "CIRCUIT B", "STRENGTH CIRCUITS (Preset)", "STRENGTH CIRCUITS"))
 
     if warmup_start != -1:
         warmup_end = circuits_start if circuits_start != -1 and circuits_start > warmup_start else len(lines)
@@ -279,45 +303,16 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 else:
                     st.caption(s)
 
-    # ---- 2) Circuits A/B: render only the FIRST occurrence of each ----
-    circuit_headers = ("CIRCUIT A", "CIRCUIT B")
-
-    # Find first CIRCUIT A, then first CIRCUIT B AFTER that
-    a_start = -1
-    b_start = -1
-
-    for i, ln in enumerate(lines):
-        if ln.strip() == "CIRCUIT A":
-            a_start = i
-            break
-
-    if a_start != -1:
-        for i in range(a_start + 1, len(lines)):
-            if lines[i].strip() == "CIRCUIT B":
-                b_start = i
-                break
-
-    # If no CIRCUIT A exists, fallback to raw text
+    # ---- Find first Circuit A, then first Circuit B after that ----
+    a_start = find_first_exact(("CIRCUIT A",))
     if a_start == -1:
         st.text(text)
         return
 
-    # Helper: get section body until next header-like marker
-    def section_body(start_idx: int) -> list[str]:
-        out = []
-        for j in range(start_idx + 1, len(lines)):
-            s = lines[j].strip()
-            if s in circuit_headers:
-                break
-            # stop if a new major section begins
-            if s.startswith("MOBILITY") or s.startswith("POST-LIFT CONDITIONING") or s.startswith("SHOOTING") or s.startswith("STICKHANDLING"):
-                break
-            if s:
-                out.append(lines[j])
-        return out
+    b_start = find_first_exact(("CIRCUIT B",), start=a_start + 1)
 
-    # CIRCUIT A card
-    a_body = section_body(a_start)
+    # Circuit A
+    a_body = grab_section(a_start, STOP_HEADERS)
     with st.container(border=True):
         st.subheader("CIRCUIT A")
         st.caption("Strength Circuits")
@@ -328,9 +323,9 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
             else:
                 st.caption(s)
 
-    # CIRCUIT B card (only if found)
+    # Circuit B (optional)
     if b_start != -1:
-        b_body = section_body(b_start)
+        b_body = grab_section(b_start, STOP_HEADERS)
         with st.container(border=True):
             st.subheader("CIRCUIT B")
             st.caption("Strength Circuits")
@@ -340,6 +335,26 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                     st.markdown(s)
                 else:
                     st.caption(s)
+
+    # ---- Mobility (optional): render if present ----
+    mob_start = -1
+    for i, ln in enumerate(lines):
+        if ln.strip().startswith("MOBILITY"):
+            mob_start = i
+            break
+
+    if mob_start != -1:
+        mob_body = grab_section(mob_start, STOP_HEADERS)
+        with st.container(border=True):
+            st.subheader(lines[mob_start].strip())
+            st.caption("Mobility")
+            for ln in mob_body:
+                s = ln.strip()
+                if s.startswith("-"):
+                    st.markdown(s)
+                else:
+                    st.caption(s)
+
 
     return
 
