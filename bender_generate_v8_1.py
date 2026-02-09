@@ -1054,88 +1054,63 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
 
 
 def filter_post_lift_conditioning_pool(
-    conditioning_drills: list[dict],
+    conditioning_drills: List[Dict[str, Any]],
     *,
     full_gym: bool,
-    post_lift_conditioning_type: str | None,
-) -> list[dict]:
-    if not conditioning_drills:
-        return []
+    post_lift_conditioning_type: Optional[str] = None,  # "bike" | "treadmill" | "surprise" | None
+) -> List[Dict[str, Any]]:
+    """
+    Enforces conditioning modality rules:
 
-    def _text_blob(d: dict) -> str:
-        parts: list[str] = []
+    - no_gym (full_gym=False): EXCLUDE bike/treadmill; allow cones/no-equipment/anything else.
+    - gym + bike: ONLY bike
+    - gym + treadmill: ONLY treadmill
+    - gym + surprise: bike OR treadmill
+    - gym + None: allow anything (but still active/age filtered elsewhere)
+    """
 
-        # name
-        parts.append(str(d.get("name") or ""))
-
-        # equipment can be str OR list
-        eq = d.get("equipment")
-        if isinstance(eq, list):
-            parts.extend([str(x) for x in eq])
-        else:
-            parts.append(str(eq or ""))
-
-        # tags can be list OR str
-        tags = d.get("tags")
-        if isinstance(tags, list):
+    def _blob(d: Dict[str, Any]) -> str:
+        # Concatenate common fields that might contain modality hints
+        parts: List[str] = []
+        for k in ("id", "name", "equipment", "modality"):
+            v = d.get(k, "")
+            if isinstance(v, str):
+                parts.append(v)
+        tags = d.get("tags", [])
+        if isinstance(tags, str):
+            parts.append(tags)
+        elif isinstance(tags, list):
             parts.extend([str(x) for x in tags])
-        else:
-            parts.append(str(tags or ""))
-
         return " ".join(parts).lower()
 
-    def uses_treadmill(d: dict) -> bool:
-        blob = _text_blob(d)
-        return ("treadmill" in blob) or ("tmill" in blob)
+    def _is_bike(d: Dict[str, Any]) -> bool:
+        s = _blob(d)
+        return any(tok in s for tok in ("bike", "assault bike", "airdyne", "erg bike", "spin bike"))
 
-    def uses_bike(d: dict) -> bool:
-        blob = _text_blob(d)
-        # include common variants
-        return (
-            ("bike" in blob)
-            or ("assault" in blob)
-            or ("airbike" in blob)
-            or ("echo" in blob)
-            or ("aerodyne" in blob)
-            or ("cycle" in blob)
-            or ("erg" in blob)
-        )
+    def _is_treadmill(d: Dict[str, Any]) -> bool:
+        s = _blob(d)
+        return any(tok in s for tok in ("treadmill", "tm " , "tm_", "incline walk"))
 
-    filtered: list[dict] = []
+    # Start with active drills only (age filtering usually happens later, but safe here too if you want)
+    pool = [d for d in (conditioning_drills or []) if is_active(d)]
 
-    for d in conditioning_drills:
-        if not is_active(d):
-            continue
+    # ---- No gym: NO bike/treadmill allowed ----
+    if not full_gym:
+        return [d for d in pool if not _is_bike(d) and not _is_treadmill(d)]
 
-        treadmill = uses_treadmill(d)
-        bike = uses_bike(d)
+    # ---- Gym rules ----
+    t = (post_lift_conditioning_type or "").strip().lower()
 
-        # -----------------------------
-        # NO GYM: exclude machines
-        # -----------------------------
-        if not full_gym:
-            if treadmill or bike:
-                continue
-            filtered.append(d)
-            continue
+    if t == "bike":
+        return [d for d in pool if _is_bike(d)]
+    if t == "treadmill":
+        return [d for d in pool if _is_treadmill(d)]
+    if t == "surprise":
+        return [d for d in pool if _is_bike(d) or _is_treadmill(d)]
 
-        # -----------------------------
-        # GYM: modality rules
-        # -----------------------------
-        if post_lift_conditioning_type == "bike":
-            if bike:
-                filtered.append(d)
-        elif post_lift_conditioning_type == "treadmill":
-            if treadmill:
-                filtered.append(d)
-        elif post_lift_conditioning_type in ("surprise", None):
-            # surprise = either machine
-            if bike or treadmill:
-                filtered.append(d)
-        else:
-            filtered.append(d)
+    # If type not specified, allow anything in gym
+    return pool
 
-    return filtered
 
 # ------------------------------
 # Mobility
