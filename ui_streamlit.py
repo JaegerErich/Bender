@@ -596,18 +596,12 @@ if st.session_state.last_output_text:
     with tab_workout:
         st.subheader("Your Workout")
 
-        if (
-            mode == "strength"
-            and location == "no_gym"
-            and "CIRCUIT A" in st.session_state.last_output_text
-        ):
-            render_no_gym_strength_circuits_only(
-                st.session_state.last_output_text
-            )
+        # No-gym strength: show circuits-only view ONLY
+        if mode == "strength" and location == "no_gym":
+            render_no_gym_strength_circuits_only(st.session_state.last_output_text)
         else:
-            render_workout_readable(
-                st.session_state.last_output_text
-            )
+            render_workout_readable(st.session_state.last_output_text)
+
 
     # -------------------------
     # TAB 2: Download / Copy
