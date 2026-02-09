@@ -1054,28 +1054,78 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
 
 
 def filter_post_lift_conditioning_pool(
-    conditioning_drills: List[Dict[str, Any]],
+    conditioning_drills: list[dict],
     *,
     full_gym: bool,
-    post_lift_conditioning_type: Optional[str],
-) -> List[Dict[str, Any]]:
-    if full_gym:
-        if post_lift_conditioning_type in ("bike", "treadmill"):
-            return [d for d in conditioning_drills if conditioning_modality(d) == post_lift_conditioning_type]
-        return [d for d in conditioning_drills if conditioning_modality(d) in ("bike", "treadmill")]
+    post_lift_conditioning_type: str | None,
+) -> list[dict]:
+    """
+    Filters conditioning drills based on gym availability and modality.
 
-    allowed = ("cones", "bodyweight", "sprints", "none")
-    out: List[Dict[str, Any]] = []
+    Rules:
+    - no_gym:
+        • EXCLUDE treadmill & bike
+        • allow everything else (cones, bodyweight, misc)
+    - gym + bike:
+        • ONLY bike-based conditioning
+    - gym + treadmill:
+        • ONLY treadmill-based conditioning
+    - gym + surprise:
+        • allow bike OR treadmill
+    """
+
+    if not conditioning_drills:
+        return []
+
+    def uses_treadmill(d: dict) -> bool:
+        eq = (d.get("equipment") or "").lower()
+        tags = " ".join(d.get("tags", [])).lower()
+        return "treadmill" in eq or "treadmill" in tags
+
+    def uses_bike(d: dict) -> bool:
+        eq = (d.get("equipment") or "").lower()
+        tags = " ".join(d.get("tags", [])).lower()
+        return "bike" in eq or "assault" in eq or "bike" in tags
+
+    filtered = []
+
     for d in conditioning_drills:
-        mod = conditioning_modality(d)
-        if mod == "hill":
+        if not is_active(d):
             continue
-        eq = norm(get(d, "equipment", default="")).lower()
-        noeq = eq in ("", "none", "no equipment", "n/a")
-        cone_ok = "cone" in eq
-        if (mod in allowed or mod == "cones") and (noeq or cone_ok):
-            out.append(d)
-    return out
+
+        treadmill = uses_treadmill(d)
+        bike = uses_bike(d)
+
+        # -----------------------------
+        # NO GYM: exclude machines
+        # -----------------------------
+        if not full_gym:
+            if treadmill or bike:
+                continue
+            filtered.append(d)
+            continue
+
+        # -----------------------------
+        # GYM MODES
+        # -----------------------------
+        if post_lift_conditioning_type == "bike":
+            if bike:
+                filtered.append(d)
+
+        elif post_lift_conditioning_type == "treadmill":
+            if treadmill:
+                filtered.append(d)
+
+        elif post_lift_conditioning_type in ("surprise", None):
+            # gym surprise = machines only
+            if bike or treadmill:
+                filtered.append(d)
+
+        else:
+            # fallback (shouldn't happen)
+            filtered.append(d)
+
+    return filtered
 
 
 # ------------------------------
@@ -1742,6 +1792,50 @@ def build_bw_strength_circuits(
                 name = norm(get(d, "name", "(unnamed)"))
                 lines.append(f"- {did} {name} (30–45s)")
 
+def _as_list(v) -> list:
+    if v is None:
+        return []
+    if isinstance(v, list):
+        return v
+    if isinstance(v, tuple):
+        return list(v)
+    return [v]
+
+def _norm_tokens(v) -> set[str]:
+    out = set()
+    for item in _as_list(v):
+        s = str(item).strip().lower()
+        if not s:
+            continue
+        out.add(s)
+    return out
+
+def _drill_has_token(d: dict, token: str) -> bool:
+    token = token.strip().lower()
+    tags = _norm_tokens(d.get("tags"))
+    equip = _norm_tokens(d.get("equipment"))
+    mp = str(d.get("movement_pattern", "") or "").strip().lower()
+    name = str(d.get("name", "") or "").strip().lower()
+
+    # token can appear in tags/equipment, or in name/pattern if you used that convention
+    return (
+        token in tags
+        or token in equip
+        or token in mp
+        or token in name
+    )
+
+def is_treadmill_conditioning(d: dict) -> bool:
+    return _drill_has_token(d, "treadmill")
+
+def is_bike_conditioning(d: dict) -> bool:
+    # allow "bike" or "assault bike" or "air bike" etc
+    return _drill_has_token(d, "bike") or _drill_has_token(d, "assault") or _drill_has_token(d, "airbike") or _drill_has_token(d, "air bike")
+
+def is_machine_conditioning(d: dict) -> bool:
+    return is_treadmill_conditioning(d) or is_bike_conditioning(d)
+
+
     return lines
 
 
@@ -2222,7 +2316,7 @@ def build_hockey_strength_session(
         fin_min = 8 if session_len_min >= 60 else 6
         cond_pool = filter_post_lift_conditioning_pool(
             conditioning_drills,
-            full_gym=True,
+            full_gym=full_gym,
             post_lift_conditioning_type=post_lift_conditioning_type,
         )
         fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "conditioning"))
