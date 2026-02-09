@@ -194,8 +194,54 @@ def _header_style(title: str) -> str:
     return "Section"
 
 def render_workout_readable(text: str) -> None:
+    """
+    Renders engine text into clean sections:
+    - Section headers become bold titles inside bordered cards
+    - Drill lines stay as bullets
+    - Other guidance lines become small text
+    """
     if not text:
         return
+
+    lines = text.splitlines()
+
+    current_title = None
+    buffer: list[str] = []
+
+    def flush_section(title: str, body_lines: list[str]) -> None:
+        if not title and not body_lines:
+            return
+
+        with st.container(border=True):
+            if title:
+                tag = _header_style(title)
+                st.markdown(
+                    f"**{title}**  \n<span style='opacity:.75'>{tag}</span>",
+                    unsafe_allow_html=True,
+                )
+
+            for ln in body_lines:
+                s = ln.strip()
+                if not s:
+                    continue
+                if s.startswith("-"):
+                    st.markdown(s)
+                else:
+                    st.caption(s)
+
+    for ln in lines:
+        s = ln.strip()
+
+        if _is_section_header(s):
+            flush_section(current_title or "", buffer)
+            current_title = s
+            buffer = []
+            continue
+
+        buffer.append(ln)
+
+    flush_section(current_title or "", buffer)
+
 
 # -----------------------------
 # No-gym strength: circuits-only renderer
@@ -294,51 +340,9 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 else:
                     st.caption(s)
 
-    """
-    Renders engine text into clean sections:
-    - Section headers become bold titles inside bordered cards
-    - Drill lines stay as bullets
-    - Other guidance lines become small text
-    """
-    if not text:
-        return
 
-    lines = text.splitlines()
+    return
 
-    # Strip the very first banner line(s) if desired (optional)
-    # We'll keep everything as-is for now.
-
-    current_title = None
-    buffer = []
-
-    def flush_section(title: str, body_lines: list[str]) -> None:
-        if not title and not body_lines:
-            return
-
-        with st.container(border=True):
-            if title:
-                tag = _header_style(title)
-                st.markdown(f"**{title}**  \n<span style='opacity:.75'>{tag}</span>", unsafe_allow_html=True)
-
-            # Render body: bullets and small notes
-            for ln in body_lines:
-                s = ln.strip()
-                if not s:
-                    continue
-                if s.startswith("-"):
-                    # Drill line
-                    st.markdown(s)
-                else:
-                    # Coach guidance / format lines
-                    st.caption(s)
-
-    for ln in lines:
-        s = ln.strip()
-
-        # Start new section when we see a header
-        if _is_section_header(s):
-            # flush previous
-            flush_section(current_title or "", buffer)
             current_title = s
             buffer = []
             continue
@@ -616,8 +620,10 @@ if st.session_state.last_output_text:
 
         st.write("")
 
-        with st.expander("Copy workout (raw text)"):
-            st.code(st.session_state.last_output_text)
+        if not (mode == "strength" and location == "no_gym"):
+            with st.expander("Copy workout (raw text)"):
+                st.code(st.session_state.last_output_text)
+
 
     # -------------------------
     # TAB 3: Feedback (Google Form)
