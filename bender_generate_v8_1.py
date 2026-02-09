@@ -1553,7 +1553,6 @@ def build_bw_strength_circuits(
 
     strength_by_id = {norm(get(d, "id", "")): d for d in strength_drills}
 
-    want_k = 1 if session_len_min <= 45 else 2
     presets = pick_preset_bw_circuits(
         circuits=circuits,
         age=age,
@@ -1563,6 +1562,17 @@ def build_bw_strength_circuits(
         recent_circuit_ids=_CURRENT_RECENT_CIRCUIT_IDS,
         recent_penalty=_CURRENT_RECENT_PENALTY,
     )
+
+    # -----------------------------
+    # No-gym time rules
+    # -----------------------------
+    m = int(session_len_min)
+
+    # how many preset circuits to show
+    want_k = 1 if m <= 30 else 2
+
+    # whether to include mobility cooldown
+    include_mobility = (20 <= m <= 30) or (m >= 40)
 
     # prevent exact back-to-back repeat signature
     last_sig = _CURRENT_LAST_CIRCUIT_SIGNATURE
@@ -1694,19 +1704,27 @@ def build_bw_strength_circuits(
         else:
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
-    # mobility cooldown (required)
-    m = pick_mobility_drills(mobility_drills, age, rnd, n=3, focus_rule=get_focus_rules(None, "mobility"))
-    lines.append("\nMOBILITY COOLDOWN CIRCUIT")
-    if not m:
-        lines.append("- [No mobility drills found]")
-    else:
-        lines.append("- Perform 2 rounds")
-        for d in m:
-            did = norm(get(d, "id", ""))
-            name = norm(get(d, "name", "(unnamed)"))
-            lines.append(f"- {did} {name} (30–45s)")
+    # mobility cooldown (time rules)
+    if include_mobility:
+        mob = pick_mobility_drills(
+            mobility_drills,
+            age,
+            rnd,
+            n=3,
+            focus_rule=get_focus_rules(None, "mobility"),
+        )
+        lines.append("\nMOBILITY COOLDOWN CIRCUIT")
+        if not mob:
+            lines.append("- [No mobility drills found]")
+        else:
+            lines.append("- Perform 2 rounds")
+            for d in mob:
+                did = norm(get(d, "id", ""))
+                name = norm(get(d, "name", "(unnamed)"))
+                lines.append(f"- {did} {name} (30–45s)")
 
     return lines
+
 
 
 # ------------------------------
