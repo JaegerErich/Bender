@@ -340,18 +340,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 else:
                     st.caption(s)
 
-
     return
-
-            current_title = s
-            buffer = []
-            continue
-
-        # Otherwise collect line
-        buffer.append(ln)
-
-    # final flush
-    flush_section(current_title or "", buffer)
 
 CACHE_VERSION = "2026-02-06"  # bump this when data files change
 
