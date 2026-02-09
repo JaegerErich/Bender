@@ -1585,7 +1585,7 @@ def build_bw_strength_circuits(
     m = int(session_len_min)
 
     # how many preset circuits to show
-    if m <= 30 else 2
+    want_k = 1 if session_len_min <= 30 else 2
 
     # whether to include mobility cooldown
     include_mobility = (20 <= m <= 30) or (m >= 40)
