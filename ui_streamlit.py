@@ -527,10 +527,9 @@ if mode == "strength":
                 ["bike", "treadmill", "surprise"],
             )
         else:
-            conditioning_type = st.selectbox(
-                "Post-lift conditioning type (no gym)",
-                ["cones"],
-            )
+            st.info("No-gym conditioning = no equipment (no bike/treadmill).")
+            conditioning_type = None
+
 
 # Auto-clear old output if key inputs change
 inputs_fingerprint = (
