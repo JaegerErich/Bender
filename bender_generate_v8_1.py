@@ -1603,6 +1603,7 @@ def build_bw_strength_circuits(
                         circuits=alt_pool,
                         age=age,
                         rnd=rnd,
+                        k=want_k,
                         prefer_session_types=["bodyweight_circuit"],
                         recent_circuit_ids=_CURRENT_RECENT_CIRCUIT_IDS,
                         recent_penalty=_CURRENT_RECENT_PENALTY,
