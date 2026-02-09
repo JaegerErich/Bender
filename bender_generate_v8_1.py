@@ -1059,35 +1059,49 @@ def filter_post_lift_conditioning_pool(
     full_gym: bool,
     post_lift_conditioning_type: str | None,
 ) -> list[dict]:
-    """
-    Filters conditioning drills based on gym availability and modality.
-
-    Rules:
-    - no_gym:
-        • EXCLUDE treadmill & bike
-        • allow everything else (cones, bodyweight, misc)
-    - gym + bike:
-        • ONLY bike-based conditioning
-    - gym + treadmill:
-        • ONLY treadmill-based conditioning
-    - gym + surprise:
-        • allow bike OR treadmill
-    """
-
     if not conditioning_drills:
         return []
 
+    def _text_blob(d: dict) -> str:
+        parts: list[str] = []
+
+        # name
+        parts.append(str(d.get("name") or ""))
+
+        # equipment can be str OR list
+        eq = d.get("equipment")
+        if isinstance(eq, list):
+            parts.extend([str(x) for x in eq])
+        else:
+            parts.append(str(eq or ""))
+
+        # tags can be list OR str
+        tags = d.get("tags")
+        if isinstance(tags, list):
+            parts.extend([str(x) for x in tags])
+        else:
+            parts.append(str(tags or ""))
+
+        return " ".join(parts).lower()
+
     def uses_treadmill(d: dict) -> bool:
-        eq = (d.get("equipment") or "").lower()
-        tags = " ".join(d.get("tags", [])).lower()
-        return "treadmill" in eq or "treadmill" in tags
+        blob = _text_blob(d)
+        return ("treadmill" in blob) or ("tmill" in blob)
 
     def uses_bike(d: dict) -> bool:
-        eq = (d.get("equipment") or "").lower()
-        tags = " ".join(d.get("tags", [])).lower()
-        return "bike" in eq or "assault" in eq or "bike" in tags
+        blob = _text_blob(d)
+        # include common variants
+        return (
+            ("bike" in blob)
+            or ("assault" in blob)
+            or ("airbike" in blob)
+            or ("echo" in blob)
+            or ("aerodyne" in blob)
+            or ("cycle" in blob)
+            or ("erg" in blob)
+        )
 
-    filtered = []
+    filtered: list[dict] = []
 
     for d in conditioning_drills:
         if not is_active(d):
@@ -1106,27 +1120,22 @@ def filter_post_lift_conditioning_pool(
             continue
 
         # -----------------------------
-        # GYM MODES
+        # GYM: modality rules
         # -----------------------------
         if post_lift_conditioning_type == "bike":
             if bike:
                 filtered.append(d)
-
         elif post_lift_conditioning_type == "treadmill":
             if treadmill:
                 filtered.append(d)
-
         elif post_lift_conditioning_type in ("surprise", None):
-            # gym surprise = machines only
+            # surprise = either machine
             if bike or treadmill:
                 filtered.append(d)
-
         else:
-            # fallback (shouldn't happen)
             filtered.append(d)
 
     return filtered
-
 
 # ------------------------------
 # Mobility
