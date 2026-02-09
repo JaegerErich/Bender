@@ -1540,6 +1540,23 @@ def build_bw_strength_circuits(
     skate_within_24h: bool = False,
 ) -> List[str]:
     lines: List[str] = []
+    # -----------------------------
+    # No-gym time rules (ALWAYS defined)
+    # -----------------------------
+    m = int(session_len_min)
+
+    if m < 20:
+        want_k = 1
+        include_mobility = False
+    elif m <= 30:
+        want_k = 1
+        include_mobility = True
+    elif m < 40:
+        want_k = 2
+        include_mobility = False
+    else:
+        want_k = 2
+        include_mobility = True
 
     prof = _strength_time_profile(session_len_min, skate_within_24h)
 
@@ -1557,7 +1574,6 @@ def build_bw_strength_circuits(
         circuits=circuits,
         age=age,
         rnd=rnd,
-        k=want_k,
         prefer_session_types=["bodyweight_circuit"],
         recent_circuit_ids=_CURRENT_RECENT_CIRCUIT_IDS,
         recent_penalty=_CURRENT_RECENT_PENALTY,
@@ -1569,7 +1585,7 @@ def build_bw_strength_circuits(
     m = int(session_len_min)
 
     # how many preset circuits to show
-    want_k = 1 if m <= 30 else 2
+    if m <= 30 else 2
 
     # whether to include mobility cooldown
     include_mobility = (20 <= m <= 30) or (m >= 40)
@@ -1587,7 +1603,6 @@ def build_bw_strength_circuits(
                         circuits=alt_pool,
                         age=age,
                         rnd=rnd,
-                        k=want_k,
                         prefer_session_types=["bodyweight_circuit"],
                         recent_circuit_ids=_CURRENT_RECENT_CIRCUIT_IDS,
                         recent_penalty=_CURRENT_RECENT_PENALTY,
