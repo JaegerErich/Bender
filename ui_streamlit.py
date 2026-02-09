@@ -243,6 +243,7 @@ def render_workout_readable(text: str) -> None:
     flush_section(current_title or "", buffer)
 
 
+
 # -----------------------------
 # No-gym strength: circuits-only renderer
 # (Warmup first, then Circuit A/B only once)
