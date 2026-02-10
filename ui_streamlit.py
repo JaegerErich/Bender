@@ -480,8 +480,8 @@ conditioning_focus = None
 
 if mode == "strength":
     if location == "gym":
-        day = st.selectbox("Strength day", ["lower", "upper"])
-        strength_day_type = "leg" if day == "lower" else "upper"
+        day = st.selectbox("Strength day", ["lower", "upper", "full"])
+        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
 
         em_label = st.selectbox(
             "Strength emphasis",
@@ -492,7 +492,8 @@ if mode == "strength":
 
         skate_within_24h = st.checkbox("Skate within 24h?", value=False)
     else:
-        strength_day_type = "leg"
+        day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
+        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
         strength_emphasis = "strength"
         skate_within_24h = False
 
