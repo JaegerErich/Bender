@@ -1284,6 +1284,26 @@ def rx_for(emphasis: Any, fatigue_role: str) -> Optional[Dict[str, str]]:
     return _rx_for(emphasis, fatigue_role)
 
 
+def _rep_seconds_for_drill(d: Dict[str, Any]) -> int:
+    """Seconds per rep for time estimation. Power/speed ~2s, strength ~4s, hypertrophy ~5s."""
+    focus = (strength_focus(d) or "").lower()
+    if focus == "power":
+        return 2
+    if focus in ("max_strength", "strength"):
+        return 4
+    return 5  # hypertrophy, strength_endurance, default
+
+
+def estimate_strength_time_sec(
+    sets: int, reps: int, rest_sec: int, rep_sec: int = 4,
+) -> int:
+    """Estimated time for one exercise: sets * (reps * rep_sec + rest_sec)."""
+    if sets <= 0:
+        return 0
+    work_per_set = max(0, reps * rep_sec)
+    return sets * (work_per_set + rest_sec)
+
+
 def _fatigue_role_for_speed_drill(d: Dict[str, Any]) -> str:
     return FATIGUE_ROLE_HIGH if fatigue_cost_level(d) == "high" else FATIGUE_ROLE_SECONDARY
 
@@ -1951,7 +1971,7 @@ def build_hockey_strength_session(
 
     # Warm-up (~5 min, compact one-line per drill)
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
-    lines.append(f"\nWARMUP (~5 min) — {day_type} day")
+    lines.append(f"\nWARMUP (~{format_seconds_short(300)}) — {day_type} day")
     lines.append("Complete in order; keep moving.")
     for d in warmup_drills_picked[:prof["warmup_cap"]]:
         if get(d, "id") == "WARN":
@@ -2268,44 +2288,154 @@ def build_hockey_strength_session(
             upper_strength_picks.append(sec_b[0])
             used_upper_subpatterns.add(_upper_subpattern(sec_b[0]))
 
+    # ---------- Time budget and trim order: Block B -> mobility -> Block A (min = warmup + speed/power) ----------
+    WARMUP_SEC = 300
+    MOBILITY_SEC_PER_DRILL = 90  # 2 rounds × 45s
+    finisher_sec = (prof.get("finisher_min") or 0) * 60 if include_finisher and not skate_within_24h else 0
+    session_sec = max(0, session_len_min * 60 - WARMUP_SEC - finisher_sec)
 
+    def _est(d: Dict[str, Any], sets: int, reps: int, rest: int) -> int:
+        rs = _rep_seconds_for_drill(d)
+        return estimate_strength_time_sec(sets, int(reps) if reps else 0, rest, rep_sec=rs)
 
-    # Render Blocks
-    lines.append("\nBLOCK A (Secondary + Resilience)")
-    if not sec_a:
-        lines.append("- [No secondary strength lift found]")
-    else:
-        d = sec_a[0]
-        rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
-        reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
-        lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
+    # RX for speed/power superset (used for time estimate)
+    _rx_a1 = _rx_for(emphasis, _fatigue_role_for_speed_drill(speed_a1)) if speed_a1 else None
+    _rx_a2 = _rx_for(emphasis, FATIGUE_ROLE_HIGH) if hf_a2 else None
 
-    if not res_a:
-        lines.append("- [No resilience drill found]")
-    else:
-        d = res_a[0]
-        rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
-        reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
-        lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
+    # Speed/power block time (superset or high fatigue only)
+    speed_power_sec = 0
+    if speed_a1 and hf_a2 and _rx_a1 and _rx_a2:
+        sets_common = min(int(_rx_a1["sets"]), int(_rx_a2["sets"]))
+        r1, r2 = int(_rx_a1["reps"]), int(_rx_a2["reps"])
+        rs1 = _rep_seconds_for_drill(speed_a1)
+        rs2 = _rep_seconds_for_drill(hf_a2)
+        speed_power_sec = sets_common * (r1 * rs1 + r2 * rs2 + 105)
+    elif hf_pick:
+        rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+        if rx:
+            d = hf_pick[0]
+            speed_power_sec = _est(d, int(rx["sets"]), int(rx["reps"]), 180)
 
-    if prof["blocks"] >= 2:
-        lines.append("\nBLOCK B (Secondary + Resilience)")
+    # Block A: equal sets for secondary + resilience
+    rx_sec = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
+    rx_res = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
+    sets_common_a = min(int(rx_sec["sets"]), int(rx_res["sets"])) if (rx_sec and rx_res) else (int(rx_sec["sets"]) if rx_sec else 3)
+    block_a_sec = 0
+    block_a_sec_secondary_only = 0
+    block_a_sec_resilience_only = 0
+    if sec_a and rx_sec:
+        block_a_sec_secondary_only = _est(sec_a[0], sets_common_a, rx_sec["reps"], 90)
+    if res_a and rx_res:
+        block_a_sec_resilience_only = _est(res_a[0], sets_common_a, rx_res["reps"], 45)
+        block_a_sec += block_a_sec_resilience_only
+    if sec_a and rx_sec:
+        block_a_sec += _est(sec_a[0], sets_common_a, rx_sec["reps"], 90)
 
+    # Block B: equal sets
+    sets_common_b = min(int(rx_sec["sets"]), int(rx_res["sets"])) if (rx_sec and rx_res) else sets_common_a
+    block_b_sec = 0
+    if sec_b and rx_sec:
+        block_b_sec += _est(sec_b[0], sets_common_b, rx_sec["reps"], 90)
+    if res_b and rx_res:
+        block_b_sec += _est(res_b[0], sets_common_b, rx_res["reps"], 45)
+
+    scap_sec = 0
+    if _is_upper_day(day_type) and scap_pool and rx_res:
+        scap_sec = _est(scap_pool[0], int(rx_res["sets"]), rx_res["reps"], 45)
+    need_push_pull = _is_upper_day(day_type) and (not have_push or not have_pull)
+    push_pull_sec = 0
+    if need_push_pull and rx_sec:
+        push_pull_sec = 8 * 60  # approximate one exercise
+
+    include_block_b = (prof["blocks"] >= 2) and bool(sec_b or res_b)
+    mobility_n_use = max(0, prof["mobility_n"])
+    include_block_a_full = True
+    include_block_a_part = False  # one exercise only
+    block_a_part_sec = block_a_sec_secondary_only if sec_a else block_a_sec_resilience_only
+
+    total = speed_power_sec + block_a_sec + (block_b_sec if include_block_b else 0)
+    if _is_upper_day(day_type):
+        total += scap_sec + (push_pull_sec if need_push_pull else 0)
+    total += mobility_n_use * MOBILITY_SEC_PER_DRILL
+
+    while total > session_sec:
+        if include_block_b:
+            include_block_b = False
+            total -= block_b_sec
+            continue
+        if mobility_n_use > 0:
+            mobility_n_use -= 1
+            total -= MOBILITY_SEC_PER_DRILL
+            continue
+        if include_block_a_full and (sec_a or res_a):
+            include_block_a_full = False
+            include_block_a_part = True
+            total -= block_a_sec
+            total += block_a_part_sec
+            continue
+        if include_block_a_part or include_block_a_full:
+            include_block_a_part = False
+            include_block_a_full = False
+            total -= block_a_part_sec if include_block_a_part else block_a_sec
+            continue
+        break
+
+    # Patch SPEED/POWER or HIGH FATIGUE header with estimated time
+    for i, s in enumerate(lines):
+        if s.strip().startswith("SPEED / POWER") and "SUPERSET" in s:
+            lines[i] = s.rstrip() + f" (~{format_seconds_short(speed_power_sec)})"
+            break
+        if s.strip().startswith("HIGH FATIGUE (1 exercise)"):
+            lines[i] = s.rstrip() + f" (~{format_seconds_short(speed_power_sec)})"
+            break
+
+    # Render Blocks (equal sets per block; time labels; trim order applied)
+    if include_block_a_full or include_block_a_part:
+        block_a_time_sec = block_a_sec if include_block_a_full else block_a_part_sec
+        if include_block_a_part and sec_a:
+            block_a_label = "BLOCK A (Secondary only)"
+        elif include_block_a_part and res_a:
+            block_a_label = "BLOCK A (Resilience only)"
+        else:
+            block_a_label = "BLOCK A (Secondary + Resilience)"
+        lines.append(f"\n{block_a_label} (~{format_seconds_short(block_a_time_sec)})")
+        if include_block_a_part:
+            if sec_a:
+                d = sec_a[0]
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"])
+                lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=90))
+            elif res_a:
+                d = res_a[0]
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"])
+                lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=45))
+        else:
+            if not sec_a:
+                lines.append("- [No secondary strength lift found]")
+            else:
+                d = sec_a[0]
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"])
+                lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=90))
+            if not res_a:
+                lines.append("- [No resilience drill found]")
+            else:
+                d = res_a[0]
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"])
+                lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=45))
+
+    if include_block_b:
+        lines.append(f"\nBLOCK B (Secondary + Resilience) (~{format_seconds_short(block_b_sec)})")
         if not sec_b:
             lines.append("- [No secondary strength lift found]")
         else:
             d = sec_b[0]
-            rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"])
-            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=90))
-
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"])
+            lines.append(format_strength_drill_with_prescription(d, sets=sets_common_b, reps=reps, rest_sec=90))
         if not res_b:
             lines.append("- [No resilience drill found]")
         else:
             d = res_b[0]
-            rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"])
-            lines.append(format_strength_drill_with_prescription(d, sets=rx["sets"], reps=reps, rest_sec=45))
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"])
+            lines.append(format_strength_drill_with_prescription(d, sets=sets_common_b, reps=reps, rest_sec=45))
 
     # SCAP / SHOULDER HEALTH ACCESSORY (guaranteed 1 on upper days)
     if _is_upper_day(day_type):
@@ -2380,9 +2510,10 @@ def build_hockey_strength_session(
         else:
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
-    # Mobility Cooldown Circuit (Required)
-    m = pick_mobility_drills(mobility_drills, age, rnd, n=prof["mobility_n"], focus_rule=get_focus_rules(None, "mobility"))
-    lines.append("\nMOBILITY COOLDOWN CIRCUIT")
+    # Mobility Cooldown Circuit (time-aware count)
+    m = pick_mobility_drills(mobility_drills, age, rnd, n=mobility_n_use, focus_rule=get_focus_rules(None, "mobility"))
+    mobility_time_sec = len(m) * MOBILITY_SEC_PER_DRILL
+    lines.append(f"\nMOBILITY COOLDOWN CIRCUIT (~{format_seconds_short(mobility_time_sec)})")
     if not m:
         lines.append("- [No mobility drills found]")
     else:
