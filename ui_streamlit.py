@@ -72,17 +72,7 @@ if ENGINE is None:
 
 
 def get_mode_options():
-    # Prefer decision tree list if available
-    try:
-        import bender_decision_tree_v4 as dt
-        if hasattr(dt, "SESSION_MODES"):
-            modes = list(dt.SESSION_MODES)
-            if modes:
-                return modes
-    except Exception:
-        pass
-
-    # Top-level categories (Puck Mastery = shooting/stickhandling/both via sub-choice)
+    # Use Streamlit top-level categories (Puck Mastery shows sub-choice; engine gets shooting/stickhandling/skills_only)
     return ["puck_mastery", "performance", "energy_systems", "skating_mechanics", "mobility"]
 
 
