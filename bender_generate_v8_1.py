@@ -712,11 +712,10 @@ def _opposing_push_pull(mp: str) -> Optional[str]:
 # Formatting
 # ------------------------------
 def format_drill(d: Dict[str, Any]) -> str:
-    did = norm(get(d, "id", default=""))
     name = norm(get(d, "name", default="(unnamed)"))
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
-    line = f"- {did} {name}".strip()
+    line = f"- {name}".strip()
     if cues:
         line += f"\n  Cues: {cues}"
     if steps:
@@ -733,9 +732,8 @@ LEG_WARMUP_SEQUENCE = [f"WU_{i:03d}" for i in range(1, 16)]
 
 def format_warmup_drill_compact(d: Dict[str, Any]) -> str:
     """One-line warmup entry (no cues/steps) to keep the block short and less daunting."""
-    did = norm(get(d, "id", default=""))
     name = norm(get(d, "name", default="(unnamed)"))
-    return f"- {did} {name}".strip()
+    return f"- {name}".strip()
 
 
 def build_strength_warmup(
@@ -928,12 +926,11 @@ def build_shooting_by_shots(drills: List[Dict[str, Any]], target_shots: int) -> 
     lines.append("Guidelines: stay on one drill long enough to feel it. Full intent, clean mechanics.")
 
     for d, shots in zip(drills, per_drill):
-        did = norm(get(d, "id", ""))
         name = norm(get(d, "name", "(unnamed)"))
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         stype = infer_shot_type(d)
-        lines.append(f"- {did} {name} ({stype}) | {split_sets(shots)}")
+        lines.append(f"- {name} ({stype}) | {split_sets(shots)}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -947,14 +944,13 @@ def build_shooting_from_defaults(drills: List[Dict[str, Any]]) -> List[str]:
         return ["- [No matching drills found]"]
     lines: List[str] = []
     for d in drills:
-        did = norm(get(d, "id", ""))
         name = norm(get(d, "name", "(unnamed)"))
         reps = norm(get(d, "default_reps", default=""))
         if not reps:
             reps = "20"
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {did} {name} — {reps} shots")
+        lines.append(f"- {name} — {reps} shots")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -1046,7 +1042,6 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
     lines: List[str] = []
 
     def describe_one(d: Dict[str, Any], seconds: int) -> List[str]:
-        did = norm(get(d, "id", ""))
         name = norm(get(d, "name", "(unnamed)"))
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
@@ -1061,7 +1056,7 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
         est = ramp + rounds * interval
 
         out: List[str] = []
-        out.append(f"- {did} {name} [{mod} | {es}]")
+        out.append(f"- {name} [{mod} | {es}]")
         out.append(
             f"  Time plan: ~{format_seconds_short(ramp)} ramp + {rounds} rounds of ({work}s work / {rest}s easy) (~{format_seconds_short(est)})"
         )
@@ -1214,11 +1209,10 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
     per = max(120, total_seconds // max(1, n))
     lines: List[str] = []
     for d in drills:
-        did = norm(get(d, "id", ""))
         name = norm(get(d, "name", "(unnamed)"))
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {did} {name} ({per // 60} min)")
+        lines.append(f"- {name} ({per // 60} min)")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -1447,12 +1441,11 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
 
 
 def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: str, rest_sec: Optional[int] = None) -> str:
-    did = norm(get(d, "id", default=""))
     name = norm(get(d, "name", default="(unnamed)"))
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     rx = f"{sets} x {reps}"
-    line = f"- {did} {name} | {rx}".strip()
+    line = f"- {name} | {rx}".strip()
     if rest_sec:
         line += f" | Rest {rest_sec}s"
     if cues:
@@ -1626,7 +1619,7 @@ def render_preset_circuit(circuit: Dict[str, Any], strength_by_id: Dict[str, Dic
         did = norm(did)
         d = strength_by_id.get(did)
         if not d:
-            lines.append(f"- [Missing drill in performance.json: {did}]")
+            lines.append("- [Missing drill in performance.json]")
         else:
             lines.append(format_drill(d))
 
@@ -1852,9 +1845,8 @@ def build_bw_strength_circuits(
         else:
             lines.append("- Perform 2 rounds")
             for d in mob:
-                did = norm(get(d, "id", ""))
                 name = norm(get(d, "name", "(unnamed)"))
-                lines.append(f"- {did} {name} (30–45s)")
+                lines.append(f"- {name} (30–45s)")
 
     return lines
 
@@ -2519,11 +2511,10 @@ def build_hockey_strength_session(
     else:
         lines.append("- Perform 2 rounds")
         for d in m:
-            did = norm(get(d, "id", ""))
             name = norm(get(d, "name", "(unnamed)"))
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
-            lines.append(f"- {did} {name} (30–45s)")
+            lines.append(f"- {name} (30–45s)")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:

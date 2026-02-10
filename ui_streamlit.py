@@ -213,7 +213,7 @@ def render_workout_readable(text: str) -> None:
             if title:
                 tag = _header_style(title)
                 st.markdown(
-                    f"**{title}**  \n<span style='opacity:.75'>{tag}</span>",
+                    f"**<span style='color:#f8fafc'>{title}</span>**  \n<span style='opacity:.7; color:#94a3b8; font-size:0.9em'>{tag}</span>",
                     unsafe_allow_html=True,
                 )
 
@@ -439,9 +439,136 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="Bender MVP", layout="centered")
-st.title("Bender – Web MVP")
-st.caption("Bender beta — build 2026-02-05")
+st.set_page_config(page_title="Bender", layout="wide", initial_sidebar_state="expanded")
+
+# Custom CSS for a cleaner, more polished look
+st.markdown("""
+<style>
+    /* Import a distinctive font */
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+
+    /* Main container and background */
+    .stApp {
+        background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    }
+    .main .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 900px;
+    }
+
+    /* Title area */
+    h1 {
+        font-family: 'DM Sans', sans-serif !important;
+        font-weight: 700 !important;
+        color: #f8fafc !important;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem !important;
+    }
+    .bender-tagline {
+        font-family: 'DM Sans', sans-serif;
+        color: #94a3b8;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+    }
+
+    /* Section labels and inputs */
+    label {
+        font-family: 'DM Sans', sans-serif !important;
+        color: #cbd5e1 !important;
+    }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    }
+    [data-testid="stSidebar"] .stMarkdown {
+        color: #94a3b8;
+    }
+
+    /* Cards / bordered containers (workout sections) */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+        background: transparent;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'DM Sans', sans-serif;
+        color: #94a3b8;
+        padding: 0.6rem 1rem;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #38bdf8 !important;
+    }
+
+    /* Buttons */
+    .stButton button {
+        font-family: 'DM Sans', sans-serif !important;
+        font-weight: 600 !important;
+        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.5rem !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .stButton button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
+    }
+
+    /* Dividers and spacing */
+    hr {
+        border-color: rgba(148, 163, 184, 0.2) !important;
+        margin: 1.5rem 0 !important;
+    }
+
+    /* Workout content: bullet lines — drill names stand out */
+    .stMarkdown p {
+        color: #e2e8f0 !important;
+    }
+    .stMarkdown li, .stMarkdown ul {
+        color: #e2e8f0 !important;
+        margin-bottom: 0.35rem !important;
+    }
+    .stCaption {
+        color: #64748b !important;
+    }
+
+    /* "Your Workout" area when result is present */
+    .workout-result-header {
+        font-family: 'DM Sans', sans-serif;
+        font-weight: 600;
+        color: #f8fafc;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    .workout-result-badge {
+        display: inline-block;
+        background: rgba(56, 189, 248, 0.15);
+        color: #38bdf8;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        margin-bottom: 1rem;
+    }
+    /* More breathing room between section cards */
+    section[data-testid="stVerticalBlockBorderWrapper"] {
+        margin-bottom: 1rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.title("Bender")
+st.markdown('<p class="bender-tagline">Hockey workout generator — build 2026-02</p>', unsafe_allow_html=True)
 
 # Session state init
 if "last_session_id" not in st.session_state:
@@ -451,90 +578,74 @@ if "last_output_text" not in st.session_state:
 if "last_inputs_fingerprint" not in st.session_state:
     st.session_state.last_inputs_fingerprint = None
 
-# Core inputs
-athlete_id = st.text_input("Athlete Name", value="")
-age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
-age = int(age)
-minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+# ---------- Sidebar: all inputs ----------
+with st.sidebar:
+    st.subheader("Session settings")
+    athlete_id = st.text_input("Athlete Name", value="", placeholder="Enter name")
+    age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
+    age = int(age)
+    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+    st.divider()
 
-mode_label = st.selectbox("Mode", DISPLAY_MODES)
-mode = LABEL_TO_MODE[mode_label]
+    mode_label = st.selectbox("Mode", DISPLAY_MODES)
+    mode = LABEL_TO_MODE[mode_label]
 
-# Puck Mastery: secondary dropdown (Shooting / Stickhandling / Both)
-if mode == "puck_mastery":
-    skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)  # default Both
-    effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
-else:
-    effective_mode = mode
-
-# Location only relevant for performance/energy_systems
-if effective_mode in ("performance", "energy_systems"):
-    location = st.selectbox("Location", ["gym", "no_gym"])
-else:
-    location = "no_gym"
-
-# Mode-specific controls (structured, no free-text)
-focus = None
-
-# Strength extras
-strength_day_type = None
-strength_emphasis = "strength"
-skate_within_24h = False
-
-# Conditioning extras
-conditioning_focus = None
-
-if effective_mode == "performance":
-    if location == "gym":
-        day = st.selectbox("Strength day", ["lower", "upper", "full"])
-        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-
-        em_label = st.selectbox(
-            "Strength emphasis",
-            EMPHASIS_DISPLAY,
-            index=EMPHASIS_KEYS.index("strength"),
-        )
-        strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-
-        skate_within_24h = st.checkbox("Skate within 24h?", value=False)
+    if mode == "puck_mastery":
+        skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+        effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
     else:
-        day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
-        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-        strength_emphasis = "strength"
-        skate_within_24h = False
+        effective_mode = mode
 
-elif effective_mode == "energy_systems":
-    if location == "gym":
-        mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
-        if mod == "bike":
-            conditioning_focus = "conditioning_bike"
-        elif mod == "treadmill":
-            conditioning_focus = "conditioning_treadmill"
-        else:
-            conditioning_focus = "conditioning"
+    if effective_mode in ("performance", "energy_systems"):
+        location = st.selectbox("Location", ["gym", "no_gym"])
     else:
-        st.info("No-gym energy systems: cones/no equipment.")
-        conditioning_focus = "conditioning_cones"
+        location = "no_gym"
 
-    focus = conditioning_focus
+    focus = None
+    strength_day_type = None
+    strength_emphasis = "strength"
+    skate_within_24h = False
+    conditioning_focus = None
 
-elif effective_mode == "mobility":
-    focus = "mobility"
-
-# Performance-only: post-lift energy systems (gym/no_gym restrictions)
-conditioning = False
-conditioning_type = None
-
-if effective_mode == "performance":
-    conditioning = st.checkbox("Post-lift energy systems?", value=False)
-    if conditioning:
+    if effective_mode == "performance":
         if location == "gym":
+            day = st.selectbox("Strength day", ["lower", "upper", "full"])
+            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+            em_label = st.selectbox(
+                "Strength emphasis",
+                EMPHASIS_DISPLAY,
+                index=EMPHASIS_KEYS.index("strength"),
+            )
+            strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+            skate_within_24h = st.checkbox("Skate within 24h?", value=False)
+        else:
+            day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
+            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+            strength_emphasis = "strength"
+            skate_within_24h = False
+
+    elif effective_mode == "energy_systems":
+        if location == "gym":
+            mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
+            conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
+        else:
+            st.caption("No-gym: cones / no equipment")
+            conditioning_focus = "conditioning_cones"
+        focus = conditioning_focus
+
+    elif effective_mode == "mobility":
+        focus = "mobility"
+
+    conditioning = False
+    conditioning_type = None
+    if effective_mode == "performance":
+        conditioning = st.checkbox("Post-lift energy systems?", value=False)
+        if conditioning and location == "gym":
             conditioning_type = st.selectbox(
-                "Post-lift energy systems type (gym)",
+                "Post-lift type (gym)",
                 ["bike", "treadmill", "surprise"],
             )
         else:
-            st.info("No-gym = no equipment (no bike/treadmill).")
             conditioning_type = None
 
 
@@ -561,8 +672,11 @@ else:
             clear_last_output()
         st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-# Generate action
-if st.button("Generate"):
+# Generate action (prominent in main area)
+col_btn, _ = st.columns([1, 3])
+with col_btn:
+    generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+if generate_clicked:
     if not athlete_id.strip():
         st.error("Athlete Name is required.")
     elif athlete_id.strip().lower() == "default":
@@ -609,7 +723,10 @@ if st.session_state.last_output_text:
     # TAB 1: Workout
     # -------------------------
     with tab_workout:
-        st.subheader("Your Workout")
+        st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
+        # Small badge: mode + duration
+        badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
+        st.markdown(f'<span class="workout-result-badge">{badge_label}</span>', unsafe_allow_html=True)
 
         # No-gym performance: show circuits-only view ONLY
         if effective_mode == "performance" and location == "no_gym":
