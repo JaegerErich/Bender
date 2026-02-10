@@ -709,10 +709,17 @@ def _opposing_push_pull(mp: str) -> Optional[str]:
     return None
 
 # ------------------------------
-# Formatting
+# Formatting (display names only — no drill IDs in output)
 # ------------------------------
-def format_drill(d: Dict[str, Any]) -> str:
+def _display_name(d: Dict[str, Any]) -> str:
+    """Name for user-facing output; strips any leading drill ID (e.g. SH_010, WU_005) if present."""
     name = norm(get(d, "name", default="(unnamed)"))
+    # Strip leading ID pattern: 2–4 letters, underscore, digits, optional space
+    return re.sub(r"^[A-Z]{2,4}_\d+\s+", "", name).strip() or name
+
+
+def format_drill(d: Dict[str, Any]) -> str:
+    name = _display_name(d)
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     line = f"- {name}".strip()
@@ -732,8 +739,7 @@ LEG_WARMUP_SEQUENCE = [f"WU_{i:03d}" for i in range(1, 16)]
 
 def format_warmup_drill_compact(d: Dict[str, Any]) -> str:
     """One-line warmup entry (no cues/steps) to keep the block short and less daunting."""
-    name = norm(get(d, "name", default="(unnamed)"))
-    return f"- {name}".strip()
+    return f"- {_display_name(d)}".strip()
 
 
 def build_strength_warmup(
@@ -926,7 +932,7 @@ def build_shooting_by_shots(drills: List[Dict[str, Any]], target_shots: int) -> 
     lines.append("Guidelines: stay on one drill long enough to feel it. Full intent, clean mechanics.")
 
     for d, shots in zip(drills, per_drill):
-        name = norm(get(d, "name", "(unnamed)"))
+        name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         stype = infer_shot_type(d)
@@ -944,7 +950,7 @@ def build_shooting_from_defaults(drills: List[Dict[str, Any]]) -> List[str]:
         return ["- [No matching drills found]"]
     lines: List[str] = []
     for d in drills:
-        name = norm(get(d, "name", "(unnamed)"))
+        name = _display_name(d)
         reps = norm(get(d, "default_reps", default=""))
         if not reps:
             reps = "20"
@@ -1042,7 +1048,7 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
     lines: List[str] = []
 
     def describe_one(d: Dict[str, Any], seconds: int) -> List[str]:
-        name = norm(get(d, "name", "(unnamed)"))
+        name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         mod = conditioning_modality(d)
@@ -1209,7 +1215,7 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
     per = max(120, total_seconds // max(1, n))
     lines: List[str] = []
     for d in drills:
-        name = norm(get(d, "name", "(unnamed)"))
+        name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         lines.append(f"- {name} ({per // 60} min)")
@@ -1441,7 +1447,7 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
 
 
 def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: str, rest_sec: Optional[int] = None) -> str:
-    name = norm(get(d, "name", default="(unnamed)"))
+    name = _display_name(d)
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     rx = f"{sets} x {reps}"
@@ -1845,7 +1851,7 @@ def build_bw_strength_circuits(
         else:
             lines.append("- Perform 2 rounds")
             for d in mob:
-                name = norm(get(d, "name", "(unnamed)"))
+                name = _display_name(d)
                 lines.append(f"- {name} (30–45s)")
 
     return lines
@@ -2511,7 +2517,7 @@ def build_hockey_strength_session(
     else:
         lines.append("- Perform 2 rounds")
         for d in m:
-            name = norm(get(d, "name", "(unnamed)"))
+            name = _display_name(d)
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
             lines.append(f"- {name} (30–45s)")

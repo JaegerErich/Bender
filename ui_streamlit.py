@@ -213,7 +213,7 @@ def render_workout_readable(text: str) -> None:
             if title:
                 tag = _header_style(title)
                 st.markdown(
-                    f"**<span style='color:#f8fafc'>{title}</span>**  \n<span style='opacity:.7; color:#94a3b8; font-size:0.9em'>{tag}</span>",
+                    f"**<span style='color:#0f172a'>{title}</span>**  \n<span style='opacity:.8; color:#64748b; font-size:0.9em'>{tag}</span>",
                     unsafe_allow_html=True,
                 )
 
@@ -439,131 +439,57 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="Bender", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state="collapsed")
 
-# Custom CSS for a cleaner, more polished look
+# Custom CSS: clean single-column layout, no sidebar
 st.markdown("""
 <style>
-    /* Import a distinctive font */
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-    /* Main container and background */
-    .stApp {
-        background: linear-gradient(160deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-    }
-    .main .block-container {
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-        max-width: 900px;
-    }
+    .stApp { background: #f8fafc; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; }
+    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #0f172a !important; letter-spacing: -0.02em; }
+    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
+    label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
-    /* Title area */
-    h1 {
-        font-family: 'DM Sans', sans-serif !important;
-        font-weight: 700 !important;
-        color: #f8fafc !important;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.25rem !important;
-    }
-    .bender-tagline {
-        font-family: 'DM Sans', sans-serif;
-        color: #94a3b8;
-        font-size: 0.95rem;
-        margin-bottom: 1.5rem;
-    }
-
-    /* Section labels and inputs */
-    label {
-        font-family: 'DM Sans', sans-serif !important;
-        color: #cbd5e1 !important;
-    }
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    }
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #94a3b8;
-    }
-
-    /* Cards / bordered containers (workout sections) */
-    [data-testid="stVerticalBlockBorderWrapper"] {
-        background: rgba(30, 41, 59, 0.6);
-        border: 1px solid rgba(148, 163, 184, 0.15);
+    /* Form card */
+    .form-card {
+        background: white;
         border-radius: 12px;
-        padding: 1rem 1.25rem;
-        margin-bottom: 0.75rem;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
     }
 
-    /* Tabs */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 0.5rem;
-        background: transparent;
-        border-bottom: 1px solid rgba(148, 163, 184, 0.2);
-    }
-    .stTabs [data-baseweb="tab"] {
-        font-family: 'DM Sans', sans-serif;
-        color: #94a3b8;
-        padding: 0.6rem 1rem;
-    }
-    .stTabs [aria-selected="true"] {
-        color: #38bdf8 !important;
+    /* Workout result cards */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 1rem 1.25rem !important;
+        margin-bottom: 0.75rem !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
     }
 
-    /* Buttons */
+    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; border-bottom: 1px solid #e2e8f0; }
+    .stTabs [data-baseweb="tab"] { font-family: 'DM Sans', sans-serif; color: #64748b; }
+    .stTabs [aria-selected="true"] { color: #0ea5e9 !important; }
+
     .stButton button {
-        font-family: 'DM Sans', sans-serif !important;
-        font-weight: 600 !important;
-        background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 8px !important;
-        padding: 0.5rem 1.5rem !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important;
+        background: #0ea5e9 !important; color: white !important; border: none !important;
+        border-radius: 8px !important; padding: 0.5rem 1.5rem !important;
     }
-    .stButton button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(14, 165, 233, 0.4);
-    }
+    .stButton button:hover { background: #0284c7 !important; }
 
-    /* Dividers and spacing */
-    hr {
-        border-color: rgba(148, 163, 184, 0.2) !important;
-        margin: 1.5rem 0 !important;
-    }
-
-    /* Workout content: bullet lines — drill names stand out */
-    .stMarkdown p {
-        color: #e2e8f0 !important;
-    }
-    .stMarkdown li, .stMarkdown ul {
-        color: #e2e8f0 !important;
-        margin-bottom: 0.35rem !important;
-    }
-    .stCaption {
-        color: #64748b !important;
-    }
-
-    /* "Your Workout" area when result is present */
-    .workout-result-header {
-        font-family: 'DM Sans', sans-serif;
-        font-weight: 600;
-        color: #f8fafc;
-        font-size: 1.1rem;
-        margin-bottom: 0.5rem;
-    }
+    .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #0f172a; font-size: 1.05rem; margin-bottom: 0.35rem; }
     .workout-result-badge {
-        display: inline-block;
-        background: rgba(56, 189, 248, 0.15);
-        color: #38bdf8;
-        padding: 0.25rem 0.6rem;
-        border-radius: 6px;
-        font-size: 0.8rem;
-        margin-bottom: 1rem;
+        display: inline-block; background: #e0f2fe; color: #0369a1;
+        padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.75rem;
     }
-    /* More breathing room between section cards */
-    section[data-testid="stVerticalBlockBorderWrapper"] {
-        margin-bottom: 1rem !important;
-    }
+    .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #334155 !important; }
+    .stCaption { color: #64748b !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -578,75 +504,70 @@ if "last_output_text" not in st.session_state:
 if "last_inputs_fingerprint" not in st.session_state:
     st.session_state.last_inputs_fingerprint = None
 
-# ---------- Sidebar: all inputs ----------
-with st.sidebar:
-    st.subheader("Session settings")
-    athlete_id = st.text_input("Athlete Name", value="", placeholder="Enter name")
+# ---------- Main area: form (no sidebar) ----------
+st.markdown("#### Session options")
+c1, c2, c3 = st.columns(3)
+with c1:
+    athlete_id = st.text_input("Athlete name", value="", placeholder="Enter name")
+with c2:
     age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
     age = int(age)
-    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
-    st.divider()
+with c3:
+    minutes = st.slider("Session length (min)", 10, 120, 45, step=5)
 
-    mode_label = st.selectbox("Mode", DISPLAY_MODES)
-    mode = LABEL_TO_MODE[mode_label]
+mode_label = st.selectbox("Mode", DISPLAY_MODES)
+mode = LABEL_TO_MODE[mode_label]
 
-    if mode == "puck_mastery":
-        skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-        effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
+if mode == "puck_mastery":
+    skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+    effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
+else:
+    effective_mode = mode
+
+if effective_mode in ("performance", "energy_systems"):
+    location = st.selectbox("Location", ["gym", "no_gym"])
+else:
+    location = "no_gym"
+
+focus = None
+strength_day_type = None
+strength_emphasis = "strength"
+skate_within_24h = False
+conditioning_focus = None
+
+if effective_mode == "performance":
+    if location == "gym":
+        day = st.selectbox("Strength day", ["lower", "upper", "full"])
+        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+        em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+        strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+        skate_within_24h = st.checkbox("Skate within 24h?", value=False)
     else:
-        effective_mode = mode
+        day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
+        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+        strength_emphasis = "strength"
+        skate_within_24h = False
 
-    if effective_mode in ("performance", "energy_systems"):
-        location = st.selectbox("Location", ["gym", "no_gym"])
+elif effective_mode == "energy_systems":
+    if location == "gym":
+        mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
+        conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
     else:
-        location = "no_gym"
+        st.caption("No-gym: cones / no equipment")
+        conditioning_focus = "conditioning_cones"
+    focus = conditioning_focus
 
-    focus = None
-    strength_day_type = None
-    strength_emphasis = "strength"
-    skate_within_24h = False
-    conditioning_focus = None
+elif effective_mode == "mobility":
+    focus = "mobility"
 
-    if effective_mode == "performance":
-        if location == "gym":
-            day = st.selectbox("Strength day", ["lower", "upper", "full"])
-            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-            em_label = st.selectbox(
-                "Strength emphasis",
-                EMPHASIS_DISPLAY,
-                index=EMPHASIS_KEYS.index("strength"),
-            )
-            strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-            skate_within_24h = st.checkbox("Skate within 24h?", value=False)
-        else:
-            day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
-            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-            strength_emphasis = "strength"
-            skate_within_24h = False
-
-    elif effective_mode == "energy_systems":
-        if location == "gym":
-            mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
-            conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
-        else:
-            st.caption("No-gym: cones / no equipment")
-            conditioning_focus = "conditioning_cones"
-        focus = conditioning_focus
-
-    elif effective_mode == "mobility":
-        focus = "mobility"
-
-    conditioning = False
-    conditioning_type = None
-    if effective_mode == "performance":
-        conditioning = st.checkbox("Post-lift energy systems?", value=False)
-        if conditioning and location == "gym":
-            conditioning_type = st.selectbox(
-                "Post-lift type (gym)",
-                ["bike", "treadmill", "surprise"],
-            )
-        else:
-            conditioning_type = None
+conditioning = False
+conditioning_type = None
+if effective_mode == "performance":
+    conditioning = st.checkbox("Post-lift energy systems?", value=False)
+    if conditioning and location == "gym":
+        conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+    else:
+        conditioning_type = None
 
 
 # Auto-clear old output if key inputs change
