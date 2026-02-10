@@ -1572,6 +1572,8 @@ def build_bw_strength_circuits(
     focus_rule: Optional[Dict[str, Any]] = None,
     include_finisher: Optional[bool] = None,
     skate_within_24h: bool = False,
+    full_gym: bool = False,
+    post_lift_conditioning_type: Optional[str] = None,
 ) -> List[str]:
     lines: List[str] = []
 
@@ -1776,6 +1778,9 @@ def build_bw_strength_circuits(
                 name = norm(get(d, "name", "(unnamed)"))
                 lines.append(f"- {did} {name} (30–45s)")
 
+    return lines
+
+
 def _as_list(v) -> list:
     if v is None:
         return []
@@ -1859,6 +1864,8 @@ def build_hockey_strength_session(
             focus_rule=focus_rule,
             include_finisher=include_finisher,
             skate_within_24h=skate_within_24h,
+            full_gym=False,
+            post_lift_conditioning_type=post_lift_conditioning_type,
         )
 
 

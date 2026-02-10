@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""BENDER: Decision Tree (CLI) — V3 (layers 1–5 compatible)
+"""BENDER: Decision Tree (CLI) — V4 (layers 1–5 compatible)
 
 This CLI gathers user intent and calls generate_session() from bender_generate_v8_1.py.
 
@@ -60,7 +60,7 @@ def _ask_choice(prompt: str, options: List[str], default_idx: int = 1) -> int:
 
 
 def main():
-    print("\n=== BENDER: Decision Tree (V3) ===\n")
+    print("\n=== BENDER: Decision Tree (V4) ===\n")
 
     age = _ask_int("Player age", 14, 6, 60)
     session_len = _ask_int("Session length in minutes", 45, 15, 180)
@@ -79,6 +79,7 @@ def main():
     )
 
     focus = None
+    session_mode = "skills_only"  # default; overridden per branch
     strength_emphasis = "strength"
     strength_day_type = None
     strength_full_gym = False
@@ -132,7 +133,7 @@ def main():
         else:
             dt = _ask_choice(
                 "Strength Training — what type of day?",
-                ["lower", "upper"],
+                ["lower", "upper", "full"],
                 default_idx=1,
             )
             strength_day_type = {1: "leg", 2: "upper", 3: "full"}[dt]
@@ -184,6 +185,7 @@ def main():
 
     # 3) Agility / skating (off-ice)
     elif focus_idx == 3:
+        session_mode = "movement"
         ag = _ask_choice(
             "Agility (off-ice) — what setup do you have?",
             ["cones", "hurdles/mini hurdles/plyometric box", "none"],
@@ -213,6 +215,7 @@ def main():
 
     # 5) Mobility
     else:
+        session_mode = "mobility"
         focus = "mobility"
 
     # Load data from ./data by default
