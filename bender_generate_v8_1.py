@@ -731,6 +731,16 @@ def format_drill(d: Dict[str, Any]) -> str:
 # ------------------------------
 LEG_WARMUP_SEQUENCE = [f"WU_{i:03d}" for i in range(1, 16)]
 
+# Max warmup items to show for performance (~5 min block)
+PERFORMANCE_WARMUP_CAP = 5
+
+
+def format_warmup_drill_compact(d: Dict[str, Any]) -> str:
+    """One-line warmup entry (no cues/steps) to keep the block short and less daunting."""
+    did = norm(get(d, "id", default=""))
+    name = norm(get(d, "name", default="(unnamed)"))
+    return f"- {did} {name}".strip()
+
 
 def build_strength_warmup(
     warmups: List[Dict[str, Any]],
@@ -1646,10 +1656,14 @@ def build_bw_strength_circuits(
     prof = _strength_time_profile(session_len_min, skate_within_24h)
 
     wu = build_strength_warmup(warmups, age, rnd, day_type=day_type)
-    lines.append(f"\nWARMUP (Strength Circuits - {day_type})")
+    lines.append(f"\nWARMUP (~5 min) — {day_type}")
+    lines.append("Complete in order; keep moving.")
     if wu:
-        for d in wu[:10]:
-            lines.append(format_drill(d))
+        for d in wu[:PERFORMANCE_WARMUP_CAP]:
+            if get(d, "id") == "WARN":
+                lines.append(format_drill(d))
+            else:
+                lines.append(format_warmup_drill_compact(d))
     else:
         lines.append("- [No warmups found]")
 
@@ -1939,11 +1953,15 @@ def build_hockey_strength_session(
         prof["speed"] = min(prof["speed"], 1)
         prof["allow_finisher"] = False
 
-    # Warm-up
+    # Warm-up (~5 min, consolidated)
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
-    lines.append(f"\nWARMUP (performance - {day_type} day)")
-    for d in warmup_drills_picked[:prof["warmup_cap"]]:
-        lines.append(format_drill(d))
+    lines.append(f"\nWARMUP (~5 min) — {day_type} day")
+    lines.append("Complete in order; keep moving.")
+    for d in warmup_drills_picked[:PERFORMANCE_WARMUP_CAP]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
 
 
     pool = [d for d in strength_drills if is_active(d) and age_ok(d, age)]
