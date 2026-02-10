@@ -82,7 +82,7 @@ RAW_MODES = get_mode_options()
 MODE_LABELS = {
     "puck_mastery": "Puck Mastery",
     "performance": "Performance",
-    "energy_systems": "Energy Systems",
+    "energy_systems": "Conditioning",
     "skating_mechanics": "Skating Mechanics",
     "mobility": "Mobility & Recovery",
 }
@@ -181,7 +181,7 @@ def _header_style(title: str) -> str:
     if "stickhandling" in t:
         return "Stickhandling"
     if "conditioning" in t or "energy systems" in t:
-        return "Energy Systems"
+        return "Conditioning"
     if "speed agility" in t:
         return "Speed & Agility"
     if "skating mechanics" in t:
@@ -506,14 +506,13 @@ if "last_inputs_fingerprint" not in st.session_state:
 
 # ---------- Main area: form (no sidebar) ----------
 st.markdown("#### Session options")
-c1, c2, c3 = st.columns(3)
+c1, c2 = st.columns(2)
 with c1:
     athlete_id = st.text_input("Athlete name", value="", placeholder="Enter name")
 with c2:
     age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
     age = int(age)
-with c3:
-    minutes = st.slider("Session length (min)", 10, 120, 45, step=5)
+minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
 mode = LABEL_TO_MODE[mode_label]
@@ -686,7 +685,7 @@ if st.session_state.last_output_text:
             "shooting": "Puck Mastery (Shooting)",
             "stickhandling": "Puck Mastery (Stickhandling)",
             "performance": "Performance",
-            "energy_systems": "Energy Systems",
+            "energy_systems": "Conditioning",
             "skating_mechanics": "Skating Mechanics",
             "mobility": "Mobility",
         }.get(effective_mode, mode_label)
