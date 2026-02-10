@@ -1740,8 +1740,8 @@ def build_bw_strength_circuits(
     if include_finisher and fin_min > 0 and not skate_within_24h:
         cond_pool = filter_post_lift_conditioning_pool(
             conditioning_drills,
-            full_gym=False,
-            post_lift_conditioning_type=None,
+            full_gym=full_gym,
+            post_lift_conditioning_type=post_lift_conditioning_type,
         )
         fin_drills = pick_conditioning_drills(
             cond_pool,
@@ -2300,9 +2300,10 @@ def build_hockey_strength_session(
         fin_min = 8 if session_len_min >= 60 else 6
         cond_pool = filter_post_lift_conditioning_pool(
             conditioning_drills,
-            full_gym=full_gym,
-            post_lift_conditioning_type=post_lift_conditioning_type,
+            full_gym=False,
+            post_lift_conditioning_type=None,
         )
+
         fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "conditioning"))
         lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
         if not fin_drills:
