@@ -1080,6 +1080,69 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
     return lines
 
 
+def _conditioning_blob(d: Dict[str, Any]) -> str:
+    """Concatenate fields that may contain modality hints (bike, treadmill, hill, stairs)."""
+    parts: List[str] = []
+    for k in ("id", "name", "equipment", "modality"):
+        v = d.get(k, "")
+        if isinstance(v, str):
+            parts.append(v)
+    tags = d.get("tags", [])
+    if isinstance(tags, str):
+        parts.append(tags)
+    elif isinstance(tags, list):
+        parts.extend([str(x) for x in tags])
+    return " ".join(parts).lower()
+
+
+def _is_bike_conditioning(d: Dict[str, Any]) -> bool:
+    s = _conditioning_blob(d)
+    return any(tok in s for tok in ("bike", "assault bike", "airdyne", "erg bike", "spin bike"))
+
+
+def _is_treadmill_conditioning(d: Dict[str, Any]) -> bool:
+    s = _conditioning_blob(d)
+    return any(tok in s for tok in ("treadmill", "tm ", "tm_", "incline walk"))
+
+
+def _is_hill_or_stairs_conditioning(d: Dict[str, Any]) -> bool:
+    """True if drill requires hill or stairs (not gym-appropriate for 'surprise')."""
+    s = _conditioning_blob(d)
+    return "hill" in s or "stair" in s
+
+
+def filter_conditioning_pool_by_modality(
+    conditioning_drills: List[Dict[str, Any]],
+    *,
+    modality_type: Optional[str] = None,  # "bike" | "treadmill" | "surprise" | None
+    full_gym: bool = False,
+) -> List[Dict[str, Any]]:
+    """
+    Filter conditioning drills by location and modality.
+
+    - no_gym (full_gym=False): EXCLUDE bike/treadmill; allow cones/no-equipment only.
+    - gym + bike: ONLY bike.
+    - gym + treadmill: ONLY treadmill.
+    - gym + surprise: gym-appropriate only (bike, treadmill, cones, bodyweight, etc.; EXCLUDE hill and stairs).
+    - gym + None: allow anything.
+    """
+    pool = [d for d in (conditioning_drills or []) if is_active(d)]
+
+    if not full_gym:
+        return [d for d in pool if not _is_bike_conditioning(d) and not _is_treadmill_conditioning(d)]
+
+    t = (modality_type or "").strip().lower()
+    if t == "bike":
+        return [d for d in pool if _is_bike_conditioning(d)]
+    if t == "treadmill":
+        return [d for d in pool if _is_treadmill_conditioning(d)]
+    if t == "surprise":
+        # Gym-only: exclude anything that requires hill or stairs
+        return [d for d in pool if not _is_hill_or_stairs_conditioning(d)]
+
+    return pool
+
+
 def filter_post_lift_conditioning_pool(
     conditioning_drills: List[Dict[str, Any]],
     *,
@@ -1087,56 +1150,14 @@ def filter_post_lift_conditioning_pool(
     post_lift_conditioning_type: Optional[str] = None,  # "bike" | "treadmill" | "surprise" | None
 ) -> List[Dict[str, Any]]:
     """
-    Enforces conditioning modality rules:
-
-    - no_gym (full_gym=False): EXCLUDE bike/treadmill; allow cones/no-equipment/anything else.
-    - gym + bike: ONLY bike
-    - gym + treadmill: ONLY treadmill
-    - gym + surprise: bike OR treadmill
-    - gym + None: allow anything (but still active/age filtered elsewhere)
+    Enforces conditioning modality rules for post-lift energy systems.
+    Delegates to filter_conditioning_pool_by_modality.
     """
-
-    def _blob(d: Dict[str, Any]) -> str:
-        # Concatenate common fields that might contain modality hints
-        parts: List[str] = []
-        for k in ("id", "name", "equipment", "modality"):
-            v = d.get(k, "")
-            if isinstance(v, str):
-                parts.append(v)
-        tags = d.get("tags", [])
-        if isinstance(tags, str):
-            parts.append(tags)
-        elif isinstance(tags, list):
-            parts.extend([str(x) for x in tags])
-        return " ".join(parts).lower()
-
-    def _is_bike(d: Dict[str, Any]) -> bool:
-        s = _blob(d)
-        return any(tok in s for tok in ("bike", "assault bike", "airdyne", "erg bike", "spin bike"))
-
-    def _is_treadmill(d: Dict[str, Any]) -> bool:
-        s = _blob(d)
-        return any(tok in s for tok in ("treadmill", "tm " , "tm_", "incline walk"))
-
-    # Start with active drills only (age filtering usually happens later, but safe here too if you want)
-    pool = [d for d in (conditioning_drills or []) if is_active(d)]
-
-    # ---- No gym: NO bike/treadmill allowed ----
-    if not full_gym:
-        return [d for d in pool if not _is_bike(d) and not _is_treadmill(d)]
-
-    # ---- Gym rules ----
-    t = (post_lift_conditioning_type or "").strip().lower()
-
-    if t == "bike":
-        return [d for d in pool if _is_bike(d)]
-    if t == "treadmill":
-        return [d for d in pool if _is_treadmill(d)]
-    if t == "surprise":
-        return [d for d in pool if _is_bike(d) or _is_treadmill(d)]
-
-    # If type not specified, allow anything in gym
-    return pool
+    return filter_conditioning_pool_by_modality(
+        conditioning_drills,
+        modality_type=post_lift_conditioning_type,
+        full_gym=full_gym,
+    )
 
 
 # ------------------------------
@@ -2385,11 +2406,12 @@ def allocate_blocks(session_mode: str, total_sec: int) -> List[Tuple[str, int]]:
         mob = total_sec - cond
         return [("energy_systems", cond), ("mobility", mob)]
 
+    # Skating Mechanics (and legacy movement/speed_agility): warmup + movement pool + mobility
     if session_mode in ("movement", "speed_agility", "skating_mechanics"):
         wu = int(total_sec * 0.20)
         mv = int(total_sec * 0.65)
         mob = total_sec - wu - mv
-        return [("warmup", wu), (session_mode, mv), ("mobility", mob)]
+        return [("warmup", wu), ("movement", mv), ("mobility", mob)]
 
     if session_mode == "performance":
         return [("performance", total_sec)]
@@ -2660,7 +2682,17 @@ def generate_session(
         # Energy Systems
         if category == "energy_systems":
             minutes = max(1, seconds // 60)
-            c_drills = pick_conditioning_drills(data["energy_systems"], age, rnd, minutes, focus_rule)
+            cond_pool = data["energy_systems"]
+            # When in gym with a chosen modality, filter to bike / treadmill / or gym-only (surprise = no hill or stairs)
+            if focus in ("conditioning_bike", "conditioning_treadmill", "conditioning"):
+                full_gym_cond = True
+                mod_type = "bike" if focus == "conditioning_bike" else ("treadmill" if focus == "conditioning_treadmill" else "surprise")
+                cond_pool = filter_conditioning_pool_by_modality(
+                    cond_pool, modality_type=mod_type, full_gym=full_gym_cond
+                )
+            elif focus == "conditioning_cones":
+                cond_pool = filter_conditioning_pool_by_modality(cond_pool, modality_type=None, full_gym=False)
+            c_drills = pick_conditioning_drills(cond_pool, age, rnd, minutes, focus_rule)
             lines.append(f"\nENERGY SYSTEMS (~{minutes} min)")
             lines.extend(build_conditioning_block(c_drills, seconds))
             continue
@@ -2703,7 +2735,7 @@ def generate_session(
         count = 2 if minutes <= 8 else (3 if minutes <= 15 else 4)
         chosen = pick_n(drills, n=min(count, len(drills)) if drills else count, rnd=rnd, focus_rule=focus_rule)
 
-        section_title = category.replace("_", " ").upper()
+        section_title = "SKATING MECHANICS" if (category == "movement" and session_mode == "skating_mechanics") else category.replace("_", " ").upper()
         lines.append(f"\n{section_title} (~{minutes} min)")
         if not chosen:
             lines.append("- [No matching drills found]")

@@ -24,9 +24,7 @@ SESSION_MODES = [
     "stickhandling",
     "performance",
     "energy_systems",
-    "speed_agility",
     "skating_mechanics",
-    "movement",
     "mobility",
 ]
 
@@ -72,9 +70,9 @@ def main():
     focus_idx = _ask_choice(
         "What should today focus on?",
         [
-            "Shooting & Stickhandling",
+            "Hockey Skills",
             "Performance",
-            "Speed & Agility",
+            "Skating Mechanics",
             "Energy Systems",
             "Mobility & Recovery",
         ],
@@ -94,11 +92,11 @@ def main():
     stickhandling_min = None
     shooting_min = None
 
-    # 1) Skills
+    # 1) Hockey Skills
     if focus_idx == 1:
         sub = _ask_choice(
-            "Shooting & Stickhandling — focus?",
-            ["shooting", "stickhandling", "both"],
+            "Hockey Skills — focus?",
+            ["Shooting", "Stickhandling", "Both"],
             default_idx=3,
         )
         # Route to the correct engine mode (prevents non-skill choices from defaulting to skills output)
@@ -186,14 +184,9 @@ def main():
                 post_lift_conditioning_type = None
 
 
-    # 3) Speed & Agility
+    # 3) Skating Mechanics (off-ice: movement pool = speed, agility, skating mechanics)
     elif focus_idx == 3:
-        ag = _ask_choice(
-            "Speed & Agility — focus?",
-            ["Speed & Agility (footwork)", "Skating Mechanics (stride/crossover)", "General movement"],
-            default_idx=1,
-        )
-        session_mode = {1: "speed_agility", 2: "skating_mechanics", 3: "movement"}[ag]
+        session_mode = "skating_mechanics"
         focus = None
 
     # 4) Energy Systems

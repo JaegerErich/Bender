@@ -82,23 +82,24 @@ def get_mode_options():
     except Exception:
         pass
 
-    # 2026 industry-standard names
-    return ["skills_only", "shooting", "stickhandling", "performance", "energy_systems", "speed_agility", "skating_mechanics", "movement", "mobility"]
+    # Top-level categories (Hockey Skills = shooting/stickhandling/both via sub-choice)
+    return ["hockey_skills", "performance", "energy_systems", "skating_mechanics", "mobility"]
 
 
 RAW_MODES = get_mode_options()
 
+# Top-level display labels
 MODE_LABELS = {
-    "skills_only": "Shooting & Stickhandling",
-    "shooting": "Shooting Only",
-    "stickhandling": "Stickhandling Only",
+    "hockey_skills": "Hockey Skills",
     "performance": "Performance",
     "energy_systems": "Energy Systems",
-    "speed_agility": "Speed & Agility",
     "skating_mechanics": "Skating Mechanics",
-    "movement": "Movement",
     "mobility": "Mobility & Recovery",
 }
+
+# Hockey Skills sub-options (map to actual session_mode sent to engine)
+SKILLS_SUB_LABELS = ["Shooting", "Stickhandling", "Both"]
+SKILLS_SUB_TO_MODE = {"Shooting": "shooting", "Stickhandling": "stickhandling", "Both": "skills_only"}
 
 DISPLAY_MODES = [MODE_LABELS.get(m, m) for m in RAW_MODES]
 LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
@@ -396,13 +397,13 @@ def _generate_via_engine(payload: dict) -> dict:
 
     # Strength-specific tokens
     location = payload.get("location", "no_gym")
-    strength_full_gym = (mode == "performance" and location == "gym")
+    strength_full_gym = (payload.get("mode") == "performance" and location == "gym")
 
     strength_day_type = payload.get("strength_day_type", None)  # "leg"/"upper"
     strength_emphasis = payload.get("strength_emphasis", "strength")
     skate_within_24h = bool(payload.get("skate_within_24h", False))
 
-    include_post_lift_conditioning = bool(payload.get("conditioning", False)) if mode == "performance" else None
+    include_post_lift_conditioning = bool(payload.get("conditioning", False)) if payload.get("mode") == "performance" else None
     post_lift_conditioning_type = payload.get("conditioning_type", None)
 
     # Skills-only extras (optional later: expose shot volume)
@@ -469,8 +470,15 @@ minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
 mode = LABEL_TO_MODE[mode_label]
 
+# Hockey Skills: secondary dropdown (Shooting / Stickhandling / Both)
+if mode == "hockey_skills":
+    skills_sub = st.selectbox("Hockey Skills — focus", SKILLS_SUB_LABELS, index=2)  # default Both
+    effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
+else:
+    effective_mode = mode
+
 # Location only relevant for performance/energy_systems
-if mode in ("performance", "energy_systems"):
+if effective_mode in ("performance", "energy_systems"):
     location = st.selectbox("Location", ["gym", "no_gym"])
 else:
     location = "no_gym"
@@ -486,7 +494,7 @@ skate_within_24h = False
 # Conditioning extras
 conditioning_focus = None
 
-if mode == "performance":
+if effective_mode == "performance":
     if location == "gym":
         day = st.selectbox("Strength day", ["lower", "upper", "full"])
         strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
@@ -505,7 +513,7 @@ if mode == "performance":
         strength_emphasis = "strength"
         skate_within_24h = False
 
-elif mode == "energy_systems":
+elif effective_mode == "energy_systems":
     if location == "gym":
         mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
         if mod == "bike":
@@ -520,14 +528,14 @@ elif mode == "energy_systems":
 
     focus = conditioning_focus
 
-elif mode == "mobility":
+elif effective_mode == "mobility":
     focus = "mobility"
 
 # Performance-only: post-lift energy systems (gym/no_gym restrictions)
 conditioning = False
 conditioning_type = None
 
-if mode == "performance":
+if effective_mode == "performance":
     conditioning = st.checkbox("Post-lift energy systems?", value=False)
     if conditioning:
         if location == "gym":
@@ -545,7 +553,7 @@ inputs_fingerprint = (
     athlete_id.strip().lower(),
     int(age),
     int(minutes),
-    mode,
+    effective_mode,
     location,
     focus,
     strength_day_type,
@@ -574,7 +582,7 @@ if st.button("Generate"):
             "athlete_id": athlete_id.strip(),
             "age": int(age),
             "minutes": int(minutes),
-            "mode": mode,
+            "mode": effective_mode,
             "focus": focus,  # controlled tokens only
             "location": location,
             # Strength tokens
@@ -614,7 +622,7 @@ if st.session_state.last_output_text:
         st.subheader("Your Workout")
 
         # No-gym performance: show circuits-only view ONLY
-        if mode == "performance" and location == "no_gym":
+        if effective_mode == "performance" and location == "no_gym":
             render_no_gym_strength_circuits_only(st.session_state.last_output_text)
         else:
             render_workout_readable(st.session_state.last_output_text)
@@ -633,7 +641,7 @@ if st.session_state.last_output_text:
 
         st.write("")
 
-        if not (mode == "performance" and location == "no_gym"):
+        if not (effective_mode == "performance" and location == "no_gym"):
             with st.expander("Copy workout (raw text)"):
                 st.code(st.session_state.last_output_text)
 
@@ -646,24 +654,22 @@ if st.session_state.last_output_text:
 
         # Map your internal mode token to the form’s expected label
         form_mode_value = {
-            "skills_only": "Shooting & Stickhandling",
-            "shooting": "Shooting",
-            "stickhandling": "Stickhandling",
+            "skills_only": "Hockey Skills (Both)",
+            "shooting": "Hockey Skills (Shooting)",
+            "stickhandling": "Hockey Skills (Stickhandling)",
             "performance": "Performance",
             "energy_systems": "Energy Systems",
-            "speed_agility": "Speed & Agility",
             "skating_mechanics": "Skating Mechanics",
-            "movement": "Movement",
             "mobility": "Mobility",
-        }.get(mode, mode_label)
+        }.get(effective_mode, mode_label)
 
         # Location label: only meaningful for performance/energy_systems
-        if mode in ("performance", "energy_systems"):
+        if effective_mode in ("performance", "energy_systems"):
             form_location_value = "Gym" if location == "gym" else "No Gym"
         else:
             form_location_value = "No Gym"  # or "N/A" if your form supports that
 
-        form_emphasis_value = strength_emphasis if mode == "performance" else ""
+        form_emphasis_value = strength_emphasis if effective_mode == "performance" else ""
 
         prefill_url = build_prefilled_feedback_url(
             athlete=athlete_id.strip(),
