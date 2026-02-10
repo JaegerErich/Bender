@@ -70,7 +70,7 @@ def main():
     focus_idx = _ask_choice(
         "What should today focus on?",
         [
-            "Hockey Skills",
+            "Puck Mastery",
             "Performance",
             "Skating Mechanics",
             "Energy Systems",
@@ -92,10 +92,10 @@ def main():
     stickhandling_min = None
     shooting_min = None
 
-    # 1) Hockey Skills
+    # 1) Puck Mastery
     if focus_idx == 1:
         sub = _ask_choice(
-            "Hockey Skills — focus?",
+            "Puck Mastery — focus?",
             ["Shooting", "Stickhandling", "Both"],
             default_idx=3,
         )

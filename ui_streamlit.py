@@ -82,22 +82,22 @@ def get_mode_options():
     except Exception:
         pass
 
-    # Top-level categories (Hockey Skills = shooting/stickhandling/both via sub-choice)
-    return ["hockey_skills", "performance", "energy_systems", "skating_mechanics", "mobility"]
+    # Top-level categories (Puck Mastery = shooting/stickhandling/both via sub-choice)
+    return ["puck_mastery", "performance", "energy_systems", "skating_mechanics", "mobility"]
 
 
 RAW_MODES = get_mode_options()
 
 # Top-level display labels
 MODE_LABELS = {
-    "hockey_skills": "Hockey Skills",
+    "puck_mastery": "Puck Mastery",
     "performance": "Performance",
     "energy_systems": "Energy Systems",
     "skating_mechanics": "Skating Mechanics",
     "mobility": "Mobility & Recovery",
 }
 
-# Hockey Skills sub-options (map to actual session_mode sent to engine)
+# Puck Mastery sub-options (map to actual session_mode sent to engine)
 SKILLS_SUB_LABELS = ["Shooting", "Stickhandling", "Both"]
 SKILLS_SUB_TO_MODE = {"Shooting": "shooting", "Stickhandling": "stickhandling", "Both": "skills_only"}
 
@@ -470,9 +470,9 @@ minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
 mode = LABEL_TO_MODE[mode_label]
 
-# Hockey Skills: secondary dropdown (Shooting / Stickhandling / Both)
-if mode == "hockey_skills":
-    skills_sub = st.selectbox("Hockey Skills — focus", SKILLS_SUB_LABELS, index=2)  # default Both
+# Puck Mastery: secondary dropdown (Shooting / Stickhandling / Both)
+if mode == "puck_mastery":
+    skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)  # default Both
     effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
 else:
     effective_mode = mode
@@ -654,9 +654,9 @@ if st.session_state.last_output_text:
 
         # Map your internal mode token to the form’s expected label
         form_mode_value = {
-            "skills_only": "Hockey Skills (Both)",
-            "shooting": "Hockey Skills (Shooting)",
-            "stickhandling": "Hockey Skills (Stickhandling)",
+            "skills_only": "Puck Mastery (Both)",
+            "shooting": "Puck Mastery (Shooting)",
+            "stickhandling": "Puck Mastery (Stickhandling)",
             "performance": "Performance",
             "energy_systems": "Energy Systems",
             "skating_mechanics": "Skating Mechanics",
