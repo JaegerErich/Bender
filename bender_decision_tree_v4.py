@@ -19,11 +19,14 @@ from typing import Optional, Tuple, List, Dict, Any
 from bender_generate_v8_1 import load_all_data, generate_session
 
 SESSION_MODES = [
-    "strength",
+    "skills_only",
     "shooting",
     "stickhandling",
-    "skills_only",
-    "conditioning",
+    "performance",
+    "energy_systems",
+    "speed_agility",
+    "skating_mechanics",
+    "movement",
     "mobility",
 ]
 
@@ -70,9 +73,9 @@ def main():
         "What should today focus on?",
         [
             "Shooting & Stickhandling",
-            "Strength Training",
-            "Skating & Agility",
-            "Conditioning",
+            "Performance",
+            "Speed & Agility",
+            "Energy Systems",
             "Mobility & Recovery",
         ],
         default_idx=1,
@@ -110,16 +113,16 @@ def main():
             session_mode = "skills_only"
             focus = None
 
-    # 2) Strength
+    # 2) Performance
     elif focus_idx == 2:
         gym_idx = _ask_choice(
-            "Strength Training — are you at a gym?",
+            "Performance — are you at a gym?",
             ["no gym", "gym"],
             default_idx=1,
         )
         strength_full_gym = (gym_idx == 2)
-        session_mode = "strength"
-        focus = "strength"
+        session_mode = "performance"
+        focus = "performance"
 
         # No-gym: circuits-only (no day-split / skating / conditioning prompts)
         if not strength_full_gym:
@@ -129,17 +132,17 @@ def main():
             include_post_lift_conditioning = False     # default (no prompt)
             post_lift_conditioning_type = None
 
-        # Full gym: ask normal strength prompts
+        # Full gym: ask normal performance prompts
         else:
             dt = _ask_choice(
-                "Strength Training — what type of day?",
+                "Performance — what type of day?",
                 ["lower", "upper", "full"],
                 default_idx=1,
             )
             strength_day_type = {1: "leg", 2: "upper", 3: "full"}[dt]
 
             em = _ask_choice(
-                "Strength Training — what are we training today?",
+                "Performance — what are we training today?",
                 [
                     "power (explosive speed)",
                     "strength (game strength)",
@@ -158,7 +161,7 @@ def main():
             skate_within_24h = (sk == 2)
 
             cond = _ask_choice(
-                "Add conditioning after lifting?",
+                "Add energy systems work after lifting?",
                 ["no", "yes"],
                 default_idx=1,
             )
@@ -166,7 +169,7 @@ def main():
 
             if include_post_lift_conditioning:
                 mod = _ask_choice(
-                    "Post-lift conditioning — choose modality:",
+                    "Post-lift energy systems — choose modality:",
                     ["cones/sprints (no equipment)", "bike", "treadmill", "surprise"],
                     default_idx=4,
                 )
@@ -183,34 +186,34 @@ def main():
                 post_lift_conditioning_type = None
 
 
-    # 3) Agility / skating (off-ice)
+    # 3) Speed & Agility
     elif focus_idx == 3:
-        session_mode = "movement"
         ag = _ask_choice(
-            "Agility (off-ice) — what setup do you have?",
-            ["cones", "hurdles/mini hurdles/plyometric box", "none"],
+            "Speed & Agility — focus?",
+            ["Speed & Agility (footwork)", "Skating Mechanics (stride/crossover)", "General movement"],
             default_idx=1,
         )
-        focus = {1: "agility_cones", 2: "agility_hurdles", 3: "agility_none"}[ag]
+        session_mode = {1: "speed_agility", 2: "skating_mechanics", 3: "movement"}[ag]
+        focus = None
 
-    # 4) Conditioning
+    # 4) Energy Systems
     elif focus_idx == 4:
-        session_mode = "conditioning"
-        focus = "conditioning"
+        session_mode = "energy_systems"
+        focus = "energy_systems"
         gym_idx = _ask_choice(
-            "Conditioning — are you at a gym?",
+            "Energy Systems — are you at a gym?",
             ["no gym", "gym"],
             default_idx=2,
         )
         if gym_idx == 2:
             mod = _ask_choice(
-                "Conditioning (gym) — choose modality:",
+                "Energy Systems (gym) — choose modality:",
                 ["bike", "treadmill", "surprise"],
                 default_idx=3,
             )
             focus = {1: "conditioning_bike", 2: "conditioning_treadmill", 3: "conditioning"}[mod]
         else:
-            # no-gym conditioning should be cones/no-equipment only
+            # no-gym: cones/no-equipment only
             focus = "conditioning_cones"
 
     # 5) Mobility

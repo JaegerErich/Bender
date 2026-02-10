@@ -1,0 +1,25 @@
+[
+  {
+    "id": "MC_014",
+    "name": "Lateral Ladder In-Out",
+    "status": "active",
+    "movement_bucket": "lateral_movement",
+    "tags": "lateral, coordination, footwork",
+    "movement_direction": "lateral",
+    "skating_phase": "change_of_direction",
+    "coordination_level": "moderate",
+    "default_duration_sec": 45,
+    "intensity": "low-med",
+    "age_min": 10,
+    "age_max": 99,
+    "equipment": "Ladder",
+    "space": "6 ft ladder",
+    "step_by_step": "In both feet then out laterally",
+    "coaching_cues": "Control over speed",
+    "video_url": null,
+    "session_type": "movement,conditioning,circuit",
+    "Plyo": "FALSE",
+    "inspired_by": "self",
+    "coach_preference": "1"
+  }
+]

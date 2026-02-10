@@ -82,8 +82,8 @@ def get_mode_options():
     except Exception:
         pass
 
-    # Canonical defaults
-    return ["skills_only", "shooting", "stickhandling", "strength", "conditioning", "mobility", "movement"]
+    # 2026 industry-standard names
+    return ["skills_only", "shooting", "stickhandling", "performance", "energy_systems", "speed_agility", "skating_mechanics", "movement", "mobility"]
 
 
 RAW_MODES = get_mode_options()
@@ -92,10 +92,12 @@ MODE_LABELS = {
     "skills_only": "Shooting & Stickhandling",
     "shooting": "Shooting Only",
     "stickhandling": "Stickhandling Only",
-    "strength": "Strength",
-    "conditioning": "Conditioning",
-    "mobility": "Mobility & Recovery",
+    "performance": "Performance",
+    "energy_systems": "Energy Systems",
+    "speed_agility": "Speed & Agility",
+    "skating_mechanics": "Skating Mechanics",
     "movement": "Movement",
+    "mobility": "Mobility & Recovery",
 }
 
 DISPLAY_MODES = [MODE_LABELS.get(m, m) for m in RAW_MODES]
@@ -156,7 +158,7 @@ def clear_last_output():
 # Pretty workout renderer (UI only)
 # -----------------------------
 _SECTION_RE = re.compile(
-    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|mobility)\b",
+    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility)\b",
     re.IGNORECASE,
 )
 
@@ -187,8 +189,12 @@ def _header_style(title: str) -> str:
         return "Shooting"
     if "stickhandling" in t:
         return "Stickhandling"
-    if "conditioning" in t:
-        return "Conditioning"
+    if "conditioning" in t or "energy systems" in t:
+        return "Energy Systems"
+    if "speed agility" in t:
+        return "Speed & Agility"
+    if "skating mechanics" in t:
+        return "Skating Mechanics"
     if "mobility" in t:
         return "Mobility"
     return "Section"
@@ -275,9 +281,11 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     MOBILITY_HEADERS = {"MOBILITY COOLDOWN CIRCUIT", "MOBILITY"}
     STOP_HEADERS = CIRCUIT_HEADERS | MOBILITY_HEADERS | {
         "POST-LIFT CONDITIONING",
+        "POST-LIFT ENERGY SYSTEMS",
         "SHOOTING",
         "STICKHANDLING",
         "CONDITIONING",
+        "ENERGY SYSTEMS",
     }
 
     # ---- Warmup: render if present BEFORE circuits ----
@@ -388,13 +396,13 @@ def _generate_via_engine(payload: dict) -> dict:
 
     # Strength-specific tokens
     location = payload.get("location", "no_gym")
-    strength_full_gym = (mode == "strength" and location == "gym")
+    strength_full_gym = (mode == "performance" and location == "gym")
 
     strength_day_type = payload.get("strength_day_type", None)  # "leg"/"upper"
     strength_emphasis = payload.get("strength_emphasis", "strength")
     skate_within_24h = bool(payload.get("skate_within_24h", False))
 
-    include_post_lift_conditioning = bool(payload.get("conditioning", False)) if mode == "strength" else None
+    include_post_lift_conditioning = bool(payload.get("conditioning", False)) if mode == "performance" else None
     post_lift_conditioning_type = payload.get("conditioning_type", None)
 
     # Skills-only extras (optional later: expose shot volume)
@@ -461,8 +469,8 @@ minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 mode_label = st.selectbox("Mode", DISPLAY_MODES)
 mode = LABEL_TO_MODE[mode_label]
 
-# Location only relevant for strength/conditioning
-if mode in ("strength", "conditioning"):
+# Location only relevant for performance/energy_systems
+if mode in ("performance", "energy_systems"):
     location = st.selectbox("Location", ["gym", "no_gym"])
 else:
     location = "no_gym"
@@ -478,7 +486,7 @@ skate_within_24h = False
 # Conditioning extras
 conditioning_focus = None
 
-if mode == "strength":
+if mode == "performance":
     if location == "gym":
         day = st.selectbox("Strength day", ["lower", "upper", "full"])
         strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
@@ -497,7 +505,7 @@ if mode == "strength":
         strength_emphasis = "strength"
         skate_within_24h = False
 
-elif mode == "conditioning":
+elif mode == "energy_systems":
     if location == "gym":
         mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
         if mod == "bike":
@@ -507,7 +515,7 @@ elif mode == "conditioning":
         else:
             conditioning_focus = "conditioning"
     else:
-        st.info("No-gym conditioning assumes cones/no equipment.")
+        st.info("No-gym energy systems: cones/no equipment.")
         conditioning_focus = "conditioning_cones"
 
     focus = conditioning_focus
@@ -515,20 +523,20 @@ elif mode == "conditioning":
 elif mode == "mobility":
     focus = "mobility"
 
-# Strength-only: post-lift conditioning (gym/no_gym restrictions)
+# Performance-only: post-lift energy systems (gym/no_gym restrictions)
 conditioning = False
 conditioning_type = None
 
-if mode == "strength":
-    conditioning = st.checkbox("Post-lift conditioning?", value=False)
+if mode == "performance":
+    conditioning = st.checkbox("Post-lift energy systems?", value=False)
     if conditioning:
         if location == "gym":
             conditioning_type = st.selectbox(
-                "Post-lift conditioning type (gym)",
+                "Post-lift energy systems type (gym)",
                 ["bike", "treadmill", "surprise"],
             )
         else:
-            st.info("No-gym conditioning = no equipment (no bike/treadmill).")
+            st.info("No-gym = no equipment (no bike/treadmill).")
             conditioning_type = None
 
 
@@ -605,8 +613,8 @@ if st.session_state.last_output_text:
     with tab_workout:
         st.subheader("Your Workout")
 
-        # No-gym strength: show circuits-only view ONLY
-        if mode == "strength" and location == "no_gym":
+        # No-gym performance: show circuits-only view ONLY
+        if mode == "performance" and location == "no_gym":
             render_no_gym_strength_circuits_only(st.session_state.last_output_text)
         else:
             render_workout_readable(st.session_state.last_output_text)
@@ -625,7 +633,7 @@ if st.session_state.last_output_text:
 
         st.write("")
 
-        if not (mode == "strength" and location == "no_gym"):
+        if not (mode == "performance" and location == "no_gym"):
             with st.expander("Copy workout (raw text)"):
                 st.code(st.session_state.last_output_text)
 
@@ -641,19 +649,21 @@ if st.session_state.last_output_text:
             "skills_only": "Shooting & Stickhandling",
             "shooting": "Shooting",
             "stickhandling": "Stickhandling",
-            "strength": "Strength",
-            "conditioning": "Conditioning",
-            "mobility": "Mobility",
+            "performance": "Performance",
+            "energy_systems": "Energy Systems",
+            "speed_agility": "Speed & Agility",
+            "skating_mechanics": "Skating Mechanics",
             "movement": "Movement",
+            "mobility": "Mobility",
         }.get(mode, mode_label)
 
-        # Location label: only meaningful for strength/conditioning
-        if mode in ("strength", "conditioning"):
+        # Location label: only meaningful for performance/energy_systems
+        if mode in ("performance", "energy_systems"):
             form_location_value = "Gym" if location == "gym" else "No Gym"
         else:
             form_location_value = "No Gym"  # or "N/A" if your form supports that
 
-        form_emphasis_value = strength_emphasis if mode == "strength" else ""
+        form_emphasis_value = strength_emphasis if mode == "performance" else ""
 
         prefill_url = build_prefilled_feedback_url(
             athlete=athlete_id.strip(),

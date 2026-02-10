@@ -39,7 +39,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
     "60_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 60, "shooting_shots": 300},
     "45_min_off_ice": {"session_mode": "movement", "session_len_min": 45},
     "in_season_lift": {
-        "session_mode": "strength",
+        "session_mode": "performance",
         "session_len_min": 45,
         "strength_emphasis": "strength",
         "strength_day_type": "full",
@@ -47,7 +47,7 @@ PRESETS: Dict[str, Dict[str, Any]] = {
         "include_post_lift_conditioning": False,
     },
     "off_season_lift": {
-        "session_mode": "strength",
+        "session_mode": "performance",
         "session_len_min": 60,
         "strength_emphasis": "hypertrophy",
         "strength_day_type": "lower",
@@ -232,14 +232,26 @@ def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, 
     else:
         DATA_DIR = os.path.join(BASE_DIR, data_dir)
 
+    movement_all = load_category("movement.json")
+    try:
+        speed_agility = load_category("speed_agility.json")
+    except Exception:
+        speed_agility = []
+    try:
+        skating_mechanics = load_category("skating_mechanics.json")
+    except Exception:
+        skating_mechanics = []
+    movement_combined = movement_all + speed_agility + skating_mechanics
     return {
         "warmup": load_category("warmup.json"),
-        "movement": load_category("movement.json"),
-        "conditioning": load_category("conditioning.json"),
+        "movement": movement_combined,
+        "speed_agility": speed_agility,
+        "skating_mechanics": skating_mechanics,
+        "energy_systems": load_category("energy_systems.json"),
         "stickhandling": load_category("stickhandling.json"),
         "shooting": load_category("shooting.json"),
         "mobility": load_category("mobility.json"),
-        "strength": load_category("strength.json"),
+        "performance": load_category("performance.json"),
         "circuits": load_category("circuits.json"),
     }
 
@@ -264,7 +276,8 @@ FOCUS_MAP: Dict[str, Dict[str, Dict[str, Any]]] = {
         "stickhandling": {"tags_any": ["puck_protection", "protection"], "weight": 2.2},
         "shooting": {"tags_any": ["puck_protection"], "weight": 1.6},
     },
-    "conditioning": {"conditioning": {"weight": 2.0}},
+    "conditioning": {"energy_systems": {"weight": 2.0}},
+    "energy_systems": {"energy_systems": {"weight": 2.0}},
     "recovery": {"mobility": {"weight": 2.5}},
 }
 
@@ -1039,13 +1052,13 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
         return out
 
     if len(drills) == 1:
-        lines.append("Structure: 1 conditioning focus (repeat to fill time).")
+        lines.append("Structure: 1 energy systems focus (repeat to fill time).")
         lines.extend(describe_one(drills[0], block_seconds))
         return lines
 
     a_time = block_seconds // 2
     b_time = block_seconds - a_time
-    lines.append("Structure: 2 conditioning blocks (different types when possible).")
+    lines.append("Structure: 2 energy systems blocks (different types when possible).")
     lines.append(f"Block A (~{format_seconds_short(a_time)})")
     lines.extend(describe_one(drills[0], a_time))
     lines.append(f"Block B (~{format_seconds_short(b_time)})")
@@ -1552,7 +1565,7 @@ def render_preset_circuit(circuit: Dict[str, Any], strength_by_id: Dict[str, Dic
         did = norm(did)
         d = strength_by_id.get(did)
         if not d:
-            lines.append(f"- [Missing drill in strength.json: {did}]")
+            lines.append(f"- [Missing drill in performance.json: {did}]")
         else:
             lines.append(format_drill(d))
 
@@ -1689,13 +1702,13 @@ def build_bw_strength_circuits(
             lines.extend(preset_lines)
         else:
             lines.append("\nSTRENGTH CIRCUITS (Preset)")
-            lines.append("- [Preset circuits found, but no drills rendered (check drill IDs in circuits.json vs strength.json)]")
+            lines.append("- [Preset circuits found, but no drills rendered (check drill IDs in circuits.json vs performance.json)]")
 
     else:
         bw_pool = [d for d in strength_drills if is_active(d) and age_ok(d, age) and is_bodyweight_strength_drill(d)]
         lines.append("\nSTRENGTH CIRCUITS")
         if not bw_pool:
-            lines.append("- [No matching bodyweight strength drills found — make sure BW drills are in strength.json]")
+            lines.append("- [No matching bodyweight strength drills found — make sure BW drills are in performance.json]")
             return lines
 
         if session_len_min <= 30:
@@ -1750,12 +1763,12 @@ def build_bw_strength_circuits(
             age,
             rnd,
             fin_min,
-            focus_rule=get_focus_rules(None, "conditioning"),
+            focus_rule=get_focus_rules(None, "energy_systems"),
         )
 
-        lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
+        lines.append(f"\nPOST-LIFT ENERGY SYSTEMS (optional, ~{fin_min} min)")
         if not fin_drills:
-            lines.append("- [No matching no-equipment conditioning drills found]")
+            lines.append("- [No matching no-equipment energy systems drills found]")
         else:
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
@@ -1893,7 +1906,7 @@ def build_hockey_strength_session(
 
     # Warm-up
     warmup_drills_picked = build_strength_warmup(warmups, age, rnd, day_type=day_type)
-    lines.append(f"\nWARMUP (strength - {day_type} day)")
+    lines.append(f"\nWARMUP (performance - {day_type} day)")
     for d in warmup_drills_picked[:prof["warmup_cap"]]:
         lines.append(format_drill(d))
 
@@ -1906,7 +1919,7 @@ def build_hockey_strength_session(
 
     if not pool:
         lines.append("\nSTRENGTH")
-        lines.append("- [No matching strength drills found — check strength.json]")
+        lines.append("- [No matching strength drills found — check performance.json]")
         return lines
 
     used_ids: set = set()
@@ -2311,10 +2324,10 @@ def build_hockey_strength_session(
             post_lift_conditioning_type=None,
         )
 
-        fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "conditioning"))
-        lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
+        fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "energy_systems"))
+        lines.append(f"\nPOST-LIFT ENERGY SYSTEMS (optional, ~{fin_min} min)")
         if not fin_drills:
-            lines.append("- [No conditioning drills found]")
+            lines.append("- [No energy systems drills found]")
         else:
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
@@ -2353,19 +2366,19 @@ def allocate_blocks(session_mode: str, total_sec: int) -> List[Tuple[str, int]]:
     if session_mode in ("stickhandling", "shooting", "mobility", "recovery"):
         return [(session_mode, total_sec)]
 
-    if session_mode == "conditioning":
+    if session_mode == "energy_systems":
         cond = int(total_sec * 0.80)
         mob = total_sec - cond
-        return [("conditioning", cond), ("mobility", mob)]
+        return [("energy_systems", cond), ("mobility", mob)]
 
-    if session_mode == "movement":
+    if session_mode in ("movement", "speed_agility", "skating_mechanics"):
         wu = int(total_sec * 0.20)
         mv = int(total_sec * 0.65)
         mob = total_sec - wu - mv
-        return [("warmup", wu), ("movement", mv), ("mobility", mob)]
+        return [("warmup", wu), (session_mode, mv), ("mobility", mob)]
 
-    if session_mode == "strength":
-        return [("strength", total_sec)]
+    if session_mode == "performance":
+        return [("performance", total_sec)]
 
     a = int(total_sec * 0.50)
     b = total_sec - a
@@ -2403,10 +2416,22 @@ def save_history(athlete_id: str, history: Dict[str, Any]) -> None:
         json.dump(history, f, indent=2)
 
 
+def _history_mode_matches(session_mode: str, requested: str) -> bool:
+    """Match session mode, including legacy aliases (strength↔performance, conditioning↔energy_systems)."""
+    s, r = norm(session_mode or ""), norm(requested or "")
+    if s == r:
+        return True
+    if r == "performance" and s == "strength":
+        return True
+    if r == "energy_systems" and s == "conditioning":
+        return True
+    return False
+
+
 def recent_ids_from_history(history: Dict[str, Any], max_sessions: int = 6, mode: Optional[str] = None) -> set:
     sessions = history.get("sessions") or []
     if mode:
-        sessions = [s for s in sessions if norm(s.get("mode", "")) == norm(mode)]
+        sessions = [s for s in sessions if _history_mode_matches(s.get("mode", ""), mode)]
     take = sessions[-max_sessions:] if max_sessions and max_sessions > 0 else sessions
     out = set()
     for s in take:
@@ -2420,7 +2445,7 @@ def recent_ids_from_history(history: Dict[str, Any], max_sessions: int = 6, mode
 def recent_circuit_ids_from_history(history: Dict[str, Any], max_sessions: int = 6, mode: Optional[str] = None) -> set:
     sessions = history.get("sessions") or []
     if mode:
-        sessions = [s for s in sessions if norm(s.get("mode", "")) == norm(mode)]
+        sessions = [s for s in sessions if _history_mode_matches(s.get("mode", ""), mode)]
     take = sessions[-max_sessions:] if max_sessions and max_sessions > 0 else sessions
     out = set()
     for s in take:
@@ -2434,7 +2459,7 @@ def recent_circuit_ids_from_history(history: Dict[str, Any], max_sessions: int =
 def last_circuit_signature_from_history(history: Dict[str, Any], mode: Optional[str] = None) -> Tuple[str, ...]:
     sessions = history.get("sessions") or []
     if mode:
-        sessions = [s for s in sessions if norm(s.get("mode", "")) == norm(mode)]
+        sessions = [s for s in sessions if _history_mode_matches(s.get("mode", ""), mode)]
     if not sessions:
         return tuple()
     last = sessions[-1]
@@ -2548,9 +2573,9 @@ def generate_session(
         if shooting_shots is None or shooting_shots <= 0:
             shooting_shots = max(120, int(max(1, shooting_min or 1) * 12))
 
-    # Strength: decide optional post-lift conditioning (unless user sets it)
+    # Performance: decide optional post-lift conditioning (unless user sets it)
     if include_post_lift_conditioning is None:
-        include_post_lift_conditioning = (session_mode == "strength" and session_len_min >= 45)
+        include_post_lift_conditioning = (session_mode == "performance" and session_len_min >= 45)
 
     for category, seconds in blocks:
         if category not in data:
@@ -2558,8 +2583,8 @@ def generate_session(
 
         focus_rule = get_focus_rules(focus, category)
 
-        # Strength
-        if session_mode == "strength" and category == "strength":
+        # Performance (strength)
+        if session_mode == "performance" and category == "performance":
             dt = (strength_day_type or "leg").lower().strip()
             if dt in ("lower", "lower_body", "legs", "leg_day"):
                 dt = "leg"
@@ -2568,7 +2593,7 @@ def generate_session(
             elif dt not in ("leg", "upper", "full"):
                 dt = "leg"
 
-            # Enforce minimum strength session length
+            # Enforce minimum performance session length
             session_len_min = max(20, session_len_min)
 
             include_finisher = include_post_lift_conditioning
@@ -2576,10 +2601,10 @@ def generate_session(
                 include_finisher = False
                 include_post_lift_conditioning = False
             strength_lines = build_hockey_strength_session(
-                strength_drills=data["strength"],
+                strength_drills=data["performance"],
                 warmups=data["warmup"],
                 mobility_drills=data["mobility"],
-                conditioning_drills=data["conditioning"],
+                conditioning_drills=data["energy_systems"],
                 circuits=data.get("circuits", []),
                 age=age,
                 rnd=rnd,
@@ -2618,11 +2643,11 @@ def generate_session(
                 lines.extend(build_shooting_from_defaults(chosen))
             continue
 
-        # Conditioning
-        if category == "conditioning":
+        # Energy Systems
+        if category == "energy_systems":
             minutes = max(1, seconds // 60)
-            c_drills = pick_conditioning_drills(data["conditioning"], age, rnd, minutes, focus_rule)
-            lines.append(f"\nCONDITIONING (~{minutes} min)")
+            c_drills = pick_conditioning_drills(data["energy_systems"], age, rnd, minutes, focus_rule)
+            lines.append(f"\nENERGY SYSTEMS (~{minutes} min)")
             lines.extend(build_conditioning_block(c_drills, seconds))
             continue
 
@@ -2654,8 +2679,8 @@ def generate_session(
                 lines.extend(build_stickhandling_circuit(picked, minutes * 60))
             continue
 
-        # Generic category
-        if category == "strength" and (not strength_full_gym):
+        # Generic category (movement, speed_agility, skating_mechanics, etc.)
+        if category == "performance" and (not strength_full_gym):
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age) and equipment_ok(d, "none")]
         else:
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age)]
@@ -2664,11 +2689,12 @@ def generate_session(
         count = 2 if minutes <= 8 else (3 if minutes <= 15 else 4)
         chosen = pick_n(drills, n=min(count, len(drills)) if drills else count, rnd=rnd, focus_rule=focus_rule)
 
-        lines.append(f"\n{category.upper()} (~{minutes} min)")
+        section_title = category.replace("_", " ").upper()
+        lines.append(f"\n{section_title} (~{minutes} min)")
         if not chosen:
             lines.append("- [No matching drills found]")
         else:
-            if category in ("movement",):
+            if category in ("movement", "speed_agility", "skating_mechanics"):
                 per = max(30, min(90, seconds // max(1, len(chosen) * 3)))
                 rounds = clamp(seconds // max(1, (per * len(chosen))), 2, 4)
                 lines.append(f"Time plan: {len(chosen)} drills | ~{per}s each | {rounds} rounds (~{format_seconds_short(per*len(chosen)*rounds)})")
@@ -2717,12 +2743,17 @@ def main():
 
     if session_mode is None:
         session_mode = norm(
-            input("\nSession mode (strength/movement/conditioning/stickhandling/shooting/skills_mixed/skills_only/recovery/mobility): ")
+            input("\nSession mode (performance/energy_systems/movement/speed_agility/skating_mechanics/stickhandling/shooting/skills_only/recovery/mobility): ")
         ).lower()
     else:
         print(f"Using preset session_mode: {session_mode}")
 
-    valid_modes = ("skills_only", "skills_mixed", "shooting", "stickhandling", "strength", "conditioning", "mobility", "movement", "recovery")
+    # Legacy aliases for backward compatibility
+    if session_mode == "performance":
+        session_mode = "performance"
+    if session_mode == "conditioning":
+        session_mode = "energy_systems"
+    valid_modes = ("skills_only", "skills_mixed", "shooting", "stickhandling", "performance", "energy_systems", "mobility", "movement", "speed_agility", "skating_mechanics", "recovery")
     if session_mode not in valid_modes:
         print("Unknown session mode. Defaulting to skills_mixed.")
         session_mode = "skills_mixed"
@@ -2739,15 +2770,15 @@ def main():
     post_lift_conditioning_type: Optional[str] = None
     skate_within_24h = False
 
-    if session_mode == "strength":
+    if session_mode == "performance":
         if strength_full_gym is None:
             fg = norm(input("Full gym available? (y/n): ")).lower()
             strength_full_gym = fg in ("y", "yes", "true", "1")
         else:
-            print(f"Using preset strength_full_gym: {strength_full_gym}")
+            print(f"Using preset full_gym: {strength_full_gym}")
 
         if strength_day_type is None:
-            strength_day_type = norm(input("Strength day type (leg/upper/full): ")).lower()
+            strength_day_type = norm(input("Performance day type (leg/upper/full): ")).lower()
         if strength_day_type not in ("leg", "upper", "full"):
             strength_day_type = "leg"
 
@@ -2755,7 +2786,7 @@ def main():
         skate_within_24h = sw in ("y", "yes", "true", "1")
 
         if include_post_lift_conditioning is None:
-            plc = norm(input("Include optional post-lift conditioning? (y/n/Enter=auto): ")).lower()
+            plc = norm(input("Include optional post-lift energy systems? (y/n/Enter=auto): ")).lower()
             if plc in ("y", "yes"):
                 include_post_lift_conditioning = True
             elif plc in ("n", "no"):
@@ -2763,13 +2794,13 @@ def main():
             else:
                 include_post_lift_conditioning = None
 
-        strength_emphasis_in = norm(input("Strength emphasis (power/strength/hypertrophy/recovery): ")).lower()
+        strength_emphasis_in = norm(input("Performance emphasis (power/strength/hypertrophy/recovery): ")).lower()
         if strength_emphasis_in in ("power", "strength", "hypertrophy", "recovery"):
             strength_emphasis = strength_emphasis_in
 
         if include_post_lift_conditioning:
             if strength_full_gym:
-                plc_type = norm(input("Post-lift conditioning type (bike/treadmill/surprise): ")).lower()
+                plc_type = norm(input("Post-lift energy systems type (bike/treadmill/surprise): ")).lower()
                 if plc_type in ("bike", "treadmill", "surprise"):
                     post_lift_conditioning_type = plc_type
             else:
