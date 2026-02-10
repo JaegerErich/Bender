@@ -223,6 +223,20 @@ def load_category(filename: str) -> List[Dict[str, Any]]:
     return load_json(path)
 
 
+def _load_category_or_fallback(primary: str, fallback: str) -> List[Dict[str, Any]]:
+    """Load primary file; if missing, try fallback (for deployment / legacy data)."""
+    try:
+        return load_category(primary)
+    except FileNotFoundError:
+        try:
+            return load_category(fallback)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f"Neither {primary} nor {fallback} found in {DATA_DIR}. "
+                f"Use {primary} (2026 naming) or keep {fallback} for backward compatibility."
+            )
+
+
 def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, Any]]]:
     global DATA_DIR
 
@@ -247,11 +261,11 @@ def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, 
         "movement": movement_combined,
         "speed_agility": speed_agility,
         "skating_mechanics": skating_mechanics,
-        "energy_systems": load_category("energy_systems.json"),
+        "energy_systems": _load_category_or_fallback("energy_systems.json", "conditioning.json"),
         "stickhandling": load_category("stickhandling.json"),
         "shooting": load_category("shooting.json"),
         "mobility": load_category("mobility.json"),
-        "performance": load_category("performance.json"),
+        "performance": _load_category_or_fallback("performance.json", "strength.json"),
         "circuits": load_category("circuits.json"),
     }
 
