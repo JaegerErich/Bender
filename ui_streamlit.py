@@ -542,8 +542,8 @@ if effective_mode == "performance":
         strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
         skate_within_24h = st.checkbox("Skate within 24h?", value=False)
     else:
-        day = st.selectbox("Circuit focus (no gym)", ["lower", "upper", "full"])
-        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+        # No-gym: premade circuit + mobility only; no circuit focus or post-lift options
+        strength_day_type = "full"
         strength_emphasis = "strength"
         skate_within_24h = False
 
@@ -561,9 +561,9 @@ elif effective_mode == "mobility":
 
 conditioning = False
 conditioning_type = None
-if effective_mode == "performance":
-    conditioning = st.checkbox("Post-lift energy systems?", value=False)
-    if conditioning and location == "gym":
+if effective_mode == "performance" and location == "gym":
+    conditioning = st.checkbox("Post-lift conditioning?", value=False)
+    if conditioning:
         conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
     else:
         conditioning_type = None
