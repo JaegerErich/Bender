@@ -472,9 +472,30 @@ st.markdown("""
         box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
     }
 
-    .stTabs [data-baseweb="tab-list"] { gap: 0.25rem; border-bottom: 1px solid #e2e8f0; }
-    .stTabs [data-baseweb="tab"] { font-family: 'DM Sans', sans-serif; color: #64748b; }
-    .stTabs [aria-selected="true"] { color: #0ea5e9 !important; }
+    /* Tabs: clearly separate Workout / Download / Feedback */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0.75rem;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-family: 'DM Sans', sans-serif;
+        color: #64748b;
+        padding: 0.5rem 1rem;
+        margin-right: 0.25rem;
+        border: 1px solid #e2e8f0;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        background: #f1f5f9;
+    }
+    .stTabs [data-baseweb="tab"]:first-child { margin-left: 0; }
+    .stTabs [aria-selected="true"] {
+        color: #0ea5e9 !important;
+        background: white !important;
+        border-color: #e2e8f0;
+        border-bottom: 1px solid white !important;
+        margin-bottom: -1px;
+    }
 
     .stButton button {
         font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important;
