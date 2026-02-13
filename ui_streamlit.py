@@ -2,6 +2,8 @@
 import os
 import random
 import re
+from datetime import datetime
+
 import streamlit as st
 import urllib.parse
 
@@ -149,7 +151,7 @@ def clear_last_output():
 # Pretty workout renderer (UI only)
 # -----------------------------
 _SECTION_RE = re.compile(
-    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility)\b",
+    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift)\b",
     re.IGNORECASE,
 )
 
@@ -180,6 +182,8 @@ def _header_style(title: str) -> str:
         return "Shooting"
     if "stickhandling" in t:
         return "Stickhandling"
+    if "post-lift" in t:
+        return "Post-Lift Conditioning"
     if "conditioning" in t or "energy systems" in t:
         return "Conditioning"
     if "speed agility" in t:
@@ -496,6 +500,20 @@ st.markdown("""
         border-bottom: 1px solid white !important;
         margin-bottom: -1px;
     }
+    .stTabs [data-baseweb="tab"]:hover { background: #e2e8f0 !important; }
+    .stTabs [data-baseweb="tab"]:focus-visible {
+        outline: 2px solid #0ea5e9; outline-offset: 2px;
+    }
+
+    /* Form card: session options container */
+    .main .block-container div[data-testid="stVerticalBlock"]:has(.form-card-marker) {
+        background: white;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+    }
 
     .stButton button {
         font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important;
@@ -524,141 +542,160 @@ if "last_output_text" not in st.session_state:
     st.session_state.last_output_text = None
 if "last_inputs_fingerprint" not in st.session_state:
     st.session_state.last_inputs_fingerprint = None
+if "scroll_to_workout" not in st.session_state:
+    st.session_state.scroll_to_workout = False
 
-# ---------- Main area: form (no sidebar) ----------
-st.markdown("#### Session options")
-c1, c2 = st.columns(2)
-with c1:
-    athlete_id = st.text_input("Athlete name", value="", placeholder="Enter name")
-with c2:
-    age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
-    age = int(age)
-minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+# ---------- Main area: form in card (no sidebar) ----------
+form_container = st.container()
+with form_container:
+    st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
+    st.markdown("#### Session options")
+    c1, c2 = st.columns(2)
+    with c1:
+        athlete_id = st.text_input("Athlete name", value="", placeholder="Enter name")
+    with c2:
+        age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
+        age = int(age)
+    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
 
-mode_label = st.selectbox("Mode", DISPLAY_MODES)
-mode = LABEL_TO_MODE[mode_label]
+    mode_label = st.selectbox("Mode", DISPLAY_MODES)
+    mode = LABEL_TO_MODE[mode_label]
 
-if mode == "puck_mastery":
-    skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-    effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
-else:
-    effective_mode = mode
-
-if effective_mode in ("performance", "energy_systems"):
-    location = st.selectbox("Location", ["gym", "no_gym"])
-else:
-    location = "no_gym"
-
-focus = None
-strength_day_type = None
-strength_emphasis = "strength"
-skate_within_24h = False
-conditioning_focus = None
-
-if effective_mode == "performance":
-    if location == "gym":
-        day = st.selectbox("Strength day", ["lower", "upper", "full"])
-        strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-        em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
-        strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-        skate_within_24h = st.checkbox("Skate within 24h?", value=False)
+    if mode == "puck_mastery":
+        skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+        effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
     else:
-        # No-gym: premade circuit + mobility only; no circuit focus or post-lift options
-        strength_day_type = "full"
-        strength_emphasis = "strength"
-        skate_within_24h = False
+        effective_mode = mode
 
-elif effective_mode == "energy_systems":
-    if location == "gym":
-        mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
-        conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
+    if effective_mode in ("performance", "energy_systems"):
+        location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
     else:
-        st.caption("No-gym: cones / no equipment")
-        conditioning_focus = "conditioning_cones"
-    focus = conditioning_focus
+        location = "no_gym"
 
-elif effective_mode == "mobility":
-    focus = "mobility"
+    focus = None
+    strength_day_type = None
+    strength_emphasis = "strength"
+    skate_within_24h = False
+    conditioning_focus = None
 
-conditioning = False
-conditioning_type = None
-if effective_mode == "performance" and location == "gym":
-    conditioning = st.checkbox("Post-lift conditioning?", value=False)
-    if conditioning:
-        conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
-    else:
-        conditioning_type = None
+    if effective_mode == "performance":
+        if location == "gym":
+            day = st.selectbox("Strength day", ["lower", "upper", "full"])
+            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+            em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+            strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+        else:
+            # No-gym: premade circuit + mobility only; no circuit focus or post-lift options
+            st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
+            strength_day_type = "full"
+            strength_emphasis = "strength"
+            skate_within_24h = False
 
+    elif effective_mode == "energy_systems":
+        if location == "gym":
+            mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
+            conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
+        else:
+            st.caption("No-gym: cones / no equipment")
+            conditioning_focus = "conditioning_cones"
+        focus = conditioning_focus
 
-# Auto-clear old output if key inputs change
-inputs_fingerprint = (
-    athlete_id.strip().lower(),
-    int(age),
-    int(minutes),
-    effective_mode,
-    location,
-    focus,
-    strength_day_type,
-    strength_emphasis,
-    skate_within_24h,
-    conditioning,
-    conditioning_type,
-)
+    elif effective_mode == "mobility":
+        focus = "mobility"
 
-if st.session_state.last_inputs_fingerprint is None:
-    st.session_state.last_inputs_fingerprint = inputs_fingerprint
-else:
-    if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
-        if st.session_state.last_session_id or st.session_state.last_output_text:
-            clear_last_output()
+    conditioning = False
+    conditioning_type = None
+    if effective_mode == "performance" and location == "gym":
+        conditioning = st.checkbox("Post-lift conditioning?", value=False)
+        if conditioning:
+            conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+        else:
+            conditioning_type = None
+
+    # Auto-clear old output if key inputs change
+    inputs_fingerprint = (
+        athlete_id.strip().lower(),
+        int(age),
+        int(minutes),
+        effective_mode,
+        location,
+        focus,
+        strength_day_type,
+        strength_emphasis,
+        skate_within_24h,
+        conditioning,
+        conditioning_type,
+    )
+
+    if st.session_state.last_inputs_fingerprint is None:
         st.session_state.last_inputs_fingerprint = inputs_fingerprint
-
-# Generate action (prominent in main area)
-col_btn, _ = st.columns([1, 3])
-with col_btn:
-    generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
-if generate_clicked:
-    if not athlete_id.strip():
-        st.error("Athlete Name is required.")
-    elif athlete_id.strip().lower() == "default":
-        st.error('Athlete Name "default" is not allowed.')
     else:
-        payload = {
-            "athlete_id": athlete_id.strip(),
-            "age": int(age),
-            "minutes": int(minutes),
-            "mode": effective_mode,
-            "focus": focus,  # controlled tokens only
-            "location": location,
-            # Strength tokens
-            "strength_day_type": strength_day_type,
-            "strength_emphasis": strength_emphasis,
-            "skate_within_24h": skate_within_24h,
-            # Post-lift conditioning
-            "conditioning": conditioning,
-            "conditioning_type": conditioning_type,
-        }
+        if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
+            if st.session_state.last_session_id or st.session_state.last_output_text:
+                clear_last_output()
+            st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        try:
-            with st.spinner("Generating workout..."):
-                if USE_API:
-                    resp = _generate_via_api(payload)
-                else:
-                    resp = _generate_via_engine(payload)
+    # Generate action (prominent in main area)
+    col_btn, _ = st.columns([1, 3])
+    with col_btn:
+        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+    if generate_clicked:
+        if not athlete_id.strip():
+            st.error("Athlete Name is required.")
+        elif athlete_id.strip().lower() == "default":
+            st.error('Athlete Name "default" is not allowed.')
+        else:
+            payload = {
+                "athlete_id": athlete_id.strip(),
+                "age": int(age),
+                "minutes": int(minutes),
+                "mode": effective_mode,
+                "focus": focus,  # controlled tokens only
+                "location": location,
+                # Strength tokens
+                "strength_day_type": strength_day_type,
+                "strength_emphasis": strength_emphasis,
+                "skate_within_24h": skate_within_24h,
+                # Post-lift conditioning
+                "conditioning": conditioning,
+                "conditioning_type": conditioning_type,
+            }
 
-            st.session_state.last_session_id = resp.get("session_id")
-            st.session_state.last_output_text = resp.get("output_text")
-            st.success("Generated")
-        except Exception as e:
-            st.error(str(e))
+            try:
+                with st.spinner("Generating workout..."):
+                    if USE_API:
+                        resp = _generate_via_api(payload)
+                    else:
+                        resp = _generate_via_engine(payload)
+
+                st.session_state.last_session_id = resp.get("session_id")
+                st.session_state.last_output_text = resp.get("output_text")
+                st.session_state.scroll_to_workout = True
+                st.success("Generated")
+            except Exception as e:
+                st.error(str(e))
 
 # -----------------------------
 # Display last generated workout (Tabbed)
 # -----------------------------
 if st.session_state.last_output_text:
     st.divider()
-
-    tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
+    # Anchor for scroll-after-generate
+    st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
+    if st.session_state.get("scroll_to_workout"):
+        st.session_state.scroll_to_workout = False
+        st.components.v1.html(
+            "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
+            height=0,
+        )
+    # Row: tabs + Clear workout
+    _col_tabs, _col_clear = st.columns([5, 1])
+    with _col_tabs:
+        tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
+    with _col_clear:
+        if st.button("Clear workout", type="secondary", use_container_width=True):
+            clear_last_output()
+            st.rerun()
 
     # -------------------------
     # TAB 1: Workout
@@ -680,18 +717,22 @@ if st.session_state.last_output_text:
     # TAB 2: Download / Copy
     # -------------------------
     with tab_download:
+        safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
+        date_str = datetime.now().strftime("%Y-%m-%d")
+        download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
         st.download_button(
             label="Download workout (.txt)",
             data=st.session_state.last_output_text,
-            file_name="bender_workout.txt",
+            file_name=download_filename,
             mime="text/plain",
         )
-
+        st.caption("Your browser will download the file when you click above.")
         st.write("")
 
         if not (effective_mode == "performance" and location == "no_gym"):
             with st.expander("Copy workout (raw text)"):
                 st.code(st.session_state.last_output_text)
+                st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
 
 
     # -------------------------

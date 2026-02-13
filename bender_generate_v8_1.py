@@ -1830,7 +1830,7 @@ def build_bw_strength_circuits(
             focus_rule=get_focus_rules(None, "energy_systems"),
         )
 
-        lines.append(f"\nPOST-LIFT ENERGY SYSTEMS (optional, ~{fin_min} min)")
+        lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
         if not fin_drills:
             lines.append("- [No matching no-equipment energy systems drills found]")
         else:
@@ -2502,7 +2502,7 @@ def build_hockey_strength_session(
         )
 
         fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "energy_systems"))
-        lines.append(f"\nPOST-LIFT ENERGY SYSTEMS (optional, ~{fin_min} min)")
+        lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
         if not fin_drills:
             lines.append("- [No energy systems drills found]")
         else:
