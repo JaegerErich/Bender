@@ -1984,7 +1984,9 @@ def build_hockey_strength_session(
         lines.append("- Any barbell exercise: use the bar only and work on technique.")
         lines.append("- Quality of movement matters more than load.")
 
-    pool = [d for d in strength_drills if is_active(d) and age_ok(d, age)]
+    # For gym + youth (13 & under), include drills marked 14+ so they get high fatigue & secondary (with form/bar-only guidance)
+    pool_age = max(age, 14) if (full_gym and age <= 13) else age
+    pool = [d for d in strength_drills if is_active(d) and age_ok(d, pool_age)]
     day_pool = [d for d in pool if _region_ok_for_day(d, day_type)]
 
     # Gym rule: avoid bodyweight lifts in main strength selections
