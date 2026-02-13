@@ -2492,13 +2492,16 @@ def build_hockey_strength_session(
                     )
                 )
 
-    # Optional Post-Lift Conditioning Finisher (Strength sessions only)
+    # Optional Post-Lift Conditioning Finisher (Strength sessions only; gym = bike or treadmill only)
     if include_finisher and not skate_within_24h:
         fin_min = 8 if session_len_min >= 60 else 6
+        plc_type = (post_lift_conditioning_type or "").strip().lower()
+        if plc_type == "surprise":
+            plc_type = rnd.choice(["bike", "treadmill"])
         cond_pool = filter_post_lift_conditioning_pool(
             conditioning_drills,
-            full_gym=False,
-            post_lift_conditioning_type=None,
+            full_gym=True,
+            post_lift_conditioning_type=plc_type or None,
         )
 
         fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "energy_systems"))
