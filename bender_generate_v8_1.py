@@ -1977,6 +1977,12 @@ def build_hockey_strength_session(
         else:
             lines.append(format_warmup_drill_compact(d))
 
+    # Youth (13 & under) gym guidance: form over weight, barbell = bar only
+    if full_gym and age <= 13:
+        lines.append("\nYOUTH (13 & UNDER) — GYM GUIDANCE")
+        lines.append("- Use low weight on all exercises. Focus on form over weight.")
+        lines.append("- Any barbell exercise: use the bar only and work on technique.")
+        lines.append("- Quality of movement matters more than load.")
 
     pool = [d for d in strength_drills if is_active(d) and age_ok(d, age)]
     day_pool = [d for d in pool if _region_ok_for_day(d, day_type)]

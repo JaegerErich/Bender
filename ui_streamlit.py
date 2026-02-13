@@ -151,7 +151,7 @@ def clear_last_output():
 # Pretty workout renderer (UI only)
 # -----------------------------
 _SECTION_RE = re.compile(
-    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift)\b",
+    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift|youth)\b",
     re.IGNORECASE,
 )
 
@@ -184,6 +184,8 @@ def _header_style(title: str) -> str:
         return "Stickhandling"
     if "post-lift" in t:
         return "Post-Lift Conditioning"
+    if "youth" in t:
+        return "Youth (13 & under) guidance"
     if "conditioning" in t or "energy systems" in t:
         return "Conditioning"
     if "speed agility" in t:
