@@ -1,0 +1,2505 @@
+[
+  {
+    "name": "Adam Benak",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "bench_power_watts_per_kg": 7.75
+  },
+  {
+    "name": "Aleksei Medvedev",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Arvid Drott",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_left_sec": 4.33,
+    "pro_agility_right_sec": 4.33
+  },
+  {
+    "name": "Asher Barnett",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 23.01
+  },
+  {
+    "name": "Benjamin Kindel",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_left_sec": 4.27
+  },
+  {
+    "name": "Bill Zonnon",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 24.36,
+    "pull_ups": 16
+  },
+  {
+    "name": "Blake Fiddler",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "Braeden Cootes",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_force_plate_in": 20.08,
+    "pull_ups": 15,
+    "bench_power_watts_per_kg": 7.23
+  },
+  {
+    "name": "Cameron Reid",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pull_ups": 14
+  },
+  {
+    "name": "Cameron Schmidt",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "bench_power_watts_per_kg": 7.82,
+    "pro_agility_right_sec": 4.21
+  },
+  {
+    "name": "Carlos Handel",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_force_plate_in": 20.87
+  },
+  {
+    "name": "Carter Amico",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "wingspan_in": 82.0
+  },
+  {
+    "name": "Carter Klippenstein",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 115.5,
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.19,
+    "pro_agility_left_sec": 4.32,
+    "pro_agility_right_sec": 4.2
+  },
+  {
+    "name": "Charlie Trethewey",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_left_sec": 4.24,
+    "pro_agility_right_sec": 4.21
+  },
+  {
+    "name": "Cole McKinney",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.62
+  },
+  {
+    "name": "Cole Reschny",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_right_sec": 4.28
+  },
+  {
+    "name": "Daniil Prokhorov",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "bench_power_watts_per_kg": 7.52
+  },
+  {
+    "name": "David Bedkovski",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "bench_power_watts_per_kg": 7.41
+  },
+  {
+    "name": "David Lewandowski",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pull_ups": 14
+  },
+  {
+    "name": "Eric Nilson",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pull_ups": 15
+  },
+  {
+    "name": "Haoxi (Simon) Wang",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 24.01,
+    "vertical_jump_force_plate_in": 21.25,
+    "wingspan_in": 82.25
+  },
+  {
+    "name": "Hayden Paupanekis",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Jack Nesbitt",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_left_sec": 4.25,
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Jacob Rombach",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_right_sec": 4.35,
+    "wingspan_in": 81.0
+  },
+  {
+    "name": "Jakob Ihs-Wozniak",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_left_sec": 4.26
+  },
+  {
+    "name": "James Hagens",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "height_in": 70.5
+  },
+  {
+    "name": "Kieren Dervin",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 25.1,
+    "vertical_jump_force_plate_in": 21.03,
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.56
+  },
+  {
+    "name": "Lynden Lakovic",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 117.0
+  },
+  {
+    "name": "Maceo Phillips",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 114.3,
+    "vertical_jump_in": 23.34,
+    "vertical_jump_force_plate_in": 21.25,
+    "bench_power_watts_per_kg": 7.64,
+    "wingspan_in": 82.0
+  },
+  {
+    "name": "Malcolm Spence",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 24.51
+  },
+  {
+    "name": "Max Psenicka",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 112.5
+  },
+  {
+    "name": "Milton Gastrin",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 24.01,
+    "vertical_jump_force_plate_in": 20.56,
+    "pro_agility_left_sec": 4.12,
+    "pro_agility_right_sec": 4.24
+  },
+  {
+    "name": "Peyton Kettles",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pro_agility_right_sec": 4.29
+  },
+  {
+    "name": "Porter Martone",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 112.0
+  },
+  {
+    "name": "Roger McQueen",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 112.8,
+    "height_in": 77.25
+  },
+  {
+    "name": "Ryker Lee",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_in": 25.67
+  },
+  {
+    "name": "Sascha Boumedienne",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "vertical_jump_force_plate_in": 20.05,
+    "pull_ups": 14
+  },
+  {
+    "name": "Sean Barnhill",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 118.0,
+    "vertical_jump_in": 23.07,
+    "vertical_jump_force_plate_in": 20.48,
+    "pro_agility_left_sec": 4.23,
+    "pro_agility_right_sec": 4.23
+  },
+  {
+    "name": "Shane Vansaghi",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "pull_ups": 15,
+    "bench_power_watts_per_kg": 7.59
+  },
+  {
+    "name": "Vaclav Nestrasil",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "wingspan_in": 79.25
+  },
+  {
+    "name": "William Belle",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 118.3,
+    "vertical_jump_in": 24.45,
+    "vertical_jump_force_plate_in": 21.92
+  },
+  {
+    "name": "William Horcoff",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 124.8,
+    "vertical_jump_force_plate_in": 22.84,
+    "pro_agility_left_sec": 4.23,
+    "pro_agility_right_sec": 4.29
+  },
+  {
+    "name": "William Moore",
+    "year": 2025,
+    "source": "nhl_combine_2025",
+    "standing_long_jump_in": 116.0,
+    "pro_agility_left_sec": 4.19,
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "AJ Spellacy",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 119.3,
+    "vertical_jump_force_plate_in": 22.64,
+    "pro_agility_right_sec": 4.24
+  },
+  {
+    "name": "Aatos Koivu",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 113.0
+  },
+  {
+    "name": "Adam Jecho",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Adam Kleber",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Alexis Bernier",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 114.5,
+    "pro_agility_right_sec": 4.28
+  },
+  {
+    "name": "Artyom Levshunov",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 22.64
+  },
+  {
+    "name": "Carson Wetsch",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 22.76,
+    "bench_power_watts_per_kg": 6.92
+  },
+  {
+    "name": "Cayden Lindstrom",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 7.69
+  },
+  {
+    "name": "Charlie Elick",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_left_sec": 4.33
+  },
+  {
+    "name": "Cole Beaudoin",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 8.71
+  },
+  {
+    "name": "Colton Roberts",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 13
+  },
+  {
+    "name": "Dean Letourneau",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 114.5,
+    "wingspan_in": 83.25
+  },
+  {
+    "name": "Dominik Badinka",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 113.0
+  },
+  {
+    "name": "EJ Emery",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 123.0,
+    "vertical_jump_force_plate_in": 27.23,
+    "pro_agility_right_sec": 4.23,
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Eriks Mateiko",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 80.25
+  },
+  {
+    "name": "Ethan Procyszyn",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 12,
+    "pro_agility_right_sec": 4.3
+  },
+  {
+    "name": "Gabriel Eliasson",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 81.0
+  },
+  {
+    "name": "Jack Pridham",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 114.5,
+    "vertical_jump_force_plate_in": 22.83,
+    "pull_ups": 13,
+    "pro_agility_left_sec": 4.34,
+    "pro_agility_right_sec": 4.29
+  },
+  {
+    "name": "Javon Moore",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 113.0
+  },
+  {
+    "name": "Jesse Pulkkinen",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Jett Luchanko",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 24.63,
+    "pro_agility_right_sec": 4.23
+  },
+  {
+    "name": "John Mustard",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 7.78,
+    "pro_agility_left_sec": 4.26
+  },
+  {
+    "name": "Kamil Bednarik",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 12,
+    "pro_agility_left_sec": 4.25
+  },
+  {
+    "name": "Kevin He",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 12
+  },
+  {
+    "name": "Konsta Helenius",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_left_sec": 4.34
+  },
+  {
+    "name": "Linus Eriksson",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 113.8
+  },
+  {
+    "name": "Lucas Pettersson",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_left_sec": 4.34
+  },
+  {
+    "name": "Lukas Fischer",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 15,
+    "bench_power_watts_per_kg": 8.26
+  },
+  {
+    "name": "Michael Brandsegg-Nygard",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_right_sec": 4.29
+  },
+  {
+    "name": "Michael Hage",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_left_sec": 4.29
+  },
+  {
+    "name": "Mikhail Yegorov",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "standing_long_jump_in": 115.8,
+    "vertical_jump_force_plate_in": 23.27
+  },
+  {
+    "name": "Nathan Villeneuve",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 6.88
+  },
+  {
+    "name": "Ollie Josephson",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 13
+  },
+  {
+    "name": "Raoul Boilard",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 7.42
+  },
+  {
+    "name": "Sam Dickinson",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 6.92,
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Sam O'Reilly",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 6.95,
+    "pro_agility_left_sec": 4.33,
+    "pro_agility_right_sec": 4.25
+  },
+  {
+    "name": "Sebastian Soini",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "bench_power_watts_per_kg": 7.54
+  },
+  {
+    "name": "Stian Solberg",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 23.84,
+    "pro_agility_left_sec": 4.12,
+    "pro_agility_right_sec": 4.08
+  },
+  {
+    "name": "Terik Parascak",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pro_agility_left_sec": 4.28,
+    "pro_agility_right_sec": 4.25
+  },
+  {
+    "name": "Tij Iginla",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 13
+  },
+  {
+    "name": "Tomas Lavoie",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Veeti Vaisanen",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 24.22
+  },
+  {
+    "name": "Will Skahan",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "vertical_jump_force_plate_in": 23.88,
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Zeev Buium",
+    "year": 2024,
+    "source": "nhl_combine_2024",
+    "pull_ups": 16
+  },
+  {
+    "name": "Andrew Gibson",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.26,
+    "pro_agility_right_sec": 4.36
+  },
+  {
+    "name": "Anton Wahlberg",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 77.5
+  },
+  {
+    "name": "Axel Sandin Pellikka",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "bench_power_watts_per_kg": 8.39
+  },
+  {
+    "name": "Beau Akey",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 116.0,
+    "vertical_jump_force_plate_in": 21.8,
+    "pro_agility_left_sec": 4.26,
+    "pro_agility_right_sec": 4.35
+  },
+  {
+    "name": "Brad Gardiner",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 7.04,
+    "pro_agility_left_sec": 4.24,
+    "pro_agility_right_sec": 4.35
+  },
+  {
+    "name": "Bradly Nadeau",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.06
+  },
+  {
+    "name": "Brady Cleveland",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_right_sec": 4.24,
+    "wingspan_in": 78.25
+  },
+  {
+    "name": "Brandon Svoboda",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.21,
+    "pro_agility_right_sec": 4.33,
+    "wingspan_in": 78.0
+  },
+  {
+    "name": "Caden Price",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "vertical_jump_force_plate_in": 22.83
+  },
+  {
+    "name": "Cameron Allen",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 117.0,
+    "vertical_jump_force_plate_in": 23.81,
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.09
+  },
+  {
+    "name": "Carey Terrance",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 112.0,
+    "vertical_jump_force_plate_in": 22.0
+  },
+  {
+    "name": "Carsen Musser",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "Charlie Stramel",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 118.0,
+    "vertical_jump_force_plate_in": 22.71,
+    "bench_power_watts_per_kg": 7.92
+  },
+  {
+    "name": "Colby Barlow",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "vertical_jump_force_plate_in": 22.96
+  },
+  {
+    "name": "Connor Bedard",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pull_ups": 14
+  },
+  {
+    "name": "Danny Nelson",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pull_ups": 14
+  },
+  {
+    "name": "David Reinbacher",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 112.0
+  },
+  {
+    "name": "Easton Cowan",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.04,
+    "pro_agility_right_sec": 4.09
+  },
+  {
+    "name": "Ethan Gauthier",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.26
+  },
+  {
+    "name": "Hunter Brzustewicz",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_right_sec": 4.36
+  },
+  {
+    "name": "Jaden Lipinski",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pull_ups": 13,
+    "wingspan_in": 77.75
+  },
+  {
+    "name": "Jakub Stancl",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Jayden Perron",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.22
+  },
+  {
+    "name": "Jesse Nurmi",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "vertical_jump_force_plate_in": 21.99
+  },
+  {
+    "name": "Jonathan Castagna",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "bench_power_watts_per_kg": 7.07,
+    "pro_agility_left_sec": 4.09,
+    "pro_agility_right_sec": 4.16
+  },
+  {
+    "name": "Larry Keenan",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Lukas Dragicevic",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "bench_power_watts_per_kg": 7.58
+  },
+  {
+    "name": "Mathieu Cataford",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "bench_power_watts_per_kg": 7.61
+  },
+  {
+    "name": "Matteo Mann",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 80.5
+  },
+  {
+    "name": "Maxim Strbak",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 112.8
+  },
+  {
+    "name": "Michael Hrabal",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 82.51
+  },
+  {
+    "name": "Nate Danielson",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 111.5,
+    "vertical_jump_force_plate_in": 22.05,
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 7.03
+  },
+  {
+    "name": "Nick Lardis",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 114.5,
+    "vertical_jump_force_plate_in": 25.49,
+    "pull_ups": 15
+  },
+  {
+    "name": "Oliver Moore",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "vertical_jump_force_plate_in": 21.7,
+    "pull_ups": 13,
+    "pro_agility_left_sec": 4.13
+  },
+  {
+    "name": "Ryan Leonard",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "bench_power_watts_per_kg": 7.13
+  },
+  {
+    "name": "Samuel Honzek",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 117.5,
+    "pro_agility_right_sec": 4.32
+  },
+  {
+    "name": "Scott Ratzlaff",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_right_sec": 4.32
+  },
+  {
+    "name": "Tom Willander",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "standing_long_jump_in": 116.5
+  },
+  {
+    "name": "William Whitelaw",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "pro_agility_left_sec": 4.24
+  },
+  {
+    "name": "Zachary Nehring",
+    "year": 2023,
+    "source": "nhl_combine_2023",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Adam Ingram",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 77.0
+  },
+  {
+    "name": "Aleksanteri Kaskimaki",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "vertical_jump_force_plate_in": 21.28
+  },
+  {
+    "name": "Alexander Suzdalev",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 77.5
+  },
+  {
+    "name": "Brennan Ali",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 9.07,
+    "pro_agility_left_sec": 4.42,
+    "pro_agility_right_sec": 4.59
+  },
+  {
+    "name": "Cameron Lund",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pro_agility_right_sec": 4.61
+  },
+  {
+    "name": "Christian Kyrou",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 7.99,
+    "pro_agility_left_sec": 4.44,
+    "pro_agility_right_sec": 4.38
+  },
+  {
+    "name": "Conor Geekie",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 77.75
+  },
+  {
+    "name": "Cutter Gauthier",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 112.0,
+    "vertical_jump_force_plate_in": 19.78,
+    "pull_ups": 15,
+    "pro_agility_left_sec": 4.46
+  },
+  {
+    "name": "Dylan James",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 112.0
+  },
+  {
+    "name": "Fabian Wagner",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 112.0,
+    "vertical_jump_force_plate_in": 21.29
+  },
+  {
+    "name": "Filip Bystedt",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 77.75
+  },
+  {
+    "name": "Filip Mesar",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 9.43
+  },
+  {
+    "name": "Frank Nazar",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 112.0,
+    "vertical_jump_force_plate_in": 21.69
+  },
+  {
+    "name": "Hunter Haight",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 16
+  },
+  {
+    "name": "Isaac Howard",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 16
+  },
+  {
+    "name": "Isaiah George",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 115.0,
+    "vertical_jump_force_plate_in": 21.73,
+    "pro_agility_right_sec": 4.59
+  },
+  {
+    "name": "Jack Devine",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 15
+  },
+  {
+    "name": "Jack Hughes",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 111.5,
+    "vertical_jump_force_plate_in": 19.94,
+    "pull_ups": 19,
+    "bench_power_watts_per_kg": 8.49,
+    "pro_agility_left_sec": 4.4,
+    "pro_agility_right_sec": 4.55
+  },
+  {
+    "name": "Jack Sparkes",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Jackson Edward",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 8.03
+  },
+  {
+    "name": "Jake Karabela",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 18,
+    "bench_power_watts_per_kg": 8.79,
+    "pro_agility_right_sec": 4.54
+  },
+  {
+    "name": "Julian Lutz",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 17,
+    "pro_agility_left_sec": 4.38
+  },
+  {
+    "name": "Lane Hutson",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 18,
+    "bench_power_watts_per_kg": 8.13
+  },
+  {
+    "name": "Liam Arnsby",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 9.06
+  },
+  {
+    "name": "Lian Bichsel",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Logan Cooley",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "vertical_jump_force_plate_in": 19.43
+  },
+  {
+    "name": "Marco Kasper",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pro_agility_left_sec": 4.49
+  },
+  {
+    "name": "Marek Hejduk",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 110.0,
+    "vertical_jump_force_plate_in": 21.28
+  },
+  {
+    "name": "Matthew Poitras",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pull_ups": 17
+  },
+  {
+    "name": "Matyas Sapovaliv",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 110.0,
+    "pro_agility_left_sec": 4.44
+  },
+  {
+    "name": "Maveric Lamoureux",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 117.5,
+    "vertical_jump_force_plate_in": 20.82,
+    "pro_agility_left_sec": 4.43,
+    "pro_agility_right_sec": 4.48,
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "Michael Fisher",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pro_agility_left_sec": 4.33,
+    "pro_agility_right_sec": 4.25
+  },
+  {
+    "name": "Noah Warren",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 82.0
+  },
+  {
+    "name": "Owen Beck",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "standing_long_jump_in": 114.5,
+    "vertical_jump_force_plate_in": 19.63,
+    "pull_ups": 16,
+    "pro_agility_right_sec": 4.42
+  },
+  {
+    "name": "Ryan Greene",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pro_agility_right_sec": 4.59
+  },
+  {
+    "name": "Sam Rinzel",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 8.09
+  },
+  {
+    "name": "Seamus Casey",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "bench_power_watts_per_kg": 9.03
+  },
+  {
+    "name": "Shane Wright",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "pro_agility_left_sec": 4.49
+  },
+  {
+    "name": "Topias Leinonen",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Tyler Brennan",
+    "year": 2022,
+    "source": "nhl_combine_2022",
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Albin Grewe",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 22.14
+  },
+  {
+    "name": "Alex Newhook",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_left_sec": 4.25
+  },
+  {
+    "name": "Alex Vlasic",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Alexander Campbell",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 22.18,
+    "pull_ups": 13
+  },
+  {
+    "name": "Artemi Kniazev",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 16,
+    "pro_agility_left_sec": 4.35
+  },
+  {
+    "name": "Brayden Tracey",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_left_sec": 4.36
+  },
+  {
+    "name": "Brett Leason",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_right_sec": 4.35,
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Cade Webber",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 113.5,
+    "pro_agility_left_sec": 4.33,
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "Case McCarthy",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "bench_power_watts_per_kg": 6.84
+  },
+  {
+    "name": "Cole Caufield",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 23.08,
+    "pull_ups": 16,
+    "bench_power_watts_per_kg": 7.07
+  },
+  {
+    "name": "Drew Helleson",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 111.5
+  },
+  {
+    "name": "Dylan Cozens",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 112.0
+  },
+  {
+    "name": "Harrison Blaisdell",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "bench_power_watts_per_kg": 6.83,
+    "pro_agility_left_sec": 4.31
+  },
+  {
+    "name": "Henry Thrun",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 111.8,
+    "pull_ups": 14,
+    "bench_power_watts_per_kg": 7.11,
+    "pro_agility_right_sec": 4.38
+  },
+  {
+    "name": "Hugo Alnefelt",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 24.28
+  },
+  {
+    "name": "Hunter Jones",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 116.5,
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Jakob Pelletier",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_right_sec": 4.34
+  },
+  {
+    "name": "Jayden Struble",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 117.8,
+    "vertical_jump_force_plate_in": 23.88,
+    "bench_power_watts_per_kg": 9.42
+  },
+  {
+    "name": "John Beecher",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 115.3
+  },
+  {
+    "name": "Judd Caulfield",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 116.3,
+    "vertical_jump_force_plate_in": 22.98
+  },
+  {
+    "name": "Kaedan Korczak",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_left_sec": 4.26,
+    "wingspan_in": 78.0
+  },
+  {
+    "name": "Kirby Dach",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_right_sec": 4.35
+  },
+  {
+    "name": "Mads Sogaard",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Marshall Warren",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 26.05
+  },
+  {
+    "name": "Matthew Robertson",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "bench_power_watts_per_kg": 7.36
+  },
+  {
+    "name": "Matvey Guskov",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_left_sec": 4.31,
+    "pro_agility_right_sec": 4.34
+  },
+  {
+    "name": "Michael Vukojevic",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "bench_power_watts_per_kg": 6.6
+  },
+  {
+    "name": "Mikhail Abramov",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 16
+  },
+  {
+    "name": "Moritz Seider",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Nathan Legare",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_left_sec": 4.36
+  },
+  {
+    "name": "Nicholas Robertson",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 15,
+    "pro_agility_right_sec": 4.32
+  },
+  {
+    "name": "Nils Hoglander",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 16,
+    "bench_power_watts_per_kg": 7.98,
+    "pro_agility_left_sec": 4.36,
+    "pro_agility_right_sec": 4.34
+  },
+  {
+    "name": "Nolan Foote",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 78.0
+  },
+  {
+    "name": "Peyton Krebs",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 15
+  },
+  {
+    "name": "Philip Broberg",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 78.25
+  },
+  {
+    "name": "Raphael Lavoie",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Samuel Bolduc",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 113.3,
+    "vertical_jump_force_plate_in": 23.82,
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 7.2,
+    "pro_agility_right_sec": 4.28
+  },
+  {
+    "name": "Samuel Poulin",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pro_agility_right_sec": 4.38
+  },
+  {
+    "name": "Spencer Knight",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "standing_long_jump_in": 117.0,
+    "vertical_jump_force_plate_in": 23.58,
+    "pro_agility_left_sec": 4.29,
+    "pro_agility_right_sec": 4.32
+  },
+  {
+    "name": "Trevor Janicke",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "pull_ups": 15,
+    "bench_power_watts_per_kg": 7.82
+  },
+  {
+    "name": "Yegor Spiridonov",
+    "year": 2019,
+    "source": "nhl_combine_2019",
+    "vertical_jump_force_plate_in": 22.22
+  },
+  {
+    "name": "Aidan Dudas",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_left_sec": 4.3,
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Andrei Svechnikov",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 7.25,
+    "pro_agility_right_sec": 4.3
+  },
+  {
+    "name": "Barrett Hayton",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "vertical_jump_in": 23.31
+  },
+  {
+    "name": "Benoit-Olivier Groulx",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 13
+  },
+  {
+    "name": "Blake McLaughlin",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 13
+  },
+  {
+    "name": "Carter Robertson",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 111.5
+  },
+  {
+    "name": "Curtis Douglas",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 81.25
+  },
+  {
+    "name": "Evan Bouchard",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 14
+  },
+  {
+    "name": "Gabriel Fortier",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "vertical_jump_in": 23.82,
+    "pull_ups": 13,
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Jack Gorniak",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 111.8,
+    "vertical_jump_in": 23.71,
+    "bench_power_watts_per_kg": 7.74,
+    "pro_agility_left_sec": 4.3,
+    "pro_agility_right_sec": 4.3
+  },
+  {
+    "name": "Jack McBain",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_left_sec": 4.4,
+    "wingspan_in": 81.25
+  },
+  {
+    "name": "Jacob Bernard-Docker",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 15,
+    "pro_agility_left_sec": 4.3,
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Jacob Ingham",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 115.0,
+    "vertical_jump_in": 22.63,
+    "pro_agility_left_sec": 4.4,
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Jake Wise",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Jakub Lauko",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 111.3,
+    "vertical_jump_in": 23.56
+  },
+  {
+    "name": "Jakub Skarek",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Jay O'Brien",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 7.21
+  },
+  {
+    "name": "Jonathan Tychonick",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_left_sec": 4.2,
+    "pro_agility_right_sec": 4.2
+  },
+  {
+    "name": "Jordan Harris",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "vertical_jump_in": 22.78,
+    "pull_ups": 14
+  },
+  {
+    "name": "K'Andre Miller",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 113.5,
+    "vertical_jump_in": 23.98,
+    "wingspan_in": 79.75
+  },
+  {
+    "name": "Keegan Karki",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Kevin Bahl",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 7.3,
+    "wingspan_in": 81.75
+  },
+  {
+    "name": "Kevin Mandolese",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 80.25
+  },
+  {
+    "name": "Liam Foudy",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 118.8,
+    "vertical_jump_in": 27.65,
+    "bench_power_watts_per_kg": 7.72,
+    "pro_agility_left_sec": 4.2,
+    "pro_agility_right_sec": 4.3
+  },
+  {
+    "name": "Martin Fehervary",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 113.5,
+    "vertical_jump_in": 24.1,
+    "pull_ups": 13,
+    "bench_power_watts_per_kg": 7.59,
+    "pro_agility_left_sec": 4.4
+  },
+  {
+    "name": "Matej Pekar",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 13
+  },
+  {
+    "name": "Mattias Samuelsson",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Mitchell Hoelscher",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 7.11
+  },
+  {
+    "name": "Mitchell Hoelsher",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pull_ups": 13
+  },
+  {
+    "name": "Nils Lundkvist",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 114.5,
+    "vertical_jump_in": 26.7
+  },
+  {
+    "name": "Noah Dobson",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 110.3,
+    "pro_agility_left_sec": 4.4
+  },
+  {
+    "name": "Oliver Wahlstrom",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 7.25
+  },
+  {
+    "name": "Olivier Rodrigue",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "standing_long_jump_in": 111.5
+  },
+  {
+    "name": "Rasmus Kupari",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 8.25
+  },
+  {
+    "name": "Sampo Ranta",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Ty Emberson",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "bench_power_watts_per_kg": 8.03
+  },
+  {
+    "name": "Xavier Bernard",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Xavier Bouchard",
+    "year": 2018,
+    "source": "nhl_combine_2018",
+    "pro_agility_left_sec": 4.4,
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Aleksi Heponiemi",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 11
+  },
+  {
+    "name": "Alex Formenton",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "vertical_jump_in": 23.63
+  },
+  {
+    "name": "Antoine Morand",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 13,
+    "bench_press": 15
+  },
+  {
+    "name": "Cale Makar",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 109.3,
+    "vertical_jump_in": 23.69,
+    "pro_agility_left_sec": 4.52,
+    "pro_agility_right_sec": 4.39
+  },
+  {
+    "name": "Callan Foote",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_left_sec": 4.5
+  },
+  {
+    "name": "Clayton Phillips",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 11
+  },
+  {
+    "name": "D'artagnan Joly",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "bench_press": 14
+  },
+  {
+    "name": "Dayton Rasmussen",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 113.3,
+    "vertical_jump_in": 25.56,
+    "bench_press": 17
+  },
+  {
+    "name": "Eemeli Rasanen",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Filip Chytil",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "vertical_jump_in": 22.62
+  },
+  {
+    "name": "Henri Jokiharju",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 111.8,
+    "vertical_jump_in": 22.84
+  },
+  {
+    "name": "Ian Scott",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 117.5,
+    "vertical_jump_in": 23.45,
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Isaac Ratcliffe",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 113.5,
+    "pro_agility_left_sec": 4.55,
+    "wingspan_in": 81.29
+  },
+  {
+    "name": "Ivan Lodnia",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_right_sec": 4.46
+  },
+  {
+    "name": "Jack Rathbone",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 13,
+    "bench_press": 15
+  },
+  {
+    "name": "Jack Studnicka",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_right_sec": 4.51
+  },
+  {
+    "name": "Jacob Paquette",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 78.74
+  },
+  {
+    "name": "Jake Leschyshyn",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "bench_press": 16
+  },
+  {
+    "name": "Jarret Tyszka",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Jonah Gadjovich",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 11,
+    "bench_press": 15
+  },
+  {
+    "name": "Josh Brook",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "bench_press": 16
+  },
+  {
+    "name": "Joshua Norris",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 118,
+    "vertical_jump_in": 26.19,
+    "bench_press": 15,
+    "pro_agility_left_sec": 4.19,
+    "pro_agility_right_sec": 4.19
+  },
+  {
+    "name": "Juuso Valimaki",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_left_sec": 4.45
+  },
+  {
+    "name": "Kailer Yamamoto",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 12,
+    "pro_agility_left_sec": 4.38,
+    "pro_agility_right_sec": 4.2
+  },
+  {
+    "name": "Kale Howarth",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Keith Petruzzelli",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Lane Zablocki",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "bench_press": 15
+  },
+  {
+    "name": "Mario Ferraro",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 12,
+    "pro_agility_left_sec": 4.46,
+    "pro_agility_right_sec": 4.42
+  },
+  {
+    "name": "Mason Shaw",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "bench_press": 15
+  },
+  {
+    "name": "Maxime Comtois",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 109.5,
+    "pro_agility_right_sec": 4.46
+  },
+  {
+    "name": "Michael Rasmussen",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 79.25
+  },
+  {
+    "name": "Morgan Frost",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 114.3,
+    "vertical_jump_in": 24.63
+  },
+  {
+    "name": "Morgan Geekie",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 114.5,
+    "vertical_jump_in": 24.4,
+    "pull_ups": 11,
+    "pro_agility_left_sec": 4.46,
+    "pro_agility_right_sec": 4.41
+  },
+  {
+    "name": "Nico Hischier",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 13
+  },
+  {
+    "name": "Pierre-Olivier Joseph",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_right_sec": 4.48
+  },
+  {
+    "name": "Robin Salo",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "vertical_jump_in": 22.54
+  },
+  {
+    "name": "Scott Reedy",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_left_sec": 4.46,
+    "pro_agility_right_sec": 4.41
+  },
+  {
+    "name": "Thomas Miller",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pro_agility_left_sec": 4.55
+  },
+  {
+    "name": "Timothy Liljegren",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "standing_long_jump_in": 111.5
+  },
+  {
+    "name": "Ukko-Pekka Luukkonen",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "wingspan_in": 78.75
+  },
+  {
+    "name": "Zach Gallant",
+    "year": 2017,
+    "source": "nhl_combine_2017",
+    "pull_ups": 12,
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Artur Kayumov",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 13
+  },
+  {
+    "name": "Auston Matthews",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_left_sec": 4.48
+  },
+  {
+    "name": "Boris Katchouk",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 113.5
+  },
+  {
+    "name": "Brett Murray",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 81.0
+  },
+  {
+    "name": "Cameron Morrison",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_left_sec": 4.4
+  },
+  {
+    "name": "Carl Grundstrom",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 14
+  },
+  {
+    "name": "Carter Hart",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 12
+  },
+  {
+    "name": "Chad Krys",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 25.59
+  },
+  {
+    "name": "Clayton Keller",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 12
+  },
+  {
+    "name": "Connor Bunnaman",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_left_sec": 4.49
+  },
+  {
+    "name": "Dillon Dube",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 13
+  },
+  {
+    "name": "Dylan Wells",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 116.3
+  },
+  {
+    "name": "German Rubtsov",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 14
+  },
+  {
+    "name": "Givani Smith",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 113.8,
+    "wingspan_in": 80.25
+  },
+  {
+    "name": "Graham McPhee",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 14
+  },
+  {
+    "name": "Griffin Luce",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 11
+  },
+  {
+    "name": "Jack Kopacka",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 11
+  },
+  {
+    "name": "Jakob Chychrun",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 118.5,
+    "vertical_jump_in": 25.28
+  },
+  {
+    "name": "James Greenway",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Jonathan Ang",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 114.0,
+    "pull_ups": 15,
+    "pro_agility_left_sec": 4.47
+  },
+  {
+    "name": "Jordan Kyrou",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 24.61,
+    "pro_agility_left_sec": 4.35,
+    "pro_agility_right_sec": 4.33
+  },
+  {
+    "name": "Joseph Raaymakers",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_left_sec": 4.42,
+    "pro_agility_right_sec": 4.43,
+    "wingspan_in": 78.25
+  },
+  {
+    "name": "Julien Gauthier",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 120.0,
+    "vertical_jump_in": 26.69
+  },
+  {
+    "name": "Keaton Middleton",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Logan Brown",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 79.5
+  },
+  {
+    "name": "Logan Stanley",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 82.75
+  },
+  {
+    "name": "Luke Green",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 23.66,
+    "pro_agility_left_sec": 4.31,
+    "pro_agility_right_sec": 4.19
+  },
+  {
+    "name": "Luke Kunin",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 113.5,
+    "vertical_jump_in": 28.98,
+    "pro_agility_right_sec": 4.37
+  },
+  {
+    "name": "Matt Filipe",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 13,
+    "pro_agility_right_sec": 4.44
+  },
+  {
+    "name": "Matthew Cairns",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_left_sec": 4.3,
+    "pro_agility_right_sec": 4.33
+  },
+  {
+    "name": "Max Zimmer",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 24.17,
+    "pro_agility_left_sec": 4.48,
+    "pro_agility_right_sec": 4.43
+  },
+  {
+    "name": "Mitchell Mattson",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 25.59
+  },
+  {
+    "name": "Nathan Bastian",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 79.0
+  },
+  {
+    "name": "Nicholas Caamano",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 11
+  },
+  {
+    "name": "Noah Gregor",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 25.28,
+    "pull_ups": 11
+  },
+  {
+    "name": "Pierre-Luc Dubois",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 114.3,
+    "pull_ups": 11,
+    "pro_agility_left_sec": 4.5,
+    "pro_agility_right_sec": 4.33
+  },
+  {
+    "name": "Rasmus Asplund",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 11
+  },
+  {
+    "name": "Riley Tufte",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Sam Steel",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pull_ups": 13
+  },
+  {
+    "name": "Samuel Girard",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 15
+  },
+  {
+    "name": "Trent Frederic",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 114.5,
+    "pro_agility_right_sec": 4.41
+  },
+  {
+    "name": "Ty Ronning",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "pro_agility_right_sec": 4.46
+  },
+  {
+    "name": "Tyson Jost",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "bench_press": 14
+  },
+  {
+    "name": "Vojtech Budik",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "standing_long_jump_in": 113.3,
+    "bench_press": 14
+  },
+  {
+    "name": "Wade Allison",
+    "year": 2016,
+    "source": "nhl_combine_2016",
+    "vertical_jump_in": 23.74,
+    "bench_press": 13
+  },
+  {
+    "name": "Adin Hill",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 80.25
+  },
+  {
+    "name": "Austin Wagner",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 115.4,
+    "vertical_jump_in": 28.74
+  },
+  {
+    "name": "Blake Speers",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_left_sec": 4.38,
+    "pro_agility_right_sec": 4.29
+  },
+  {
+    "name": "Brandon Carlo",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 80.5,
+    "height_in": 77
+  },
+  {
+    "name": "Brendan Guhle",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 122,
+    "vertical_jump_in": 26.77,
+    "pull_ups": 12,
+    "bench_press": 15,
+    "pro_agility_left_sec": 4.47,
+    "pro_agility_right_sec": 4.39
+  },
+  {
+    "name": "Brendan Warren",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 12
+  },
+  {
+    "name": "Callum Booth",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_left_sec": 4.5,
+    "wingspan_in": 81.0
+  },
+  {
+    "name": "Chris Martenet",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 115.0,
+    "wingspan_in": 80.0,
+    "height_in": 79
+  },
+  {
+    "name": "Colin White",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 113.4,
+    "vertical_jump_in": 25.0,
+    "pro_agility_left_sec": 4.34,
+    "pro_agility_right_sec": 4.21
+  },
+  {
+    "name": "Connor Hobbs",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "bench_press": 17
+  },
+  {
+    "name": "Connor McDavid",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_left_sec": 4.43
+  },
+  {
+    "name": "Daniel Vladar",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 84.0,
+    "height_in": 77.25
+  },
+  {
+    "name": "Dennis Yan",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 14
+  },
+  {
+    "name": "Deven Sideroff",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "bench_press": 15
+  },
+  {
+    "name": "Dylan Strome",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_right_sec": 4.47
+  },
+  {
+    "name": "Erik Cernak",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 79.25
+  },
+  {
+    "name": "Erik Foley",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "vertical_jump_in": 24.64,
+    "pull_ups": 12,
+    "bench_press": 17,
+    "pro_agility_right_sec": 4.38
+  },
+  {
+    "name": "Evgeny Svechnikov",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "bench_press": 16
+  },
+  {
+    "name": "Felix Sandstrom",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 12
+  },
+  {
+    "name": "Gustav Bouramman",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "vertical_jump_in": 23.7
+  },
+  {
+    "name": "Jack Eichel",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 115.0,
+    "vertical_jump_in": 26.18,
+    "bench_press": 16,
+    "pro_agility_left_sec": 4.48,
+    "pro_agility_right_sec": 4.24
+  },
+  {
+    "name": "Jesse Gabrielle",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 11,
+    "bench_press": 20
+  },
+  {
+    "name": "Jordan Greenway",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 12,
+    "wingspan_in": 80.5,
+    "height_in": 76.75
+  },
+  {
+    "name": "Karch Bachman",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "vertical_jump_in": 23.74,
+    "pro_agility_left_sec": 4.43,
+    "pro_agility_right_sec": 4.39
+  },
+  {
+    "name": "Kyle Connor",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 12,
+    "bench_press": 15
+  },
+  {
+    "name": "Lawson Crouse",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 116.1
+  },
+  {
+    "name": "MacKenzie Blackwood",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "vertical_jump_in": 27.28
+  },
+  {
+    "name": "Mackenzie Blackwood",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 118.9
+  },
+  {
+    "name": "Mathieu Joseph",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_right_sec": 4.42
+  },
+  {
+    "name": "Mitchell Stephens",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_left_sec": 4.48
+  },
+  {
+    "name": "Nathan Noel",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pull_ups": 12
+  },
+  {
+    "name": "Noah Hanifin",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "bench_press": 15
+  },
+  {
+    "name": "Paul Bittner",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 80.0
+  },
+  {
+    "name": "Roope Hintz",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 78.5
+  },
+  {
+    "name": "Ryan Gropp",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 112.2,
+    "vertical_jump_in": 27.44
+  },
+  {
+    "name": "Thomas Chabot",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "vertical_jump_in": 24.02
+  },
+  {
+    "name": "Travis Konecny",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 111.0,
+    "pull_ups": 13,
+    "bench_press": 16
+  },
+  {
+    "name": "Tyler Soy",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "pro_agility_left_sec": 4.46,
+    "pro_agility_right_sec": 4.4
+  },
+  {
+    "name": "Yakov Trenin",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "wingspan_in": 80.75
+  },
+  {
+    "name": "Zachary Senyshyn",
+    "year": 2015,
+    "source": "nhl_combine_2015",
+    "standing_long_jump_in": 115.0,
+    "pro_agility_left_sec": 4.42
+  }
+]
