@@ -219,7 +219,7 @@ def render_workout_readable(text: str) -> None:
             if title:
                 tag = _header_style(title)
                 st.markdown(
-                    f"**<span style='color:#14532d'>{title}</span>**  \n<span style='opacity:.8; color:#4d7c0f; font-size:0.9em'>{tag}</span>",
+                    f"**<span style='color:#0f172a'>{title}</span>**  \n<span style='opacity:.8; color:#64748b; font-size:0.9em'>{tag}</span>",
                     unsafe_allow_html=True,
                 )
 
@@ -452,11 +452,11 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-    .stApp { background: #f7fef7; }
+    .stApp { background: #f8fafc; }
     .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; }
-    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #14532d !important; letter-spacing: -0.02em; }
-    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #4d7c0f; font-size: 0.95rem; margin-bottom: 1.25rem; }
-    label { font-family: 'DM Sans', sans-serif !important; color: #166534 !important; }
+    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #0f172a !important; letter-spacing: -0.02em; }
+    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
+    label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
     /* Form card */
     .form-card {
@@ -465,13 +465,13 @@ st.markdown("""
         padding: 1.25rem 1.5rem;
         margin-bottom: 1.25rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #bbf7d0;
+        border: 1px solid #e2e8f0;
     }
 
     /* Workout result cards */
     [data-testid="stVerticalBlockBorderWrapper"] {
         background: white !important;
-        border: 1px solid #bbf7d0 !important;
+        border: 1px solid #e2e8f0 !important;
         border-radius: 12px !important;
         padding: 1rem 1.25rem !important;
         margin-bottom: 0.75rem !important;
@@ -481,30 +481,30 @@ st.markdown("""
     /* Tabs: clearly separate Workout / Download / Feedback */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.75rem;
-        border-bottom: 1px solid #bbf7d0;
+        border-bottom: 1px solid #e2e8f0;
         padding-bottom: 0;
     }
     .stTabs [data-baseweb="tab"] {
         font-family: 'DM Sans', sans-serif;
-        color: #4d7c0f;
+        color: #64748b;
         padding: 0.5rem 1rem;
         margin-right: 0.25rem;
-        border: 1px solid #bbf7d0;
+        border: 1px solid #e2e8f0;
         border-bottom: none;
         border-radius: 8px 8px 0 0;
-        background: #fef9c3;
+        background: #f1f5f9;
     }
     .stTabs [data-baseweb="tab"]:first-child { margin-left: 0; }
     .stTabs [aria-selected="true"] {
-        color: #166534 !important;
+        color: #0ea5e9 !important;
         background: white !important;
-        border-color: #bbf7d0;
+        border-color: #e2e8f0;
         border-bottom: 1px solid white !important;
         margin-bottom: -1px;
     }
-    .stTabs [data-baseweb="tab"]:hover { background: #fef08a !important; }
+    .stTabs [data-baseweb="tab"]:hover { background: #e2e8f0 !important; }
     .stTabs [data-baseweb="tab"]:focus-visible {
-        outline: 2px solid #16a34a; outline-offset: 2px;
+        outline: 2px solid #0ea5e9; outline-offset: 2px;
     }
 
     /* Form card: session options container */
@@ -514,23 +514,23 @@ st.markdown("""
         padding: 1.25rem 1.5rem;
         margin-bottom: 1.25rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #bbf7d0;
+        border: 1px solid #e2e8f0;
     }
 
     .stButton button {
         font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important;
-        background: #16a34a !important; color: white !important; border: none !important;
+        background: #0ea5e9 !important; color: white !important; border: none !important;
         border-radius: 8px !important; padding: 0.5rem 1.5rem !important;
     }
-    .stButton button:hover { background: #15803d !important; }
+    .stButton button:hover { background: #0284c7 !important; }
 
-    .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #14532d; font-size: 1.05rem; margin-bottom: 0.35rem; }
+    .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #0f172a; font-size: 1.05rem; margin-bottom: 0.35rem; }
     .workout-result-badge {
-        display: inline-block; background: #fef08a; color: #166534;
+        display: inline-block; background: #e0f2fe; color: #0369a1;
         padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.75rem;
     }
-    .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #166534 !important; }
-    .stCaption { color: #4d7c0f !important; }
+    .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #334155 !important; }
+    .stCaption { color: #64748b !important; }
 </style>
 """, unsafe_allow_html=True)
 
