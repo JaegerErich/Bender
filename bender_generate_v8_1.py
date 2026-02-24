@@ -973,15 +973,17 @@ def build_shooting_by_shots(drills: List[Dict[str, Any]], target_shots: int) -> 
     target_shots = sum(per_drill)
 
     def split_sets(shots: int) -> str:
-        sets = max(1, min(6, round(shots / 10)))
-        per_set = max(10, shots // sets)
-        planned = sets * per_set
-        last_set = per_set + (shots - planned)
+        # Simple set x rep format; choose sets so reps are round (10–25). Total ≈ shots for time.
+        sets = max(1, min(6, round(shots / 12)))
+        reps = max(10, round(shots / sets))
+        total = sets * reps
+        if total < shots and sets < 6:
+            sets += 1
+            reps = max(10, round(shots / sets))
+            total = sets * reps
         if sets == 1:
-            return f"{shots} shots"
-        if last_set == per_set:
-            return f"{sets} x {per_set} shots"
-        return f"{sets-1} x {per_set} + 1 x {last_set} shots"
+            return f"{reps} shots"
+        return f"{sets} x {reps} shots"
 
     lines: List[str] = []
     lines.append(f"Target volume: {target_shots} total shots | Min {min_shots_per_drill}/drill")
@@ -2125,6 +2127,16 @@ def build_hockey_strength_session(
     hf_candidates = _avoid_movement_pattern(hf_candidates, mp_avoid)
 
     hf_pick = _pick_by_filter(hf_candidates, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if not hf_pick and hf_pool:
+        hf_pick = _pick_by_filter(hf_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if not hf_pick and day_pool:
+        remaining = [d for d in day_pool if norm(get(d, "id", "")) not in used_ids]
+        if remaining:
+            hf_pick = [rnd.choice(remaining)]
+        else:
+            hf_pick = [rnd.choice(day_pool)]
+        if hf_pick:
+            used_ids.add(norm(get(hf_pick[0], "id", "")))
     if hf_pick and _is_upper_day(day_type):
         upper_strength_picks.append(hf_pick[0])
     if hf_pick and _is_upper_day(day_type):
@@ -2175,7 +2187,7 @@ def build_hockey_strength_session(
         else:
             # Fallback: render high fatigue only
             lines.append("\nHIGH FATIGUE (1 exercise)")
-            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH) or _rx_for("strength", FATIGUE_ROLE_HIGH)
             if rx:
                 lines.append(
                     format_strength_drill_with_prescription(
@@ -2192,7 +2204,7 @@ def build_hockey_strength_session(
         lines.append("\nHIGH FATIGUE (1 exercise)")
         if hf_pick:
             d = hf_pick[0]
-            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
+            rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH) or _rx_for("strength", FATIGUE_ROLE_HIGH)
             if rx:
                 lines.append(
                     format_strength_drill_with_prescription(
@@ -2278,6 +2290,22 @@ def build_hockey_strength_session(
         )
     else:
         sec_a = _pick_by_filter(sec_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+
+    if not sec_a:
+        sec_pool_wider = [
+            d for d in day_pool
+            if norm(get(d, "id", "")) not in used_ids
+            and not is_stability_candidate(d)
+        ]
+        if hf_pick:
+            sec_pool_wider = _avoid_movement_pattern(sec_pool_wider, movement_pattern(hf_pick[0]))
+        sec_a = _pick_by_filter(sec_pool_wider, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if not sec_a:
+        any_left = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
+        if any_left:
+            sec_a = _pick_by_filter(any_left, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
+    if not sec_a and pool:
+        sec_a = [rnd.choice([d for d in pool if not is_stability_candidate(d)] or pool)]
 
     # After SEC A is chosen, always mark used + track upper variety
     if sec_a:

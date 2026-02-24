@@ -289,30 +289,39 @@ def _header_style(title: str) -> str:
 def render_workout_readable(text: str) -> None:
     """
     Renders engine text into clean sections:
-    - Section headers become bold titles inside bordered cards
-    - Drill lines stay as bullets
-    - Other guidance lines become small text
+    - Each section is in an expander (expand/collapse)
+    - "Expand all" / "Collapse all" buttons above the workout
     """
     if not text:
         return
 
-    lines = text.splitlines()
+    if "workout_expand_all" not in st.session_state:
+        st.session_state.workout_expand_all = False
 
+    expand_all = st.session_state.workout_expand_all
+
+    # Buttons to expand or collapse all sections
+    btn_col1, btn_col2, _ = st.columns([1, 1, 4])
+    with btn_col1:
+        if st.button("Expand all", key="workout_expand_all_btn"):
+            st.session_state.workout_expand_all = True
+            st.rerun()
+    with btn_col2:
+        if st.button("Collapse all", key="workout_collapse_all_btn"):
+            st.session_state.workout_expand_all = False
+            st.rerun()
+
+    lines = text.splitlines()
     current_title = None
     buffer: list[str] = []
 
     def flush_section(title: str, body_lines: list[str]) -> None:
         if not title and not body_lines:
             return
-
-        with st.container(border=True):
-            if title:
-                tag = _header_style(title)
-                st.markdown(
-                    f"**<span style='color:#0f172a'>{title}</span>**  \n<span style='opacity:.8; color:#64748b; font-size:0.9em'>{tag}</span>",
-                    unsafe_allow_html=True,
-                )
-
+        label = (title.strip() or "Section")
+        tag = _header_style(title) if title else ""
+        expander_label = f"{label} — {tag}" if tag else label
+        with st.expander(expander_label, expanded=expand_all):
             for ln in body_lines:
                 s = ln.strip()
                 if not s:
@@ -345,6 +354,20 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     if not text:
         return
 
+    if "workout_expand_all" not in st.session_state:
+        st.session_state.workout_expand_all = False
+    expand_all = st.session_state.workout_expand_all
+
+    btn_col1, btn_col2, _ = st.columns([1, 1, 4])
+    with btn_col1:
+        if st.button("Expand all", key="workout_expand_all_btn"):
+            st.session_state.workout_expand_all = True
+            st.rerun()
+    with btn_col2:
+        if st.button("Collapse all", key="workout_collapse_all_btn"):
+            st.session_state.workout_expand_all = False
+            st.rerun()
+
     lines = text.splitlines()
 
     def find_first_exact(targets: tuple[str, ...], start: int = 0) -> int:
@@ -362,6 +385,15 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
             if s:
                 out.append(lines[j])
         return out
+
+    def render_in_expander(label: str, tag: str, body: list[str]) -> None:
+        with st.expander(f"{label} — {tag}", expanded=expand_all):
+            for ln in body:
+                s = ln.strip()
+                if s.startswith("-"):
+                    st.markdown(s)
+                else:
+                    st.caption(s)
 
     # ---- headers we care about ----
     CIRCUIT_HEADERS = {"CIRCUIT A", "CIRCUIT B"}
@@ -387,16 +419,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     if warmup_start != -1:
         warmup_end = circuits_start if circuits_start != -1 and circuits_start > warmup_start else len(lines)
         warmup_body = [ln for ln in lines[warmup_start + 1 : warmup_end] if ln.strip()]
-
-        with st.container(border=True):
-            st.subheader("WARMUP")
-            st.caption("Strength Circuits")
-            for ln in warmup_body:
-                s = ln.strip()
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
+        render_in_expander("WARMUP", "Strength Circuits", warmup_body)
 
     # ---- Find first Circuit A, then first Circuit B after that ----
     a_start = find_first_exact(("CIRCUIT A",))
@@ -406,32 +429,13 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
 
     b_start = find_first_exact(("CIRCUIT B",), start=a_start + 1)
 
-    # Circuit A
     a_body = grab_section(a_start, STOP_HEADERS)
-    with st.container(border=True):
-        st.subheader("CIRCUIT A")
-        st.caption("Strength Circuits")
-        for ln in a_body:
-            s = ln.strip()
-            if s.startswith("-"):
-                st.markdown(s)
-            else:
-                st.caption(s)
+    render_in_expander("CIRCUIT A", "Strength Circuits", a_body)
 
-    # Circuit B (optional)
     if b_start != -1:
         b_body = grab_section(b_start, STOP_HEADERS)
-        with st.container(border=True):
-            st.subheader("CIRCUIT B")
-            st.caption("Strength Circuits")
-            for ln in b_body:
-                s = ln.strip()
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
+        render_in_expander("CIRCUIT B", "Strength Circuits", b_body)
 
-    # ---- Mobility (optional): render if present ----
     mob_start = -1
     for i, ln in enumerate(lines):
         if ln.strip().startswith("MOBILITY"):
@@ -440,18 +444,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
 
     if mob_start != -1:
         mob_body = grab_section(mob_start, STOP_HEADERS)
-        with st.container(border=True):
-            st.subheader(lines[mob_start].strip())
-            st.caption("Mobility")
-            for ln in mob_body:
-                s = ln.strip()
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
-
-
-    return
+        render_in_expander(lines[mob_start].strip(), "Mobility", mob_body)
 
 CACHE_VERSION = "2026-02-06"  # bump this when data files change
 
@@ -705,6 +698,7 @@ if st.session_state.current_user_id is None:
         placeholder="e.g. John Smith",
         autocomplete="name",
     )
+    create_age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1, key="create_age")
     create_password = st.text_input("Password", key="create_password", type="password")
     create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
     if st.button("Create account", key="btn_create"):
@@ -726,6 +720,7 @@ if st.session_state.current_user_id is None:
                 profile = {
                     "user_id": uid,
                     "display_name": create_username,
+                    "age": int(create_age),
                     "equipment": [],
                     "equipment_setup_done": False,
                     "password_salt": salt_hex,
@@ -781,7 +776,7 @@ if not _equipment_setup_done(st.session_state.current_profile or {}):
 
 display_name = (st.session_state.current_profile or {}).get("display_name") or st.session_state.current_user_id or ""
 
-# Sidebar: equipment (dynamic list from data) + log out
+# Sidebar: equipment (dynamic list from data) + Sign out
 with st.sidebar:
     st.markdown(f"**{display_name}**")
     st.divider()
@@ -808,27 +803,37 @@ with st.sidebar:
         save_profile(prof)
         st.success("Saved")
         st.rerun()
-    if st.button("Log out", key="sidebar_logout"):
+    if st.button("Sign out", key="sidebar_logout"):
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
         st.session_state.page = "main"
-        st.rerun()  # Shows landing (Create account / Log in)
+        st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
+# Signed-in line + Sign out (visible in main area)
+_col_user, _col_signout = st.columns([4, 1])
+with _col_user:
+    st.caption(f"Signed in as **{display_name}**")
+with _col_signout:
+    if st.button("Sign out", key="main_signout"):
+        st.session_state.current_user_id = None
+        st.session_state.current_profile = None
+        st.session_state.page = "main"
+        st.rerun()
+
 # Athlete = logged-in user (for history, download filename, feedback)
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
 athlete_id = athlete_id.strip() or "athlete"
 
 form_container = st.container()
+# Age from profile (set at account creation)
+age = int((st.session_state.current_profile or {}).get("age") or 16)
+age = max(6, min(99, age))
+
 with form_container:
     st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
     st.markdown("#### Session options")
-    c1, c2 = st.columns(2)
-    with c1:
-        age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
-        age = int(age)
-    with c2:
-        minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
     minutes = int(minutes)
 
     mode_label = st.selectbox("Mode", DISPLAY_MODES)

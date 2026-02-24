@@ -36,6 +36,7 @@ def main():
     profile = {
         "user_id": user_id,
         "display_name": display_name,
+        "age": 16,
         "equipment": ["None"],
         "equipment_setup_done": True,
         "password_salt": salt_hex,
