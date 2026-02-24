@@ -1,0 +1,3 @@
+id,name,status,movement_bucket,tags,movement_direction,skating_phase,coordination_level,default_duration_sec,intensity,age_min,age_max,equipment,space,step_by_step,coaching_cues,video_url,session_type,Plyo,inspired_by,coach_preference
+MC_007,Carioca (Crossover Run),active,lateral_movement,"crossover, rotation, coordination",lateral,transitions,moderate,60,low-med,10,99,None,10 yd lane,Crossover run laterally down and back,Hips rotate naturally,,"movement,conditioning,circuit",FALSE,self,1
+MC_025,Crossover Step Holds,active,lateral_movement,"crossover, lateral, balance_control",lateral,change_of_direction,moderate,45,low-med,10,99,None,6x6 ft,Crossover step and hold position,Hip control,,"movement,conditioning,circuit",FALSE,self,1

@@ -1,11 +1,90 @@
 # ui_streamlit.py
+import json
 import os
 import random
 import re
 from datetime import datetime
+from pathlib import Path
 
 import streamlit as st
 import urllib.parse
+
+# Profile storage (data/profiles/*.json)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROFILE_DIR = Path(BASE_DIR) / "data" / "profiles"
+
+# Equipment options for profile (token-friendly; "Full gym" = no filter)
+EQUIPMENT_OPTIONS = [
+    "Full gym",
+    "Barbell",
+    "Barbell & rack",
+    "Barbell & bench",
+    "Dumbbell",
+    "Dumbbells",
+    "Kettlebell",
+    "Bench",
+    "Box",
+    "Pull-up bar",
+    "Rings",
+    "Resistance band",
+    "Band",
+    "Cable machine",
+    "Medicine ball",
+    "Trap bar",
+    "Landmine setup",
+    "Cones",
+    "Ladder",
+    "Hurdles",
+    "Mini hurdles",
+    "Stick & puck",
+    "Shooting pad & pucks",
+    "Wall",
+    "None",
+]
+
+
+def _sanitize_user_id(name: str) -> str:
+    s = re.sub(r"[^\w\-]", "_", (name or "").strip().lower())
+    return s[:80] if s else ""
+
+
+def _profile_path(user_id: str) -> Path:
+    return PROFILE_DIR / f"{user_id}.json"
+
+
+def load_profile(user_id: str) -> dict | None:
+    path = _profile_path(user_id)
+    if not path.exists():
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def save_profile(profile: dict) -> None:
+    user_id = (profile.get("user_id") or "").strip()
+    if not user_id:
+        return
+    PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    path = _profile_path(user_id)
+    profile["updated_at"] = datetime.now().isoformat()
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(profile, f, indent=2)
+
+
+def list_profiles() -> list[dict]:
+    if not PROFILE_DIR.exists():
+        return []
+    out = []
+    for p in PROFILE_DIR.glob("*.json"):
+        try:
+            with open(p, encoding="utf-8") as f:
+                out.append(json.load(f))
+        except Exception:
+            continue
+    return sorted(out, key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
 
 
 # Optional API mode (off by default)
@@ -407,6 +486,10 @@ def _generate_via_engine(payload: dict) -> dict:
     stickhandling_min = payload.get("stickhandling_min", None)
     shooting_min = payload.get("shooting_min", None)
 
+    profile = st.session_state.get("current_profile") or {}
+    user_equipment = list(profile.get("equipment") or [])
+    if "Full gym" in user_equipment:
+        user_equipment = None
     out_text = ENGINE.generate_session(
         data=data,
         age=age,
@@ -427,6 +510,7 @@ def _generate_via_engine(payload: dict) -> dict:
         include_post_lift_conditioning=include_post_lift_conditioning,
         post_lift_conditioning_type=post_lift_conditioning_type,
         skate_within_24h=skate_within_24h,
+        user_equipment=user_equipment,
     )
 
     # Lightweight "session_id" for display/share later (not persisted)
@@ -546,6 +630,96 @@ if "last_inputs_fingerprint" not in st.session_state:
     st.session_state.last_inputs_fingerprint = None
 if "scroll_to_workout" not in st.session_state:
     st.session_state.scroll_to_workout = False
+if "current_user_id" not in st.session_state:
+    st.session_state.current_user_id = None
+if "current_profile" not in st.session_state:
+    st.session_state.current_profile = None
+if "page" not in st.session_state:
+    st.session_state.page = "main"
+
+# ---------- Login: require profile ----------
+if st.session_state.current_user_id is None:
+    st.markdown("#### Sign in or create a profile")
+    existing = list_profiles()
+    if existing:
+        options = ["— New profile —"] + [p.get("display_name") or p.get("user_id", "") for p in existing]
+        choice = st.selectbox("Select profile or create new", options)
+        if choice and choice != "— New profile —":
+            idx = options.index(choice) - 1
+            prof = existing[idx]
+            if st.button("Continue as this user"):
+                st.session_state.current_user_id = prof.get("user_id", "")
+                st.session_state.current_profile = prof
+                st.session_state.page = "main"
+                st.rerun()
+        else:
+            login_name = st.text_input("Your name (new profile)", placeholder="Enter name")
+            if st.button("Create and continue") and login_name.strip():
+                uid = _sanitize_user_id(login_name)
+                if not uid or uid == "default":
+                    st.error("Please enter a valid name.")
+                else:
+                    st.session_state.current_user_id = uid
+                    st.session_state.current_profile = {
+                        "user_id": uid,
+                        "display_name": login_name.strip(),
+                        "equipment": [],
+                        "created_at": datetime.now().isoformat(),
+                        "updated_at": datetime.now().isoformat(),
+                    }
+                    save_profile(st.session_state.current_profile)
+                    st.session_state.page = "main"
+                    st.rerun()
+    else:
+        login_name = st.text_input("Your name", placeholder="Enter your name to start")
+        if st.button("Continue") and login_name.strip():
+            uid = _sanitize_user_id(login_name)
+            if not uid or uid == "default":
+                st.error("Please enter a valid name.")
+            else:
+                st.session_state.current_user_id = uid
+                st.session_state.current_profile = {
+                    "user_id": uid,
+                    "display_name": login_name.strip(),
+                    "equipment": [],
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                }
+                save_profile(st.session_state.current_profile)
+                st.session_state.page = "main"
+                st.rerun()
+    st.stop()
+
+# ---------- Equipment page ----------
+if st.session_state.page == "equipment":
+    prof = st.session_state.current_profile or {}
+    st.markdown("#### My equipment")
+    st.caption("Workouts will only include exercises that use equipment you have. Select everything that applies.")
+    selected = []
+    for opt in EQUIPMENT_OPTIONS:
+        if st.checkbox(opt, value=opt in (prof.get("equipment") or [])):
+            selected.append(opt)
+    if st.button("Save equipment"):
+        prof["equipment"] = selected
+        st.session_state.current_profile = prof
+        save_profile(prof)
+        st.session_state.page = "main"
+        st.success("Saved.")
+        st.rerun()
+    if st.button("Back to workout"):
+        st.session_state.page = "main"
+        st.rerun()
+    st.stop()
+
+# ---------- Main app: header with profile + equipment link ----------
+display_name = (st.session_state.current_profile or {}).get("display_name") or st.session_state.current_user_id or ""
+col_head1, col_head2 = st.columns([3, 1])
+with col_head1:
+    st.caption(f"Logged in as **{display_name}**")
+with col_head2:
+    if st.button("My equipment", use_container_width=True):
+        st.session_state.page = "equipment"
+        st.rerun()
 
 # ---------- Main area: form in card (no sidebar) ----------
 form_container = st.container()
@@ -647,6 +821,10 @@ with form_container:
         elif athlete_id.strip().lower() == "default":
             st.error('Athlete Name "default" is not allowed.')
         else:
+            profile = st.session_state.get("current_profile") or {}
+            user_equipment = list(profile.get("equipment") or [])
+            if "Full gym" in user_equipment:
+                user_equipment = None
             payload = {
                 "athlete_id": athlete_id.strip(),
                 "age": int(age),
@@ -661,6 +839,7 @@ with form_container:
                 # Post-lift conditioning
                 "conditioning": conditioning,
                 "conditioning_type": conditioning_type,
+                "user_equipment": user_equipment,
             }
 
             try:

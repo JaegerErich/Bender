@@ -197,6 +197,29 @@ def equipment_ok(d: Dict[str, Any], equip_level: str) -> bool:
     return any(k in joined for k in BASIC_EQUIP_KEYWORDS)
 
 
+def equipment_ok_for_user(d: Dict[str, Any], user_equipment: Optional[List[str]]) -> bool:
+    """
+    True if the drill only requires equipment that is in user_equipment.
+    If user_equipment is None or empty, treat as no restriction (allow all).
+    If user_equipment contains 'full_gym' or 'full', allow all.
+    """
+    if not user_equipment:
+        return True
+    user_set = {_equip_norm(t) for t in user_equipment if t}
+    if "full_gym" in user_set or "full" in user_set:
+        return True
+    eq = drill_equipment_list(d)
+    if not eq:
+        return True
+    for need in eq:
+        if not any(
+            ut in need or need in ut
+            for ut in user_set
+        ):
+            return False
+    return True
+
+
 def preference_score(d: Dict[str, Any]) -> int:
     cp = get(d, "coach_preference", default="")
     if norm(cp) == "":
@@ -1924,6 +1947,7 @@ def build_hockey_strength_session(
     full_gym: bool = True,
     post_lift_conditioning_type: Optional[str] = None,
     skate_within_24h: bool = False,
+    user_equipment: Optional[List[str]] = None,
 ) -> List[str]:    
     # No gym: circuits only
     if not full_gym:
@@ -1987,6 +2011,8 @@ def build_hockey_strength_session(
     # For gym + youth (13 & under), include drills marked 14+ so they get high fatigue & secondary (with form/bar-only guidance)
     pool_age = max(age, 14) if (full_gym and age <= 13) else age
     pool = [d for d in strength_drills if is_active(d) and age_ok(d, pool_age)]
+    if user_equipment is not None:
+        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
     day_pool = [d for d in pool if _region_ok_for_day(d, day_type)]
 
     # Gym rule: avoid bodyweight lifts in main strength selections
@@ -2707,6 +2733,7 @@ def generate_session(
     include_post_lift_conditioning: Optional[bool] = None,
     post_lift_conditioning_type: Optional[str] = None,
     skate_within_24h: bool = False,
+    user_equipment: Optional[List[str]] = None,
     primary_signal: Optional[str] = None,
     **kwargs,
 ) -> str:
@@ -2805,6 +2832,7 @@ def generate_session(
                 full_gym=strength_full_gym,
                 post_lift_conditioning_type=post_lift_conditioning_type,
                 skate_within_24h=skate_within_24h,
+                user_equipment=user_equipment,
             )
             return _finalize_and_return("\n".join(lines + strength_lines))
 
@@ -2883,6 +2911,8 @@ def generate_session(
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age) and equipment_ok(d, "none")]
         else:
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age)]
+        if user_equipment is not None:
+            drills = [d for d in drills if equipment_ok_for_user(d, user_equipment)]
 
         minutes = max(1, seconds // 60)
         count = 2 if minutes <= 8 else (3 if minutes <= 15 else 4)
