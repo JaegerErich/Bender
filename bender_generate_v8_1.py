@@ -2139,6 +2139,15 @@ def build_hockey_strength_session(
             hf_pick = [rnd.choice(day_pool)]
         if hf_pick:
             used_ids.add(norm(get(hf_pick[0], "id", "")))
+    # Final fallback: pool has drills but day_pool was empty or all filtered out — pick any from pool
+    if not hf_pick and pool:
+        any_remaining = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
+        if any_remaining:
+            hf_pick = [rnd.choice(any_remaining)]
+            used_ids.add(norm(get(hf_pick[0], "id", "")))
+        else:
+            hf_pick = [rnd.choice(pool)]
+            used_ids.add(norm(get(hf_pick[0], "id", "")))
     if hf_pick and _is_upper_day(day_type):
         upper_strength_picks.append(hf_pick[0])
     if hf_pick and _is_upper_day(day_type):

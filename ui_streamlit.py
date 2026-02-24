@@ -307,9 +307,10 @@ def render_workout_readable(text: str) -> None:
             return
         label = (title.strip() or "Section")
         tag = _header_style(title) if title else ""
-        # Only warm-up gets a dropdown; rest of workout is always visible
+        # Only warm-up gets a dropdown; rest of workout is always visible. Bold "WARMUP", same size.
         if is_warmup_header(title):
-            expander_label = f"{label} — {tag}" if tag else label
+            warmup_display = "**WARMUP**" + (label[6:] if label.upper().startswith("WARMUP") else "")
+            expander_label = f"{warmup_display} — {tag}" if tag else warmup_display
             with st.expander(expander_label):
                 for ln in body_lines:
                     s = ln.strip()
@@ -419,7 +420,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     if warmup_start != -1:
         warmup_end = circuits_start if circuits_start != -1 and circuits_start > warmup_start else len(lines)
         warmup_body = [ln for ln in lines[warmup_start + 1 : warmup_end] if ln.strip()]
-        render_section("WARMUP", "Strength Circuits", warmup_body, as_dropdown=True)
+        render_section("**WARMUP**", "Strength Circuits", warmup_body, as_dropdown=True)
 
     # ---- Find first Circuit A, then first Circuit B after that ----
     a_start = find_first_exact(("CIRCUIT A",))
