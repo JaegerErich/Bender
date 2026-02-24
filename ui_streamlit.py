@@ -1,8 +1,10 @@
 # ui_streamlit.py
+import hashlib
 import json
 import os
 import random
 import re
+import secrets
 from datetime import datetime
 from pathlib import Path
 
@@ -12,6 +14,39 @@ import urllib.parse
 # Profile storage (data/profiles/*.json)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROFILE_DIR = Path(BASE_DIR) / "data" / "profiles"
+
+PBKDF2_ITERATIONS = 100_000
+
+
+def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
+    """Return (salt_hex, hash_hex). If salt is None, generate a new one."""
+    if salt is None:
+        salt = secrets.token_bytes(16)
+    else:
+        salt = salt if isinstance(salt, bytes) else bytes.fromhex(salt)
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt,
+        PBKDF2_ITERATIONS,
+    )
+    return salt.hex(), key.hex()
+
+
+def _verify_password(password: str, salt_hex: str, hash_hex: str) -> bool:
+    """Return True if password matches stored salt+hash."""
+    try:
+        _, derived_hex = _hash_password(password, bytes.fromhex(salt_hex))
+        return secrets.compare_digest(derived_hex, hash_hex)
+    except Exception:
+        return False
+
+
+def _user_id_taken(user_id: str) -> bool:
+    """True if a profile already exists with this user_id."""
+    if not user_id:
+        return False
+    return _profile_path(user_id).exists()
 
 
 def _sanitize_user_id(name: str) -> str:
@@ -464,8 +499,6 @@ def _generate_via_engine(payload: dict) -> dict:
 
     profile = st.session_state.get("current_profile") or {}
     user_equipment = list(profile.get("equipment") or [])
-    if "Full gym" in user_equipment:
-        user_equipment = None
     out_text = ENGINE.generate_session(
         data=data,
         age=age,
@@ -613,48 +646,87 @@ if "current_profile" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "main"
 
-# ---------- Login: Create account or Log in ----------
+# ---------- Landing: Create account or Log in ----------
 if st.session_state.current_user_id is None:
     st.markdown("#### Welcome to Bender")
-    existing = list_profiles()
     tab_create, tab_login = st.tabs(["Create account", "Log in"])
+
     with tab_create:
-        st.caption("New here? Create an account to get started.")
-        create_name = st.text_input("Your name", key="create_name", placeholder="Enter your name")
-        if st.button("Create account", key="btn_create") and create_name.strip():
-            uid = _sanitize_user_id(create_name)
-            if not uid or uid == "default":
-                st.error("Please enter a valid name.")
+        st.caption("Create an account to get started. You’ll set your equipment next.")
+        create_username = st.text_input(
+            "Username (your first and last name)",
+            key="create_username",
+            placeholder="e.g. John Smith",
+            autocomplete="name",
+        )
+        create_password = st.text_input("Password", key="create_password", type="password")
+        create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
+        if st.button("Create account", key="btn_create"):
+            create_username = (create_username or "").strip()
+            if not create_username:
+                st.error("Please enter your first and last name.")
+            elif not create_password:
+                st.error("Please enter a password.")
+            elif create_password != create_confirm:
+                st.error("Passwords do not match.")
             else:
-                st.session_state.current_user_id = uid
-                st.session_state.current_profile = {
-                    "user_id": uid,
-                    "display_name": create_name.strip(),
-                    "equipment": [],
-                    "equipment_setup_done": False,
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat(),
-                }
-                save_profile(st.session_state.current_profile)
-                st.session_state.page = "equipment_onboarding"
-                st.rerun()
-    with tab_login:
-        if not existing:
-            st.caption("No accounts yet. Create one in the other tab.")
-        else:
-            st.caption("Choose your profile to continue.")
-            options = [p.get("display_name") or p.get("user_id", "") for p in existing]
-            choice = st.selectbox("Profile", options, key="login_select")
-            if st.button("Log in", key="btn_login") and choice:
-                idx = options.index(choice)
-                prof = existing[idx]
-                st.session_state.current_user_id = prof.get("user_id", "")
-                st.session_state.current_profile = prof
-                if not _equipment_setup_done(prof):
-                    st.session_state.page = "equipment_onboarding"
+                uid = _sanitize_user_id(create_username)
+                if not uid or uid == "default":
+                    st.error("Please enter a valid first and last name.")
+                elif _user_id_taken(uid):
+                    st.error("That username is already taken. Please choose another or log in.")
                 else:
-                    st.session_state.page = "main"
-                st.rerun()
+                    salt_hex, hash_hex = _hash_password(create_password)
+                    st.session_state.current_user_id = uid
+                    st.session_state.current_profile = {
+                        "user_id": uid,
+                        "display_name": create_username,
+                        "equipment": [],
+                        "equipment_setup_done": False,
+                        "password_salt": salt_hex,
+                        "password_hash": hash_hex,
+                        "created_at": datetime.now().isoformat(),
+                        "updated_at": datetime.now().isoformat(),
+                    }
+                    save_profile(st.session_state.current_profile)
+                    st.session_state.page = "equipment_onboarding"
+                    st.rerun()
+
+    with tab_login:
+        st.caption("Enter your username and password.")
+        login_username = st.text_input(
+            "Username (first and last name)",
+            key="login_username",
+            placeholder="e.g. John Smith",
+        )
+        login_password = st.text_input("Password", key="login_password", type="password")
+        if st.button("Log in", key="btn_login"):
+            login_username = (login_username or "").strip()
+            if not login_username:
+                st.error("Please enter your username.")
+            elif not login_password:
+                st.error("Please enter your password.")
+            else:
+                uid = _sanitize_user_id(login_username)
+                prof = load_profile(uid)
+                if prof is None:
+                    st.error("No account with that username. Create an account or check spelling.")
+                elif not prof.get("password_hash"):
+                    st.error("This account was created before we added passwords. Please create a new account with your name and choose a password.")
+                elif not _verify_password(
+                    login_password,
+                    prof.get("password_salt") or "",
+                    prof.get("password_hash") or "",
+                ):
+                    st.error("Incorrect password.")
+                else:
+                    st.session_state.current_user_id = uid
+                    st.session_state.current_profile = prof
+                    if not _equipment_setup_done(prof):
+                        st.session_state.page = "equipment_onboarding"
+                    else:
+                        st.session_state.page = "main"
+                    st.rerun()
     st.stop()
 
 # ---------- Required: Equipment onboarding (before first workout) ----------
@@ -667,7 +739,7 @@ if st.session_state.page == "equipment_onboarding":
             data = ENGINE.load_all_data()
             st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
         except Exception:
-            st.session_state.equipment_options = ["Full gym", "None"]
+            st.session_state.equipment_options = ["None"]
     equipment_options = st.session_state.equipment_options
     selected = []
     for opt in equipment_options:
@@ -675,7 +747,7 @@ if st.session_state.page == "equipment_onboarding":
             selected.append(opt)
     if st.button("Save and continue", key="onb_save"):
         if not selected:
-            st.warning("Select at least one option (e.g. \"Full gym\" or \"None\") so we can build workouts.")
+            st.warning("Select at least one option (e.g. \"None\" for no equipment) so we can build workouts.")
         else:
             prof["equipment"] = selected
             prof["equipment_setup_done"] = True
@@ -703,7 +775,7 @@ with st.sidebar:
             data = ENGINE.load_all_data()
             st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
         except Exception:
-            st.session_state.equipment_options = ["Full gym", "None"]
+            st.session_state.equipment_options = ["None"]
     equipment_options = st.session_state.equipment_options
     prof = st.session_state.current_profile or {}
     current_equip = prof.get("equipment") or []
@@ -723,20 +795,24 @@ with st.sidebar:
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
         st.session_state.page = "main"
-        st.rerun()
+        st.rerun()  # Shows landing (Create account / Log in)
 
 # ---------- Main area: form in card ----------
+# Athlete = logged-in user (for history, download filename, feedback)
+athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
+athlete_id = athlete_id.strip() or "athlete"
+
 form_container = st.container()
 with form_container:
     st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
     st.markdown("#### Session options")
     c1, c2 = st.columns(2)
     with c1:
-        athlete_id = st.text_input("Athlete name", value="", placeholder="Enter name")
-    with c2:
         age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1)
         age = int(age)
-    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+    with c2:
+        minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+    minutes = int(minutes)
 
     mode_label = st.selectbox("Mode", DISPLAY_MODES)
     mode = LABEL_TO_MODE[mode_label]
@@ -820,45 +896,38 @@ with form_container:
     with col_btn:
         generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
     if generate_clicked:
-        if not athlete_id.strip():
-            st.error("Athlete Name is required.")
-        elif athlete_id.strip().lower() == "default":
-            st.error('Athlete Name "default" is not allowed.')
-        else:
-            profile = st.session_state.get("current_profile") or {}
-            user_equipment = list(profile.get("equipment") or [])
-            if "Full gym" in user_equipment:
-                user_equipment = None
-            payload = {
-                "athlete_id": athlete_id.strip(),
-                "age": int(age),
-                "minutes": int(minutes),
-                "mode": effective_mode,
-                "focus": focus,  # controlled tokens only
-                "location": location,
-                # Strength tokens
-                "strength_day_type": strength_day_type,
-                "strength_emphasis": strength_emphasis,
-                "skate_within_24h": skate_within_24h,
-                # Post-lift conditioning
-                "conditioning": conditioning,
-                "conditioning_type": conditioning_type,
-                "user_equipment": user_equipment,
-            }
+        profile = st.session_state.get("current_profile") or {}
+        user_equipment = list(profile.get("equipment") or [])
+        payload = {
+            "athlete_id": athlete_id,
+            "age": int(age),
+            "minutes": int(minutes),
+            "mode": effective_mode,
+            "focus": focus,  # controlled tokens only
+            "location": location,
+            # Strength tokens
+            "strength_day_type": strength_day_type,
+            "strength_emphasis": strength_emphasis,
+            "skate_within_24h": skate_within_24h,
+            # Post-lift conditioning
+            "conditioning": conditioning,
+            "conditioning_type": conditioning_type,
+            "user_equipment": user_equipment,
+        }
 
-            try:
-                with st.spinner("Generating workout..."):
-                    if USE_API:
-                        resp = _generate_via_api(payload)
-                    else:
-                        resp = _generate_via_engine(payload)
+        try:
+            with st.spinner("Generating workout..."):
+                if USE_API:
+                    resp = _generate_via_api(payload)
+                else:
+                    resp = _generate_via_engine(payload)
 
-                st.session_state.last_session_id = resp.get("session_id")
-                st.session_state.last_output_text = resp.get("output_text")
-                st.session_state.scroll_to_workout = True
-                st.success("Generated")
-            except Exception as e:
-                st.error(str(e))
+            st.session_state.last_session_id = resp.get("session_id")
+            st.session_state.last_output_text = resp.get("output_text")
+            st.session_state.scroll_to_workout = True
+            st.success("Generated")
+        except Exception as e:
+            st.error(str(e))
 
 # -----------------------------
 # Display last generated workout (Tabbed)
