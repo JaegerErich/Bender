@@ -645,54 +645,17 @@ if "current_profile" not in st.session_state:
     st.session_state.current_profile = None
 if "page" not in st.session_state:
     st.session_state.page = "main"
+if "auth_page" not in st.session_state:
+    st.session_state.auth_page = "login"  # "login" or "create_account" when not logged in
 
-# ---------- Landing: Create account or Log in ----------
+# ---------- Not logged in: Log in (first) or Create account (separate page) ----------
 if st.session_state.current_user_id is None:
-    st.markdown("#### Welcome to Bender")
-    tab_create, tab_login = st.tabs(["Create account", "Log in"])
-
-    with tab_create:
-        st.caption("Create an account to get started. You’ll set your equipment next.")
-        create_username = st.text_input(
-            "Username (your first and last name)",
-            key="create_username",
-            placeholder="e.g. John Smith",
-            autocomplete="name",
-        )
-        create_password = st.text_input("Password", key="create_password", type="password")
-        create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
-        if st.button("Create account", key="btn_create"):
-            create_username = (create_username or "").strip()
-            if not create_username:
-                st.error("Please enter your first and last name.")
-            elif not create_password:
-                st.error("Please enter a password.")
-            elif create_password != create_confirm:
-                st.error("Passwords do not match.")
-            else:
-                uid = _sanitize_user_id(create_username)
-                if not uid or uid == "default":
-                    st.error("Please enter a valid first and last name.")
-                elif _user_id_taken(uid):
-                    st.error("That username is already taken. Please choose another or log in.")
-                else:
-                    salt_hex, hash_hex = _hash_password(create_password)
-                    st.session_state.current_user_id = uid
-                    st.session_state.current_profile = {
-                        "user_id": uid,
-                        "display_name": create_username,
-                        "equipment": [],
-                        "equipment_setup_done": False,
-                        "password_salt": salt_hex,
-                        "password_hash": hash_hex,
-                        "created_at": datetime.now().isoformat(),
-                        "updated_at": datetime.now().isoformat(),
-                    }
-                    save_profile(st.session_state.current_profile)
-                    st.session_state.page = "equipment_onboarding"
-                    st.rerun()
-
-    with tab_login:
+    # ----- Log in page (default) -----
+    if st.session_state.auth_page == "login":
+        st.markdown("#### Log in")
+        if st.session_state.get("creation_success"):
+            st.success(st.session_state.creation_success)
+            del st.session_state.creation_success
         st.caption("Enter your username and password.")
         login_username = st.text_input(
             "Username (first and last name)",
@@ -727,6 +690,58 @@ if st.session_state.current_user_id is None:
                     else:
                         st.session_state.page = "main"
                     st.rerun()
+        st.caption("Don’t have an account?")
+        if st.button("Create an account", key="goto_create"):
+            st.session_state.auth_page = "create_account"
+            st.rerun()
+        st.stop()
+
+    # ----- Create account page (separate) -----
+    st.markdown("#### Create an account")
+    st.caption("You’ll set your equipment after you log in.")
+    create_username = st.text_input(
+        "Username (your first and last name)",
+        key="create_username",
+        placeholder="e.g. John Smith",
+        autocomplete="name",
+    )
+    create_password = st.text_input("Password", key="create_password", type="password")
+    create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
+    if st.button("Create account", key="btn_create"):
+        create_username = (create_username or "").strip()
+        if not create_username:
+            st.error("Please enter your first and last name.")
+        elif not create_password:
+            st.error("Please enter a password.")
+        elif create_password != create_confirm:
+            st.error("Passwords do not match.")
+        else:
+            uid = _sanitize_user_id(create_username)
+            if not uid or uid == "default":
+                st.error("Please enter a valid first and last name.")
+            elif _user_id_taken(uid):
+                st.error("That username is already taken. Please choose another or log in.")
+            else:
+                salt_hex, hash_hex = _hash_password(create_password)
+                profile = {
+                    "user_id": uid,
+                    "display_name": create_username,
+                    "equipment": [],
+                    "equipment_setup_done": False,
+                    "password_salt": salt_hex,
+                    "password_hash": hash_hex,
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                }
+                save_profile(profile)
+                st.session_state.creation_success = "Account created. Please log in."
+                st.session_state.auth_page = "login"
+                st.rerun()
+    st.markdown("---")
+    st.caption("Already have an account?")
+    if st.button("Back to log in", key="back_to_login"):
+        st.session_state.auth_page = "login"
+        st.rerun()
     st.stop()
 
 # ---------- Required: Equipment onboarding (before first workout) ----------
@@ -769,7 +784,9 @@ display_name = (st.session_state.current_profile or {}).get("display_name") or s
 # Sidebar: equipment (dynamic list from data) + log out
 with st.sidebar:
     st.markdown(f"**{display_name}**")
-    st.caption("My equipment")
+    st.divider()
+    st.subheader("Equipment")
+    st.caption("Check what you have. Workouts only include exercises that use this equipment.")
     if "equipment_options" not in st.session_state:
         try:
             data = ENGINE.load_all_data()

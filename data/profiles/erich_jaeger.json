@@ -1,0 +1,12 @@
+{
+  "user_id": "erich_jaeger",
+  "display_name": "Erich Jaeger",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-24T13:46:34.230379",
+  "updated_at": "2026-02-24T13:46:34.230399"
+}
