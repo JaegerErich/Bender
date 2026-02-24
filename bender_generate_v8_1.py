@@ -293,6 +293,42 @@ def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, 
     }
 
 
+def get_all_equipment_from_data(data: Dict[str, List[Dict[str, Any]]]) -> List[str]:
+    """
+    Collect all unique equipment values from drill data. Used by the Streamlit UI
+    for the profile equipment list. When new exercises are added to movement.json,
+    performance.json, etc., add their "equipment" field as usual — it will appear
+    in the app's equipment list automatically (no separate list to maintain).
+    Returns sorted list with "Full gym" and "None" first, then rest alphabetically.
+    """
+    seen_lower: Dict[str, str] = {}
+    for category, drills in data.items():
+        if not isinstance(drills, list):
+            continue
+        for d in drills:
+            eq = d.get("equipment")
+            if eq is None:
+                continue
+            s = norm(str(eq))
+            if not s:
+                continue
+            key = s.lower()
+            if key not in seen_lower:
+                seen_lower[key] = s
+    # Circuits have no per-drill equipment; their drills reference performance/movement
+    special = ["full gym", "none"]
+    rest = [v for k, v in sorted(seen_lower.items()) if k not in special]
+    out = []
+    for t in special:
+        if t in seen_lower:
+            out.append(seen_lower[t])
+    if "Full gym" not in out:
+        out.insert(0, "Full gym")
+    if "None" not in out:
+        out.append("None")
+    return out + rest
+
+
 # ------------------------------
 # Focus logic
 # ------------------------------

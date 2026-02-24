@@ -13,35 +13,6 @@ import urllib.parse
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROFILE_DIR = Path(BASE_DIR) / "data" / "profiles"
 
-# Equipment options for profile (token-friendly; "Full gym" = no filter)
-EQUIPMENT_OPTIONS = [
-    "Full gym",
-    "Barbell",
-    "Barbell & rack",
-    "Barbell & bench",
-    "Dumbbell",
-    "Dumbbells",
-    "Kettlebell",
-    "Bench",
-    "Box",
-    "Pull-up bar",
-    "Rings",
-    "Resistance band",
-    "Band",
-    "Cable machine",
-    "Medicine ball",
-    "Trap bar",
-    "Landmine setup",
-    "Cones",
-    "Ladder",
-    "Hurdles",
-    "Mini hurdles",
-    "Stick & puck",
-    "Shooting pad & pucks",
-    "Wall",
-    "None",
-]
-
 
 def _sanitize_user_id(name: str) -> str:
     s = re.sub(r"[^\w\-]", "_", (name or "").strip().lower())
@@ -85,6 +56,11 @@ def list_profiles() -> list[dict]:
         except Exception:
             continue
     return sorted(out, key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
+
+
+def _equipment_setup_done(profile: dict) -> bool:
+    """True if profile has completed required equipment setup (can generate workouts)."""
+    return bool(profile.get("equipment_setup_done"))
 
 
 # Optional API mode (off by default)
@@ -529,9 +505,9 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state="expanded")
 
-# Custom CSS: clean single-column layout, no sidebar
+# Custom CSS: single-column main; sidebar for equipment
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
@@ -637,91 +613,119 @@ if "current_profile" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "main"
 
-# ---------- Login: require profile ----------
+# ---------- Login: Create account or Log in ----------
 if st.session_state.current_user_id is None:
-    st.markdown("#### Sign in or create a profile")
+    st.markdown("#### Welcome to Bender")
     existing = list_profiles()
-    if existing:
-        options = ["— New profile —"] + [p.get("display_name") or p.get("user_id", "") for p in existing]
-        choice = st.selectbox("Select profile or create new", options)
-        if choice and choice != "— New profile —":
-            idx = options.index(choice) - 1
-            prof = existing[idx]
-            if st.button("Continue as this user"):
-                st.session_state.current_user_id = prof.get("user_id", "")
-                st.session_state.current_profile = prof
-                st.session_state.page = "main"
-                st.rerun()
-        else:
-            login_name = st.text_input("Your name (new profile)", placeholder="Enter name")
-            if st.button("Create and continue") and login_name.strip():
-                uid = _sanitize_user_id(login_name)
-                if not uid or uid == "default":
-                    st.error("Please enter a valid name.")
-                else:
-                    st.session_state.current_user_id = uid
-                    st.session_state.current_profile = {
-                        "user_id": uid,
-                        "display_name": login_name.strip(),
-                        "equipment": [],
-                        "created_at": datetime.now().isoformat(),
-                        "updated_at": datetime.now().isoformat(),
-                    }
-                    save_profile(st.session_state.current_profile)
-                    st.session_state.page = "main"
-                    st.rerun()
-    else:
-        login_name = st.text_input("Your name", placeholder="Enter your name to start")
-        if st.button("Continue") and login_name.strip():
-            uid = _sanitize_user_id(login_name)
+    tab_create, tab_login = st.tabs(["Create account", "Log in"])
+    with tab_create:
+        st.caption("New here? Create an account to get started.")
+        create_name = st.text_input("Your name", key="create_name", placeholder="Enter your name")
+        if st.button("Create account", key="btn_create") and create_name.strip():
+            uid = _sanitize_user_id(create_name)
             if not uid or uid == "default":
                 st.error("Please enter a valid name.")
             else:
                 st.session_state.current_user_id = uid
                 st.session_state.current_profile = {
                     "user_id": uid,
-                    "display_name": login_name.strip(),
+                    "display_name": create_name.strip(),
                     "equipment": [],
+                    "equipment_setup_done": False,
                     "created_at": datetime.now().isoformat(),
                     "updated_at": datetime.now().isoformat(),
                 }
                 save_profile(st.session_state.current_profile)
-                st.session_state.page = "main"
+                st.session_state.page = "equipment_onboarding"
+                st.rerun()
+    with tab_login:
+        if not existing:
+            st.caption("No accounts yet. Create one in the other tab.")
+        else:
+            st.caption("Choose your profile to continue.")
+            options = [p.get("display_name") or p.get("user_id", "") for p in existing]
+            choice = st.selectbox("Profile", options, key="login_select")
+            if st.button("Log in", key="btn_login") and choice:
+                idx = options.index(choice)
+                prof = existing[idx]
+                st.session_state.current_user_id = prof.get("user_id", "")
+                st.session_state.current_profile = prof
+                if not _equipment_setup_done(prof):
+                    st.session_state.page = "equipment_onboarding"
+                else:
+                    st.session_state.page = "main"
                 st.rerun()
     st.stop()
 
-# ---------- Equipment page ----------
-if st.session_state.page == "equipment":
+# ---------- Required: Equipment onboarding (before first workout) ----------
+if st.session_state.page == "equipment_onboarding":
     prof = st.session_state.current_profile or {}
-    st.markdown("#### My equipment")
-    st.caption("Workouts will only include exercises that use equipment you have. Select everything that applies.")
+    st.markdown("#### Set up your equipment")
+    st.caption("Choose what you have so we can build the right workouts. You can change this anytime in the sidebar.")
+    if "equipment_options" not in st.session_state:
+        try:
+            data = ENGINE.load_all_data()
+            st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
+        except Exception:
+            st.session_state.equipment_options = ["Full gym", "None"]
+    equipment_options = st.session_state.equipment_options
     selected = []
-    for opt in EQUIPMENT_OPTIONS:
-        if st.checkbox(opt, value=opt in (prof.get("equipment") or [])):
+    for opt in equipment_options:
+        if st.checkbox(opt, value=opt in (prof.get("equipment") or []), key=f"onb_{opt}"):
             selected.append(opt)
-    if st.button("Save equipment"):
-        prof["equipment"] = selected
-        st.session_state.current_profile = prof
-        save_profile(prof)
-        st.session_state.page = "main"
-        st.success("Saved.")
-        st.rerun()
-    if st.button("Back to workout"):
-        st.session_state.page = "main"
-        st.rerun()
+    if st.button("Save and continue", key="onb_save"):
+        if not selected:
+            st.warning("Select at least one option (e.g. \"Full gym\" or \"None\") so we can build workouts.")
+        else:
+            prof["equipment"] = selected
+            prof["equipment_setup_done"] = True
+            st.session_state.current_profile = prof
+            save_profile(prof)
+            st.session_state.page = "main"
+            st.success("Saved. Taking you to Bender.")
+            st.rerun()
     st.stop()
 
-# ---------- Main app: header with profile + equipment link ----------
+# ---------- Main app: sidebar for equipment + main area ----------
+# Require equipment setup before generating (e.g. legacy profile)
+if not _equipment_setup_done(st.session_state.current_profile or {}):
+    st.session_state.page = "equipment_onboarding"
+    st.rerun()
+
 display_name = (st.session_state.current_profile or {}).get("display_name") or st.session_state.current_user_id or ""
-col_head1, col_head2 = st.columns([3, 1])
-with col_head1:
-    st.caption(f"Logged in as **{display_name}**")
-with col_head2:
-    if st.button("My equipment", use_container_width=True):
-        st.session_state.page = "equipment"
+
+# Sidebar: equipment (dynamic list from data) + log out
+with st.sidebar:
+    st.markdown(f"**{display_name}**")
+    st.caption("My equipment")
+    if "equipment_options" not in st.session_state:
+        try:
+            data = ENGINE.load_all_data()
+            st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
+        except Exception:
+            st.session_state.equipment_options = ["Full gym", "None"]
+    equipment_options = st.session_state.equipment_options
+    prof = st.session_state.current_profile or {}
+    current_equip = prof.get("equipment") or []
+    for opt in equipment_options:
+        st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{opt}")
+    if st.button("Save equipment", key="sidebar_save"):
+        new_equip = [
+            opt for opt in equipment_options
+            if st.session_state.get(f"sidebar_{opt}", opt in current_equip)
+        ]
+        prof["equipment"] = new_equip
+        st.session_state.current_profile = prof
+        save_profile(prof)
+        st.success("Saved")
+        st.rerun()
+    if st.button("Log out", key="sidebar_logout"):
+        st.session_state.current_user_id = None
+        st.session_state.current_profile = None
+        st.session_state.page = "main"
         st.rerun()
 
-# ---------- Main area: form in card (no sidebar) ----------
+# ---------- Main area: form in card ----------
 form_container = st.container()
 with form_container:
     st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
