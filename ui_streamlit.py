@@ -288,48 +288,50 @@ def _header_style(title: str) -> str:
 
 def render_workout_readable(text: str) -> None:
     """
-    Renders engine text into clean sections:
-    - Each section is in an expander (expand/collapse)
-    - "Expand all" / "Collapse all" buttons above the workout
+    Renders engine text into clean sections.
+    Only the warm-up section uses a dropdown (expander); all other sections are always visible.
     """
     if not text:
         return
 
-    if "workout_expand_all" not in st.session_state:
-        st.session_state.workout_expand_all = False
-
-    expand_all = st.session_state.workout_expand_all
-
-    # Buttons to expand or collapse all sections
-    btn_col1, btn_col2, _ = st.columns([1, 1, 4])
-    with btn_col1:
-        if st.button("Expand all", key="workout_expand_all_btn"):
-            st.session_state.workout_expand_all = True
-            st.rerun()
-    with btn_col2:
-        if st.button("Collapse all", key="workout_collapse_all_btn"):
-            st.session_state.workout_expand_all = False
-            st.rerun()
-
     lines = text.splitlines()
     current_title = None
     buffer: list[str] = []
+
+    def is_warmup_header(title: str) -> bool:
+        t = (title or "").strip().upper()
+        return t.startswith("WARMUP")
 
     def flush_section(title: str, body_lines: list[str]) -> None:
         if not title and not body_lines:
             return
         label = (title.strip() or "Section")
         tag = _header_style(title) if title else ""
-        expander_label = f"{label} — {tag}" if tag else label
-        with st.expander(expander_label, expanded=expand_all):
-            for ln in body_lines:
-                s = ln.strip()
-                if not s:
-                    continue
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
+        # Only warm-up gets a dropdown; rest of workout is always visible
+        if is_warmup_header(title):
+            expander_label = f"{label} — {tag}" if tag else label
+            with st.expander(expander_label):
+                for ln in body_lines:
+                    s = ln.strip()
+                    if not s:
+                        continue
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
+        else:
+            with st.container(border=True):
+                st.subheader(label)
+                if tag:
+                    st.caption(tag)
+                for ln in body_lines:
+                    s = ln.strip()
+                    if not s:
+                        continue
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
 
     for ln in lines:
         s = ln.strip()
@@ -351,22 +353,9 @@ def render_workout_readable(text: str) -> None:
 # (Warmup first, then Circuit A/B only once)
 # -----------------------------
 def render_no_gym_strength_circuits_only(text: str) -> None:
+    """No-gym strength: only warm-up has a dropdown; Circuit A/B and Mobility are always visible."""
     if not text:
         return
-
-    if "workout_expand_all" not in st.session_state:
-        st.session_state.workout_expand_all = False
-    expand_all = st.session_state.workout_expand_all
-
-    btn_col1, btn_col2, _ = st.columns([1, 1, 4])
-    with btn_col1:
-        if st.button("Expand all", key="workout_expand_all_btn"):
-            st.session_state.workout_expand_all = True
-            st.rerun()
-    with btn_col2:
-        if st.button("Collapse all", key="workout_collapse_all_btn"):
-            st.session_state.workout_expand_all = False
-            st.rerun()
 
     lines = text.splitlines()
 
@@ -386,14 +375,25 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 out.append(lines[j])
         return out
 
-    def render_in_expander(label: str, tag: str, body: list[str]) -> None:
-        with st.expander(f"{label} — {tag}", expanded=expand_all):
-            for ln in body:
-                s = ln.strip()
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
+    def render_section(label: str, tag: str, body: list[str], as_dropdown: bool = False) -> None:
+        if as_dropdown:
+            with st.expander(f"{label} — {tag}"):
+                for ln in body:
+                    s = ln.strip()
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
+        else:
+            with st.container(border=True):
+                st.subheader(label)
+                st.caption(tag)
+                for ln in body:
+                    s = ln.strip()
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
 
     # ---- headers we care about ----
     CIRCUIT_HEADERS = {"CIRCUIT A", "CIRCUIT B"}
@@ -419,7 +419,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     if warmup_start != -1:
         warmup_end = circuits_start if circuits_start != -1 and circuits_start > warmup_start else len(lines)
         warmup_body = [ln for ln in lines[warmup_start + 1 : warmup_end] if ln.strip()]
-        render_in_expander("WARMUP", "Strength Circuits", warmup_body)
+        render_section("WARMUP", "Strength Circuits", warmup_body, as_dropdown=True)
 
     # ---- Find first Circuit A, then first Circuit B after that ----
     a_start = find_first_exact(("CIRCUIT A",))
@@ -430,11 +430,11 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
     b_start = find_first_exact(("CIRCUIT B",), start=a_start + 1)
 
     a_body = grab_section(a_start, STOP_HEADERS)
-    render_in_expander("CIRCUIT A", "Strength Circuits", a_body)
+    render_section("CIRCUIT A", "Strength Circuits", a_body, as_dropdown=False)
 
     if b_start != -1:
         b_body = grab_section(b_start, STOP_HEADERS)
-        render_in_expander("CIRCUIT B", "Strength Circuits", b_body)
+        render_section("CIRCUIT B", "Strength Circuits", b_body, as_dropdown=False)
 
     mob_start = -1
     for i, ln in enumerate(lines):
@@ -444,7 +444,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
 
     if mob_start != -1:
         mob_body = grab_section(mob_start, STOP_HEADERS)
-        render_in_expander(lines[mob_start].strip(), "Mobility", mob_body)
+        render_section(lines[mob_start].strip(), "Mobility", mob_body, as_dropdown=False)
 
 CACHE_VERSION = "2026-02-06"  # bump this when data files change
 

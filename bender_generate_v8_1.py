@@ -1343,11 +1343,13 @@ def rx_for(emphasis: Any, fatigue_role: str) -> Optional[Dict[str, str]]:
 
 
 def _rep_seconds_for_drill(d: Dict[str, Any]) -> int:
-    """Seconds per rep for time estimation. Power/speed ~2s, strength ~4s, hypertrophy ~5s."""
+    """Seconds per rep for time estimation. Power/speed ~2s, heavy strength ~5s (setup/bracing), hypertrophy ~5s."""
     focus = (strength_focus(d) or "").lower()
     if focus == "power":
         return 2
-    if focus in ("max_strength", "strength"):
+    if focus == "max_strength":
+        return 5  # heavy barbell: setup, bracing, rep
+    if focus in ("strength",):
         return 4
     return 5  # hypertrophy, strength_endurance, default
 
@@ -2395,19 +2397,20 @@ def build_hockey_strength_session(
     _rx_a1 = _rx_for(emphasis, _fatigue_role_for_speed_drill(speed_a1)) if speed_a1 else None
     _rx_a2 = _rx_for(emphasis, FATIGUE_ROLE_HIGH) if hf_a2 else None
 
-    # Speed/power block time (superset or high fatigue only)
+    # Speed/power block time (superset or high fatigue only). Use full rest after each round for high-CNS lift.
     speed_power_sec = 0
     if speed_a1 and hf_a2 and _rx_a1 and _rx_a2:
         sets_common = min(int(_rx_a1["sets"]), int(_rx_a2["sets"]))
         r1, r2 = int(_rx_a1["reps"]), int(_rx_a2["reps"])
         rs1 = _rep_seconds_for_drill(speed_a1)
         rs2 = _rep_seconds_for_drill(hf_a2)
-        speed_power_sec = sets_common * (r1 * rs1 + r2 * rs2 + 105)
+        rest_after_round = int(_rx_a2.get("rest_sec", 150))  # high-fatigue rest (150–180s) after each A1+A2 round
+        speed_power_sec = sets_common * (r1 * rs1 + r2 * rs2 + rest_after_round)
     elif hf_pick:
         rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH)
         if rx:
             d = hf_pick[0]
-            speed_power_sec = _est(d, int(rx["sets"]), int(rx["reps"]), 180)
+            speed_power_sec = _est(d, int(rx["sets"]), int(rx["reps"]), int(rx.get("rest_sec", 180)))
 
     # Block A: equal sets for secondary + resilience
     rx_sec = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
@@ -2623,6 +2626,18 @@ def build_hockey_strength_session(
                 lines.append(f"  Cues: {cues}")
             if steps:
                 lines.append(f"  Steps: {steps}")
+
+    # Total estimated time so it aligns with session length input
+    total_est_sec = WARMUP_SEC + speed_power_sec
+    if include_block_a_full or include_block_a_part:
+        total_est_sec += block_a_sec if include_block_a_full else block_a_part_sec
+    if include_block_b:
+        total_est_sec += block_b_sec
+    if _is_upper_day(day_type):
+        total_est_sec += scap_sec + (push_pull_sec if need_push_pull else 0)
+    total_est_sec += mobility_time_sec + finisher_sec
+    total_min = max(1, total_est_sec // 60)
+    lines.append(f"\nTotal estimated time: ~{total_min} min")
 
     return lines
 
