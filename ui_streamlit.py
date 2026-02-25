@@ -691,7 +691,11 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state="expanded")
+# Collapse sidebar after Save equipment (one-time flag)
+_sidebar_state = "collapsed" if st.session_state.get("collapse_sidebar_after_save") else "expanded"
+if st.session_state.get("collapse_sidebar_after_save"):
+    st.session_state.collapse_sidebar_after_save = False
+st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state=_sidebar_state)
 
 # Custom CSS: single-column main; sidebar for equipment
 st.markdown("""
@@ -739,23 +743,29 @@ st.markdown("""
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        min-width: 4.5rem; flex: 0 0 auto;
+        min-width: 3.2rem; flex: 0 0 auto; gap: 0;
+    }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] {
+        gap: 0.2rem !important;
     }
 
-    /* Plan day selector: dark grey cards, number + date, selected=white border+date pill */
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        background: #1e293b !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
+    /* Plan day selector: dark grey cards, number + date aligned, selected=white border+date pill */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+        background: #1e293b !important; padding: 0.35rem 0.25rem; border-radius: 10px; margin: 0 0.08rem; border: 2px solid transparent;
+        display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 3.25rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        min-width: 2.5rem; min-height: 1.9rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important;
     }
     .plan-day-date {
-        background: transparent; color: #475569; font-size: 0.7rem; text-align: center; margin: 0.2rem 0 0 0;
+        background: transparent; color: #475569; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
     }
     .plan-day-date-selected {
         background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
@@ -775,12 +785,12 @@ st.markdown("""
         border-color: white !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 3.25rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        min-width: 2.5rem; min-height: 1.9rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #475569 !important; margin-top: 0.2rem !important;
+        background: transparent !important; color: #475569 !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
         background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
@@ -1081,6 +1091,7 @@ with st.sidebar:
         prof["equipment"] = new_equip
         st.session_state.current_profile = prof
         save_profile(prof)
+        st.session_state.collapse_sidebar_after_save = True
         st.success("Saved")
         st.rerun()
     if st.button("Sign out", key="sidebar_logout"):
