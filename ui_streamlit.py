@@ -154,9 +154,16 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
 
     if "plan_selected_day" not in st.session_state:
         st.session_state.plan_selected_day = 0
-    day_options = [f"Day {i+1} ({d['date'].strftime('%b %d') if hasattr(d['date'], 'strftime') else d['date']})" for i, (_, d) in enumerate(flat_days)]
-    _default_day = st.session_state.get("plan_selected_day", 0)
-    sel_idx = st.selectbox("Jump to day", range(total_days), index=min(_default_day, max(0, total_days - 1)), format_func=lambda i: day_options[i], key="plan_day_sel")
+    _default_day = min(st.session_state.get("plan_selected_day", 0), max(0, total_days - 1))
+    sel_idx = st.radio(
+        "Day",
+        range(total_days),
+        index=_default_day,
+        format_func=lambda i: f"{i+1}  {flat_days[i][1]['date'].strftime('%b %d') if hasattr(flat_days[i][1]['date'], 'strftime') else flat_days[i][1]['date']}",
+        key="plan_day_radio",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
     st.session_state.plan_selected_day = sel_idx
 
     _, day_data = flat_days[sel_idx]
@@ -1164,6 +1171,17 @@ if _tab_admin is not None:
     with _tab_admin:
         st.subheader("Admin: Plan Builder")
         st.caption("Multi-week workout plans. Generate with full workouts for each day (Bible App–style view).")
+        # Build plan for: dropdown to select target player (uses their equipment & age)
+        _all_profiles_for_builder = list_profiles()
+        _builder_options = [(None, "Default (admin / no equipment filter)")] + [(p, (p.get("display_name") or p.get("user_id") or "Unknown")) for p in _all_profiles_for_builder]
+        _builder_idx = st.selectbox(
+            "Build plan for",
+            options=range(len(_builder_options)),
+            format_func=lambda i: _builder_options[i][1],
+            key="admin_plan_target",
+            help="Workouts will be filtered by this player's equipment (e.g. no shooting if they don't have Shooting pad & net).",
+        )
+        _target_profile_for_plan = _builder_options[_builder_idx][0]
         _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
         _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
@@ -1177,9 +1195,12 @@ if _tab_admin is not None:
             if st.button("Generate plan with workouts", type="primary", key="admin_gen_full"):
                 _plan = generate_plan(_w, _d, _start)
                 data = _load_engine_data()
-                profile = st.session_state.get("current_profile") or {}
+                profile = _target_profile_for_plan or (st.session_state.get("current_profile") or {})
                 _expand = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])
                 user_equipment = _expand(profile.get("equipment")) if ENGINE else []
+                _plan_age = int(profile.get("age") or 16)
+                _plan_age = max(6, min(99, _plan_age))
+                _plan_athlete = (profile.get("display_name") or profile.get("user_id") or "athlete").strip()
 
                 _progress = st.progress(0.0, text="Generating workouts…")
                 _total_slots = sum(
@@ -1195,12 +1216,12 @@ if _tab_admin is not None:
                     seed = params.get("seed", day_idx * 100)
                     resp = ENGINE.generate_session(
                         data=data,
-                        age=age,
+                        age=_plan_age,
                         seed=seed,
                         focus=params.get("focus"),
                         session_mode=params.get("mode", "performance"),
                         session_len_min=params.get("session_len_min", 25),
-                        athlete_id=f"plan_{athlete_id}",
+                        athlete_id=f"plan_{_plan_athlete}",
                         use_memory=False,
                         strength_day_type=params.get("strength_day_type"),
                         strength_full_gym=(params.get("mode") == "performance" and params.get("location") == "gym"),
@@ -1231,10 +1252,16 @@ if _tab_admin is not None:
 
             st.markdown("---")
             st.markdown("**Select day** — *Day X of Y*")
-            # Day selector: show ~4 at a time, scroll via slider/select
-            day_options = [f"Day {i+1} ({d['date'].strftime('%b %d')})" for i, (_, d) in enumerate(flat_days)]
-            _default_day = st.session_state.get("admin_plan_selected_day", 0)
-            sel_idx = st.selectbox("Jump to day", range(total_days), index=min(_default_day, total_days - 1), format_func=lambda i: day_options[i], key="admin_plan_day_sel")
+            _default_day = min(st.session_state.get("admin_plan_selected_day", 0), max(0, total_days - 1))
+            sel_idx = st.radio(
+                "Day",
+                range(total_days),
+                index=_default_day,
+                format_func=lambda i: f"{i+1}  {flat_days[i][1]['date'].strftime('%b %d')}",
+                key="admin_plan_day_radio",
+                horizontal=True,
+                label_visibility="collapsed",
+            )
             st.session_state.admin_plan_selected_day = sel_idx
 
             _, day_data = flat_days[sel_idx]
