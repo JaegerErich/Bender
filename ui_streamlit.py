@@ -201,7 +201,7 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
                 return
         st.session_state.plan_workout_view = None
 
-    # Day squares (Bible App style)
+    # Day squares (Bible App style: number + date, rounded squares)
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
     cols_per_row = 8
     for row_start in range(0, total_days, cols_per_row):
@@ -213,19 +213,23 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
             with row_cols[j]:
                 day_data = flat_days[i][1]
                 day_date = day_data.get("date")
+                date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
                 _completed = completed.get(i) or completed.get(str(i)) or []
                 _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
                 focus_items_i = day_data.get("focus_items", [])
                 day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
                 past = day_date < today_date if hasattr(day_date, "__lt__") else False
                 missed = past and not day_complete
-                label = f"{i + 1}"
+                label = f"{'✓ ' if day_complete else ''}{i + 1}"
                 if missed:
                     label = f"{i + 1} ⚠"
                 btn_type = "primary" if i == sel_idx else "secondary"
-                if st.button(label, key=f"plan_day_{i}", type=btn_type):
-                    st.session_state.plan_selected_day = i
-                    st.rerun()
+                _sq = st.container()
+                with _sq:
+                    if st.button(label, key=f"plan_day_{i}", type=btn_type):
+                        st.session_state.plan_selected_day = i
+                        st.rerun()
+                    st.caption(date_str)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -240,14 +244,16 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
     if missed_sel:
         st.caption("⚠ This day was missed.")
 
+    # Modes as collapsed expanders; expand to see "View workout" → opens full page
     focus_items = day_data.get("focus_items", [])
     if focus_items:
         for fi in focus_items:
             done = fi["mode_key"] in _completed_set
             label = f"{'✓ ' if done else ''}{fi['label']}"
-            if st.button(label, key=f"plan_open_{sel_idx}_{fi['mode_key']}", type="primary" if done else "secondary"):
-                st.session_state.plan_workout_view = (sel_idx, fi["mode_key"])
-                st.rerun()
+            with st.expander(label, expanded=False):
+                if st.button("View workout →", key=f"plan_open_{sel_idx}_{fi['mode_key']}"):
+                    st.session_state.plan_workout_view = (sel_idx, fi["mode_key"])
+                    st.rerun()
     else:
         for f in day_data.get("focus", []):
             st.markdown(f"- {f}")
