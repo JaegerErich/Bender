@@ -151,40 +151,103 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
     for w in plan:
         for d in w["days"]:
             flat_days.append((w["week"], d))
+    if total_days == 0:
+        st.caption("No days in plan.")
+        return
+
+    today_date = date.today()
+    plan_start = flat_days[0][1].get("date")
+    if hasattr(plan_start, "strftime"):
+        days_elapsed = (today_date - plan_start).days
+        current_day_index = min(max(0, days_elapsed), total_days - 1)
+    else:
+        current_day_index = 0
 
     if "plan_selected_day" not in st.session_state:
-        st.session_state.plan_selected_day = 0
-    _default_day = min(st.session_state.get("plan_selected_day", 0), max(0, total_days - 1))
-    sel_idx = st.radio(
-        "Day",
-        range(total_days),
-        index=_default_day,
-        format_func=lambda i: f"{i+1}  {flat_days[i][1]['date'].strftime('%b %d') if hasattr(flat_days[i][1]['date'], 'strftime') else flat_days[i][1]['date']}",
-        key="plan_day_radio",
-        horizontal=True,
-        label_visibility="collapsed",
-    )
+        st.session_state.plan_selected_day = min(current_day_index, total_days - 1)
+    sel_idx = min(st.session_state.plan_selected_day, total_days - 1)
     st.session_state.plan_selected_day = sel_idx
 
-    _, day_data = flat_days[sel_idx]
-    dt_display = day_data["date"].strftime("%A, %b %d") if hasattr(day_data["date"], "strftime") else str(day_data["date"])
-    st.markdown(f"### Day {sel_idx + 1} of {total_days}")
-    st.caption(dt_display)
-
-    focus_items = day_data.get("focus_items", [])
-    if focus_items:
-        _completed_for_day = completed.get(sel_idx) or completed.get(str(sel_idx)) or []
-        _completed_set = set(_completed_for_day) if isinstance(_completed_for_day, list) else _completed_for_day
-        for fi in focus_items:
-            done = fi["mode_key"] in _completed_set
-            with st.expander(f"{'✓ ' if done else ''}{fi['label']}", expanded=not done):
+    # Workout view (separate page): Back / Complete
+    if "plan_workout_view" in st.session_state and st.session_state.plan_workout_view is not None:
+        wv_day, wv_mode = st.session_state.plan_workout_view
+        if wv_day < len(flat_days):
+            _, wv_day_data = flat_days[wv_day]
+            focus_items = wv_day_data.get("focus_items", [])
+            fi = next((x for x in focus_items if x["mode_key"] == wv_mode), None)
+            if fi:
+                st.markdown(f"### {fi['label']} — Day {wv_day + 1}")
+                btn_col1, btn_col2, _ = st.columns([1, 1, 4])
+                with btn_col1:
+                    if st.button("← Back", key="plan_workout_back"):
+                        st.session_state.plan_workout_view = None
+                        st.rerun()
+                with btn_col2:
+                    if st.button("✓ Complete", key="plan_workout_complete"):
+                        st.session_state.plan_workout_view = None
+                        _comp = completed.get(wv_day) or completed.get(str(wv_day)) or []
+                        _comp_set = set(_comp) if isinstance(_comp, list) else set(_comp)
+                        _comp_set.add(wv_mode)
+                        _focus = wv_day_data.get("focus_items", [])
+                        all_done = len(_focus) > 0 and all(x["mode_key"] in _comp_set for x in _focus)
+                        if all_done and wv_day < total_days - 1:
+                            st.session_state.plan_selected_day = wv_day + 1
+                        on_complete(wv_day, wv_mode)
                 _workout_text = fi.get("workout") or "(No workout)"
                 if _workout_text != "(No workout)":
                     render_workout_readable(_workout_text)
                 else:
                     st.caption(_workout_text)
-                if st.button("Completed Workout", key=f"plan_done_{sel_idx}_{fi['mode_key']}"):
-                    on_complete(sel_idx, fi["mode_key"])
+                return
+        st.session_state.plan_workout_view = None
+
+    # Day squares (Bible App style)
+    st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
+    cols_per_row = 8
+    for row_start in range(0, total_days, cols_per_row):
+        row_cols = st.columns(cols_per_row)
+        for j in range(cols_per_row):
+            i = row_start + j
+            if i >= total_days:
+                continue
+            with row_cols[j]:
+                day_data = flat_days[i][1]
+                day_date = day_data.get("date")
+                _completed = completed.get(i) or completed.get(str(i)) or []
+                _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
+                focus_items_i = day_data.get("focus_items", [])
+                day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
+                past = day_date < today_date if hasattr(day_date, "__lt__") else False
+                missed = past and not day_complete
+                label = f"{i + 1}"
+                if missed:
+                    label = f"{i + 1} ⚠"
+                btn_type = "primary" if i == sel_idx else "secondary"
+                if st.button(label, key=f"plan_day_{i}", type=btn_type):
+                    st.session_state.plan_selected_day = i
+                    st.rerun()
+    st.divider()
+
+    _, day_data = flat_days[sel_idx]
+    dt_display = day_data["date"].strftime("%A, %b %d") if hasattr(day_data["date"], "strftime") else str(day_data["date"])
+    st.markdown(f"### Day {sel_idx + 1}: {dt_display}")
+    _completed_for_day = completed.get(sel_idx) or completed.get(str(sel_idx)) or []
+    _completed_set = set(_completed_for_day) if isinstance(_completed_for_day, list) else _completed_for_day
+    past_sel = day_data.get("date") < today_date if hasattr(day_data.get("date"), "__lt__") else False
+    missed_sel = past_sel and not (len(day_data.get("focus_items", [])) > 0 and all(
+        x["mode_key"] in _completed_set for x in day_data.get("focus_items", [])
+    ))
+    if missed_sel:
+        st.caption("⚠ This day was missed.")
+
+    focus_items = day_data.get("focus_items", [])
+    if focus_items:
+        for fi in focus_items:
+            done = fi["mode_key"] in _completed_set
+            label = f"{'✓ ' if done else ''}{fi['label']}"
+            if st.button(label, key=f"plan_open_{sel_idx}_{fi['mode_key']}", type="primary" if done else "secondary"):
+                st.session_state.plan_workout_view = (sel_idx, fi["mode_key"])
+                st.rerun()
     else:
         for f in day_data.get("focus", []):
             st.markdown(f"- {f}")
@@ -1182,8 +1245,11 @@ if _tab_admin is not None:
             help="Workouts will be filtered by this player's equipment (e.g. no shooting if they don't have Shooting pad & net).",
         )
         _target_profile_for_plan = _builder_options[_builder_idx][0]
-        _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
-        _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
+        _col_w, _col_d = st.columns(2)
+        with _col_w:
+            _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
+        with _col_d:
+            _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
         _col_gen, _col_full = st.columns(2)
         with _col_gen:
