@@ -704,14 +704,19 @@ st.markdown("""
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
-    /* Sidebar & equipment: ensure text visible on mobile (avoid white on white) */
+    /* Sidebar & equipment: ensure text visible on mobile (black text) */
     [data-testid="stSidebar"] { background-color: #f8fafc !important; }
     [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] { color: #1e293b !important; }
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+    [data-testid="stSidebar"] span { color: #000000 !important; }
     [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #0f172a !important; }
-    [data-testid="stSidebar"] p { color: #334155 !important; }
-    [data-testid="stSidebar"] .stCaption { color: #475569 !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #000000 !important; }
+    [data-testid="stSidebar"] p { color: #000000 !important; }
+    [data-testid="stSidebar"] .stCaption { color: #000000 !important; }
+    [data-testid="stSidebar"] .stCheckbox label { color: #000000 !important; }
+
+    /* Equipment onboarding & main-area checkboxes: black text for mobile */
+    .stCheckbox label, [data-testid="stCheckbox"] label { color: #000000 !important; }
 
     /* Plan day selector: single row, horizontal scroll bar */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -880,6 +885,21 @@ if "auth_page" not in st.session_state:
     st.session_state.auth_page = "login"  # "login" or "create_account" when not logged in
 if "admin_plan" not in st.session_state:
     st.session_state.admin_plan = None
+
+# Restore login from URL (e.g. after page refresh) — keep user logged in unless they sign out
+if st.session_state.current_user_id is None:
+    _uid = st.query_params.get("uid")
+    if _uid:
+        _prof = load_profile(_uid)
+        if _prof:
+            st.session_state.current_user_id = _uid
+            st.session_state.current_profile = _prof
+            if not _equipment_setup_done(_prof):
+                st.session_state.page = "equipment_onboarding"
+            else:
+                st.session_state.page = "main"
+            st.rerun()
+
 # ---------- Not logged in: Log in (first) or Create account (separate page) ----------
 if st.session_state.current_user_id is None:
     # ----- Log in page (default) -----
@@ -916,6 +936,7 @@ if st.session_state.current_user_id is None:
                 else:
                     st.session_state.current_user_id = uid
                     st.session_state.current_profile = prof
+                    st.query_params["uid"] = uid  # persist in URL so refresh keeps user logged in
                     if not _equipment_setup_done(prof):
                         st.session_state.page = "equipment_onboarding"
                     else:
@@ -1053,6 +1074,8 @@ with st.sidebar:
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
         st.session_state.page = "main"
+        if "uid" in st.query_params:
+            del st.query_params["uid"]
         st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
@@ -1065,6 +1088,8 @@ with _col_signout:
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
         st.session_state.page = "main"
+        if "uid" in st.query_params:
+            del st.query_params["uid"]
         st.rerun()
 
 # Athlete = logged-in user (for history, download filename, feedback)
