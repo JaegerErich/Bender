@@ -1,6 +1,6 @@
 """
 Admin Plan Builder: multi-week workout plans for Bender.
-Only exposed to admin user "Erich Jaeger" via UI gating.
+Only exposed to admin users (see ADMIN_USERS) via UI gating.
 Templates for 3–7 days/week; progression notes; optional drill generation with variety.
 """
 from datetime import date, timedelta
@@ -56,9 +56,12 @@ WEEK_TEMPLATES: dict[int, list[list[str]]] = {
 }
 
 
+ADMIN_USERS = {"Erich Jaeger", "Austin Azzinnaro"}
+
+
 def is_admin_user(display_name: str | None) -> bool:
-    """Only Erich Jaeger is admin. Exact match, case-sensitive."""
-    return display_name == "Erich Jaeger"
+    """Exact match, case-sensitive. Admin users see Plan Builder tab."""
+    return display_name in ADMIN_USERS
 
 
 def get_progression_note(week_index: int) -> str:
