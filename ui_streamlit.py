@@ -1026,13 +1026,9 @@ if st.session_state.page == "equipment_onboarding":
     for mode_name, opts in equipment_by_mode.items():
         st.markdown(f"**{mode_name}**")
         for opt in opts:
-            _ocb, _olab = st.columns([1, 4], gap=None)
-            with _ocb:
-                if st.checkbox(" ", value=opt in current_equip, key=f"onb_{mode_name}_{opt}", label_visibility="collapsed"):
-                    if opt not in selected:
-                        selected.append(opt)
-            with _olab:
-                st.markdown(f"<span style='color:#000000;font-weight:500;'>{opt}</span>", unsafe_allow_html=True)
+            if st.checkbox(opt, value=opt in current_equip, key=f"onb_{mode_name}_{opt}"):
+                if opt not in selected:
+                    selected.append(opt)
         st.caption("")
     if st.button("Save and continue", key="onb_save"):
         if not selected:
@@ -1076,11 +1072,7 @@ with st.sidebar:
             all_canonical.append((mode_name, opt))
             if opt in _equip_tooltips:
                 st.caption(_equip_tooltips[opt])
-            _ecb, _elab = st.columns([1, 4], gap=None)
-            with _ecb:
-                st.checkbox(" ", value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}", label_visibility="collapsed")
-            with _elab:
-                st.markdown(f"<span style='color:#000000;font-weight:500;'>{opt}</span>", unsafe_allow_html=True)
+            st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
     if st.button("Save equipment", key="sidebar_save"):
         new_equip = [
             opt for _mode, opt in all_canonical
