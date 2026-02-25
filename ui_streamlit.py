@@ -938,7 +938,7 @@ with _bender_ctx:
         minutes = int(minutes)
 
         mode_label = st.selectbox("Mode", DISPLAY_MODES)
-            mode = LABEL_TO_MODE[mode_label]
+        mode = LABEL_TO_MODE[mode_label]
 
         if mode == "puck_mastery":
             skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
@@ -951,7 +951,7 @@ with _bender_ctx:
         else:
             location = "no_gym"
 
-            focus = None
+        focus = None
         strength_day_type = None
         strength_emphasis = "strength"
         skate_within_24h = False
