@@ -1120,10 +1120,10 @@ with _col_signout:
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
 athlete_id = athlete_id.strip() or "athlete"
 
-# Admin: Plan Builder tab (only for Erich Jaeger)
+# Admin: Plan Builder tab (only for admin users)
 try:
     from admin_plan_builder import is_admin_user, generate_plan, generate_plan_with_workouts
-except ImportError:
+except (ImportError, KeyError, Exception):
     is_admin_user = lambda _: False
     generate_plan = lambda *a, **k: []
     generate_plan_with_workouts = lambda p, cb, seed=42: p
