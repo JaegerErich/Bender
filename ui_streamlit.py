@@ -199,49 +199,30 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
                 return
         st.session_state.plan_workout_view = None
 
-    # Day squares (Bible App style): 6 visible, scroll with ◀ ▶
-    if "plan_day_offset" not in st.session_state:
-        st.session_state.plan_day_offset = 0
-    days_visible = 6
-    max_offset = max(0, total_days - days_visible)
-    st.session_state.plan_day_offset = min(st.session_state.plan_day_offset, max_offset)
-    offset = st.session_state.plan_day_offset
+    # Day squares (clean dark card design): single row with horizontal scroll bar
     st.markdown('<div id="plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
-    nav_cols = st.columns([1, 10, 1])
-    with nav_cols[0]:
-        if st.button("◀", key="plan_day_prev") and offset > 0:
-            st.session_state.plan_day_offset = max(0, offset - days_visible)
-            st.rerun()
-    with nav_cols[1]:
-        row_cols = st.columns(days_visible)
-        for j in range(days_visible):
-            i = offset + j
-            if i >= total_days:
-                continue
-            with row_cols[j]:
-                day_data = flat_days[i][1]
-                day_date = day_data.get("date")
-                date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
-                _completed = completed.get(i) or completed.get(str(i)) or []
-                _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
-                focus_items_i = day_data.get("focus_items", [])
-                day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
-                past = day_date < today_date if hasattr(day_date, "__lt__") else False
-                missed = past and not day_complete
-                label = f"{'✓ ' if day_complete else ''}{i + 1}"
-                if missed:
-                    label = f"{i + 1} ⚠"
-                btn_type = "primary" if i == sel_idx else "secondary"
-                if st.button(label, key=f"plan_day_{i}", type=btn_type):
-                    st.session_state.plan_selected_day = i
-                    st.rerun()
-                date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
-                st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
-    with nav_cols[2]:
-        if st.button("▶", key="plan_day_next") and offset < max_offset:
-            st.session_state.plan_day_offset = min(max_offset, offset + days_visible)
-            st.rerun()
+    row_cols = st.columns(total_days)
+    for i in range(total_days):
+        with row_cols[i]:
+            day_data = flat_days[i][1]
+            day_date = day_data.get("date")
+            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
+            _completed = completed.get(i) or completed.get(str(i)) or []
+            _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
+            focus_items_i = day_data.get("focus_items", [])
+            day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
+            past = day_date < today_date if hasattr(day_date, "__lt__") else False
+            missed = past and not day_complete
+            label = f"{'✓ ' if day_complete else ''}{i + 1}"
+            if missed:
+                label = f"{i + 1} ⚠"
+            btn_type = "primary" if i == sel_idx else "secondary"
+            if st.button(label, key=f"plan_day_{i}", type=btn_type):
+                st.session_state.plan_selected_day = i
+                st.rerun()
+            date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
+            st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -721,45 +702,58 @@ st.markdown("""
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
-    /* Plan day selector: 6 visible, number + date box (distinct colors) */
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button {
-        min-width: 3.5rem; min-height: 2.5rem; border-radius: 10px 10px 0 0; font-weight: 600; font-size: 1rem;
+    /* Plan day selector: single row, horizontal scroll bar */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] {
+        overflow-x: auto; max-width: 100%; padding-bottom: 0.5rem;
+        -webkit-overflow-scrolling: touch; scrollbar-width: thin;
     }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button[kind="primary"] {
-        background: #1e293b !important; color: white !important; border: 2px solid white !important; border-bottom: none !important;
-    }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button[kind="secondary"] {
-        background: #475569 !important; color: #cbd5e1 !important; border: 1px solid #64748b !important; border-bottom: none !important;
-    }
-    .plan-day-date {
-        background: #334155; color: #e2e8f0; padding: 0.25rem 0.5rem; border-radius: 0 0 10px 10px;
-        font-size: 0.7rem; text-align: center; margin: -1px 0 0 0; border: 1px solid #64748b; border-top: none;
-    }
-    .plan-day-date-selected {
-        background: #f1f5f9 !important; color: #1e293b !important; border-color: white !important;
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+        min-width: 4rem; flex: 0 0 auto;
     }
 
-    /* Admin plan day selector: grey outer rect, light blue number rect on top */
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) > * {
-        background: #e2e8f0 !important; padding: 0.35rem; border-radius: 10px; margin: 0 0.15rem;
+    /* Plan day selector: dark grey cards, number + date, selected=white border+date pill */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+        background: #334155 !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button {
-        min-width: 2.8rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
-        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
+        border-color: white !important;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button[kind="primary"] {
-        background: #60a5fa !important; color: white !important; border: 1px solid #3b82f6 !important;
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
+        min-width: 3rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        background: transparent !important; color: white !important; border: none !important;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .plan-day-date {
-        background: transparent !important; color: #475569 !important; border: none !important; margin-top: 0.2rem !important;
+    .plan-day-date {
+        background: transparent; color: #94a3b8; font-size: 0.7rem; text-align: center; margin: 0.2rem 0 0 0;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .plan-day-date-selected {
-        background: transparent !important; color: #1e293b !important;
+    .plan-day-date-selected {
+        background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
+        border-radius: 999px !important; display: inline-block !important;
     }
-    /* Day complete: blue box turns green (instead of checkmark) */
+
+    /* Admin plan day selector: same dark card design */
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+        background: #334155 !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
+        border-color: white !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
+        min-width: 3rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        background: transparent !important; color: white !important; border: none !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
+        background: transparent !important; color: #94a3b8 !important; margin-top: 0.2rem !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
+        background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
+        border-radius: 999px !important;
+    }
+    /* Admin day complete: card turns green */
     .admin-day-complete { display: none; }
-    .admin-day-complete + * .stButton button {
-        background: #22c55e !important; color: white !important; border-color: #16a34a !important;
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
+        background: #16a34a !important;
     }
 
     /* Admin mode buttons (Performance, etc.) - lighter blue */
@@ -1374,8 +1368,6 @@ if _tab_admin is not None:
                     st.session_state.admin_plan_completed = {}
                 if "admin_plan_workout_view" in st.session_state:
                     st.session_state.admin_plan_workout_view = None
-                if "admin_plan_day_offset" in st.session_state:
-                    st.session_state.admin_plan_day_offset = 0
                 st.rerun()
 
         if st.session_state.get("admin_plan"):
@@ -1420,43 +1412,24 @@ if _tab_admin is not None:
                 st.session_state.admin_plan_workout_view = None
 
             st.markdown("---")
-            if "admin_plan_day_offset" not in st.session_state:
-                st.session_state.admin_plan_day_offset = 0
-            days_visible = 6
-            max_offset = max(0, total_days - days_visible)
-            st.session_state.admin_plan_day_offset = min(st.session_state.admin_plan_day_offset, max_offset)
-            offset = st.session_state.admin_plan_day_offset
             st.markdown('<div id="admin-plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
             st.markdown(f"**Select day** — Day {st.session_state.admin_plan_selected_day + 1} of {total_days}")
             sel_idx = st.session_state.admin_plan_selected_day
-            nav_cols = st.columns([1, 10, 1])
-            with nav_cols[0]:
-                if st.button("◀", key="admin_plan_day_prev") and offset > 0:
-                    st.session_state.admin_plan_day_offset = max(0, offset - days_visible)
-                    st.rerun()
-            with nav_cols[1]:
-                row_cols = st.columns(days_visible)
-                for j in range(days_visible):
-                    i = offset + j
-                    if i >= total_days:
-                        continue
-                    with row_cols[j]:
-                        day_data_i = flat_days[i][1]
-                        date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
-                        _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
-                        focus_i = day_data_i.get("focus_items", [])
-                        day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
-                        if day_done:
-                            st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
-                        if st.button(f"{i + 1}", key=f"admin_plan_day_{i}", type="primary" if i == sel_idx else "secondary"):
-                            st.session_state.admin_plan_selected_day = i
-                            st.rerun()
-                        date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
-                        st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
-            with nav_cols[2]:
-                if st.button("▶", key="admin_plan_day_next") and offset < max_offset:
-                    st.session_state.admin_plan_day_offset = min(max_offset, offset + days_visible)
-                    st.rerun()
+            row_cols = st.columns(total_days)
+            for i in range(total_days):
+                with row_cols[i]:
+                    day_data_i = flat_days[i][1]
+                    date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
+                    _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
+                    focus_i = day_data_i.get("focus_items", [])
+                    day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
+                    if day_done:
+                        st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+                    if st.button(f"{i + 1}", key=f"admin_plan_day_{i}", type="primary" if i == sel_idx else "secondary"):
+                        st.session_state.admin_plan_selected_day = i
+                        st.rerun()
+                    date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
+                    st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
 
             _, day_data = flat_days[sel_idx]
             st.markdown(f"### Day {sel_idx + 1} of {total_days}")
