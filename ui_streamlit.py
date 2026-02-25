@@ -1094,7 +1094,7 @@ with _bender_ctx:
                     st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
 
         with tab_feedback:
-        st.write("Leave feedback so I can improve workouts.")
+            st.write("Leave feedback so I can improve workouts.")
 
         # Map your internal mode token to the form’s expected label
             form_mode_value = {
