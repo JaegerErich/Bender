@@ -184,7 +184,7 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
                         st.rerun()
                 with btn_col2:
                     if st.button("✓ Complete", key="plan_workout_complete"):
-                        st.session_state.plan_workout_view = None
+                        st.session_state.plan_workout_view = None  # Minimize: close workout view
                         _comp = completed.get(wv_day) or completed.get(str(wv_day)) or []
                         _comp_set = set(_comp) if isinstance(_comp, list) else set(_comp)
                         _comp_set.add(wv_mode)
@@ -202,6 +202,7 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
         st.session_state.plan_workout_view = None
 
     # Day squares (Bible App style: number + date, rounded squares)
+    st.markdown('<div id="plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
     cols_per_row = 8
     for row_start in range(0, total_days, cols_per_row):
@@ -705,6 +706,21 @@ st.markdown("""
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #0f172a !important; letter-spacing: -0.02em; }
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
+
+    /* Plan day selector (Bible app style: rounded squares, selected=border+pill date) */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button {
+        min-width: 3.5rem; min-height: 3.25rem; border-radius: 10px; font-weight: 600; font-size: 1rem;
+    }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button[kind="primary"] {
+        background: #1e293b !important; color: white !important; border: 2px solid white !important;
+    }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button[kind="secondary"] {
+        background: #475569 !important; color: #cbd5e1 !important; border: 1px solid #64748b !important;
+    }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) [data-testid="stCaptionContainer"] {
+        background: #f1f5f9; color: #334155; padding: 0.15rem 0.4rem; border-radius: 999px; font-size: 0.7rem;
+        display: inline-block; margin-top: 0.25rem;
+    }
 
     /* Form card */
     .form-card {
