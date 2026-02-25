@@ -722,6 +722,21 @@ st.markdown("""
         display: inline-block; margin-top: 0.25rem;
     }
 
+    /* Admin plan day selector (same Bible app style) */
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button {
+        min-width: 3.5rem; min-height: 3.25rem; border-radius: 10px; font-weight: 600; font-size: 1rem;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button[kind="primary"] {
+        background: #1e293b !important; color: white !important; border: 2px solid white !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) .stButton button[kind="secondary"] {
+        background: #475569 !important; color: #cbd5e1 !important; border: 1px solid #64748b !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(8)) [data-testid="stCaptionContainer"] {
+        background: #f1f5f9; color: #334155; padding: 0.15rem 0.4rem; border-radius: 999px; font-size: 0.7rem;
+        display: inline-block; margin-top: 0.25rem;
+    }
+
     /* Form card */
     .form-card {
         background: white;
@@ -1273,7 +1288,7 @@ if _tab_admin is not None:
         with _col_d:
             _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
-        _col_gen, _col_full = st.columns(2)
+        _col_gen, _col_full, _col_clear = st.columns(3)
         with _col_gen:
             if st.button("Generate plan (structure only)", key="admin_gen"):
                 _plan = generate_plan(_w, _d, _start)
@@ -1323,6 +1338,15 @@ if _tab_admin is not None:
                 st.session_state.admin_plan = _plan
                 st.session_state.admin_plan_selected_day = 0
                 st.rerun()
+        with _col_clear:
+            if st.button("Clear plan", key="admin_plan_clear"):
+                st.session_state.admin_plan = None
+                st.session_state.admin_plan_selected_day = 0
+                if "admin_plan_completed" in st.session_state:
+                    st.session_state.admin_plan_completed = {}
+                if "admin_plan_workout_view" in st.session_state:
+                    st.session_state.admin_plan_workout_view = None
+                st.rerun()
 
         if st.session_state.get("admin_plan"):
             _plan = st.session_state.admin_plan
@@ -1338,41 +1362,71 @@ if _tab_admin is not None:
             if "admin_plan_completed" not in st.session_state:
                 st.session_state.admin_plan_completed = {}
 
+            # Workout view (separate page): Back / Workout Complete
+            if "admin_plan_workout_view" in st.session_state and st.session_state.admin_plan_workout_view is not None:
+                wv_day, wv_mode = st.session_state.admin_plan_workout_view
+                if wv_day < len(flat_days):
+                    _, wv_day_data = flat_days[wv_day]
+                    focus_items_wv = wv_day_data.get("focus_items", [])
+                    fi_wv = next((x for x in focus_items_wv if x["mode_key"] == wv_mode), None)
+                    if fi_wv:
+                        st.markdown(f"### {fi_wv['label']} — Day {wv_day + 1}")
+                        btn_col1, btn_col2, _ = st.columns([1, 1, 4])
+                        with btn_col1:
+                            if st.button("← Back", key="admin_workout_back"):
+                                st.session_state.admin_plan_workout_view = None
+                                st.rerun()
+                        with btn_col2:
+                            if st.button("Workout Complete", key="admin_workout_complete"):
+                                st.session_state.admin_plan_workout_view = None
+                                if wv_day not in st.session_state.admin_plan_completed:
+                                    st.session_state.admin_plan_completed[wv_day] = set()
+                                st.session_state.admin_plan_completed[wv_day].add(wv_mode)
+                                st.rerun()
+                        _workout_text = fi_wv.get("workout") or "(No workout)"
+                        if _workout_text != "(No workout)":
+                            render_workout_readable(_workout_text)
+                        else:
+                            st.caption(_workout_text)
+                        st.stop()
+                st.session_state.admin_plan_workout_view = None
+
             st.markdown("---")
-            st.markdown("**Select day** — *Day X of Y*")
+            st.markdown('<div id="admin-plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
+            st.markdown(f"**Select day** — Day {st.session_state.admin_plan_selected_day + 1} of {total_days}")
             _default_day = min(st.session_state.get("admin_plan_selected_day", 0), max(0, total_days - 1))
-            sel_idx = st.radio(
-                "Day",
-                range(total_days),
-                index=_default_day,
-                format_func=lambda i: f"{i+1}  {flat_days[i][1]['date'].strftime('%b %d')}",
-                key="admin_plan_day_radio",
-                horizontal=True,
-                label_visibility="collapsed",
-            )
-            st.session_state.admin_plan_selected_day = sel_idx
+            sel_idx = _default_day
+            cols_per_row = 8
+            for row_start in range(0, total_days, cols_per_row):
+                row_cols = st.columns(cols_per_row)
+                for j in range(cols_per_row):
+                    i = row_start + j
+                    if i >= total_days:
+                        continue
+                    with row_cols[j]:
+                        day_data_i = flat_days[i][1]
+                        date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
+                        btn_type = "primary" if i == sel_idx else "secondary"
+                        if st.button(f"{i + 1}", key=f"admin_plan_day_{i}", type=btn_type):
+                            st.session_state.admin_plan_selected_day = i
+                            st.rerun()
+                        st.caption(date_str)
+            sel_idx = st.session_state.admin_plan_selected_day
 
             _, day_data = flat_days[sel_idx]
             st.markdown(f"### Day {sel_idx + 1} of {total_days}")
             st.caption(f"{day_data['date'].strftime('%A, %b %d')}")
 
-            # List of modes (Performance, Skating Mechanics, etc.) — click to expand, see full workout
+            # List of modes — click to open workout page (Back / Workout Complete there)
             focus_items = day_data.get("focus_items", [])
             if focus_items:
                 for fi in focus_items:
                     completed = st.session_state.admin_plan_completed.get(sel_idx, set()) or set()
                     done = fi["mode_key"] in completed
-                    with st.expander(f"{'✓ ' if done else ''}{fi['label']}", expanded=not done):
-                        _workout_text = fi.get("workout") or "(No workout)"
-                        if _workout_text != "(No workout)":
-                            render_workout_readable(_workout_text)
-                        else:
-                            st.caption(_workout_text)
-                        if st.button("Completed Workout", key=f"admin_done_{sel_idx}_{fi['mode_key']}"):
-                            if sel_idx not in st.session_state.admin_plan_completed:
-                                st.session_state.admin_plan_completed[sel_idx] = set()
-                            st.session_state.admin_plan_completed[sel_idx].add(fi["mode_key"])
-                            st.rerun()
+                    label = f"{'✓ ' if done else ''}{fi['label']}"
+                    if st.button(label, key=f"admin_open_{sel_idx}_{fi['mode_key']}", type="primary" if done else "secondary"):
+                        st.session_state.admin_plan_workout_view = (sel_idx, fi["mode_key"])
+                        st.rerun()
             else:
                 # Legacy: plan without focus_items
                 for f in day_data.get("focus", []):
