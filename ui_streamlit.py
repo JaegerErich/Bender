@@ -99,6 +99,90 @@ def _equipment_setup_done(profile: dict) -> bool:
     return bool(profile.get("equipment_setup_done"))
 
 
+def _serialize_plan_for_storage(plan: list) -> list:
+    """Convert date objects to ISO strings for JSON storage."""
+    out = []
+    for w in plan:
+        week_copy = dict(w)
+        week_copy["days"] = []
+        for d in w.get("days", []):
+            day_copy = dict(d)
+            dt = d.get("date")
+            if hasattr(dt, "isoformat"):
+                day_copy["date"] = dt.isoformat()
+            elif isinstance(dt, str):
+                day_copy["date"] = dt
+            week_copy["days"].append(day_copy)
+        if "week_start" in week_copy and hasattr(week_copy["week_start"], "isoformat"):
+            week_copy["week_start"] = week_copy["week_start"].isoformat()
+        out.append(week_copy)
+    return out
+
+
+def _deserialize_plan_for_display(plan: list) -> list:
+    """Convert date strings back to date objects for display."""
+    out = []
+    for w in plan:
+        week_copy = dict(w)
+        week_copy["days"] = []
+        for d in w.get("days", []):
+            day_copy = dict(d)
+            dt = d.get("date")
+            if isinstance(dt, str):
+                try:
+                    day_copy["date"] = date.fromisoformat(dt)
+                except (ValueError, TypeError):
+                    day_copy["date"] = dt
+            week_copy["days"].append(day_copy)
+        if isinstance(week_copy.get("week_start"), str):
+            try:
+                week_copy["week_start"] = date.fromisoformat(week_copy["week_start"])
+            except (ValueError, TypeError):
+                pass
+        out.append(week_copy)
+    return out
+
+
+def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: callable) -> None:
+    """Render Bible App–style plan view. completed = {day_idx: [mode_key, ...]}. on_complete(day_idx, mode_key)."""
+    plan = _deserialize_plan_for_display(plan)
+    total_days = sum(len(w["days"]) for w in plan)
+    flat_days: list[tuple[int, dict]] = []
+    for w in plan:
+        for d in w["days"]:
+            flat_days.append((w["week"], d))
+
+    if "plan_selected_day" not in st.session_state:
+        st.session_state.plan_selected_day = 0
+    day_options = [f"Day {i+1} ({d['date'].strftime('%b %d') if hasattr(d['date'], 'strftime') else d['date']})" for i, (_, d) in enumerate(flat_days)]
+    _default_day = st.session_state.get("plan_selected_day", 0)
+    sel_idx = st.selectbox("Jump to day", range(total_days), index=min(_default_day, max(0, total_days - 1)), format_func=lambda i: day_options[i], key="plan_day_sel")
+    st.session_state.plan_selected_day = sel_idx
+
+    _, day_data = flat_days[sel_idx]
+    dt_display = day_data["date"].strftime("%A, %b %d") if hasattr(day_data["date"], "strftime") else str(day_data["date"])
+    st.markdown(f"### Day {sel_idx + 1} of {total_days}")
+    st.caption(dt_display)
+
+    focus_items = day_data.get("focus_items", [])
+    if focus_items:
+        _completed_for_day = completed.get(sel_idx) or completed.get(str(sel_idx)) or []
+        _completed_set = set(_completed_for_day) if isinstance(_completed_for_day, list) else _completed_for_day
+        for fi in focus_items:
+            done = fi["mode_key"] in _completed_set
+            with st.expander(f"{'✓ ' if done else ''}{fi['label']}", expanded=not done):
+                _workout_text = fi.get("workout") or "(No workout)"
+                if _workout_text != "(No workout)":
+                    render_workout_readable(_workout_text)
+                else:
+                    st.caption(_workout_text)
+                if st.button("Completed Workout", key=f"plan_done_{sel_idx}_{fi['mode_key']}"):
+                    on_complete(sel_idx, fi["mode_key"])
+    else:
+        for f in day_data.get("focus", []):
+            st.markdown(f"- {f}")
+
+
 # Optional API mode (off by default)
 USE_API = os.getenv("BENDER_USE_API", "0").strip().lower() in ("1", "true", "yes", "y")
 API_BASE = os.getenv("BENDER_API_BASE", "http://127.0.0.1:8000").strip()
@@ -837,23 +921,50 @@ athlete_id = athlete_id.strip() or "athlete"
 
 # Admin: Plan Builder tab (only for Erich Jaeger)
 try:
-    from admin_plan_builder import is_admin_user, generate_plan, get_template_for_days
+    from admin_plan_builder import is_admin_user, generate_plan, generate_plan_with_workouts
 except ImportError:
     is_admin_user = lambda _: False
     generate_plan = lambda *a, **k: []
-    get_template_for_days = lambda _: []
+    generate_plan_with_workouts = lambda p, cb, seed=42: p
 
 _admin = is_admin_user(display_name)
+_assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
     _tab_bender, _tab_admin = st.tabs(["Bender", "Admin: Plan Builder"])
     _bender_ctx = _tab_bender
+    _tab_plan = None
+elif _assigned_plan:
+    _tab_plan, _tab_generate = st.tabs(["My Plan", "Generate Workout"])
+    _bender_ctx = _tab_generate
+    _tab_admin = None
 else:
     _bender_ctx = nullcontext()
     _tab_admin = None
+    _tab_plan = None
 
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
+
+# My Plan tab (for players with assigned plan)
+if _tab_plan is not None and _assigned_plan:
+    with _tab_plan:
+        _plan_data = _deserialize_plan_for_display(_assigned_plan)
+        _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
+        if isinstance(_plan_completed, dict):
+            _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
+
+        def _plan_on_complete(day_idx: int, mode_key: str) -> None:
+            prof = dict(st.session_state.current_profile or {})
+            c = dict(prof.get("assigned_plan_completed") or {})
+            key = str(day_idx)
+            c[key] = list(set(c.get(key, [])) | {mode_key})
+            prof["assigned_plan_completed"] = c
+            st.session_state.current_profile = prof
+            save_profile(prof)
+            st.rerun()
+
+        _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 with _bender_ctx:
     form_container = st.container()
@@ -1052,20 +1163,126 @@ with _bender_ctx:
 if _tab_admin is not None:
     with _tab_admin:
         st.subheader("Admin: Plan Builder")
-        st.caption("Multi-week workout plans. Category focus per day.")
+        st.caption("Multi-week workout plans. Generate with full workouts for each day (Bible App–style view).")
         _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
         _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
-        if st.button("Generate plan", key="admin_gen"):
-            _plan = generate_plan(_w, _d, _start)
-            st.session_state.admin_plan = _plan
-            st.rerun()
+        _col_gen, _col_full = st.columns(2)
+        with _col_gen:
+            if st.button("Generate plan (structure only)", key="admin_gen"):
+                _plan = generate_plan(_w, _d, _start)
+                st.session_state.admin_plan = _plan
+                st.rerun()
+        with _col_full:
+            if st.button("Generate plan with workouts", type="primary", key="admin_gen_full"):
+                _plan = generate_plan(_w, _d, _start)
+                data = _load_engine_data()
+                profile = st.session_state.get("current_profile") or {}
+                _expand = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])
+                user_equipment = _expand(profile.get("equipment")) if ENGINE else []
+
+                _progress = st.progress(0.0, text="Generating workouts…")
+                _total_slots = sum(
+                    sum(1 for f in d.get("focus", []) if not ("optional" in (f or "").lower() and "conditioning" in (f or "").lower()))
+                    for w in _plan for d in w["days"]
+                )
+                _slot = [0]  # mutable counter for closure
+
+                def _gen_cb(day_idx: int, focus_str: str, params: dict) -> str:
+                    _slot[0] += 1
+                    if _total_slots:
+                        _progress.progress(min(1.0, _slot[0] / _total_slots), text=f"Generating workout {_slot[0]} of {_total_slots}…")
+                    seed = params.get("seed", day_idx * 100)
+                    resp = ENGINE.generate_session(
+                        data=data,
+                        age=age,
+                        seed=seed,
+                        focus=params.get("focus"),
+                        session_mode=params.get("mode", "performance"),
+                        session_len_min=params.get("session_len_min", 25),
+                        athlete_id=f"plan_{athlete_id}",
+                        use_memory=False,
+                        strength_day_type=params.get("strength_day_type"),
+                        strength_full_gym=(params.get("mode") == "performance" and params.get("location") == "gym"),
+                        strength_emphasis=params.get("strength_emphasis", "strength"),
+                        user_equipment=user_equipment,
+                    )
+                    return resp or "(Empty)"
+
+                _plan = generate_plan_with_workouts(_plan, _gen_cb, base_seed=random.randint(1, 999999))
+                _progress.empty()
+                st.session_state.admin_plan = _plan
+                st.session_state.admin_plan_selected_day = 0
+                st.rerun()
+
         if st.session_state.get("admin_plan"):
             _plan = st.session_state.admin_plan
+            total_days = sum(len(w["days"]) for w in _plan)
+            flat_days: list[tuple[int, dict]] = []
             for w in _plan:
-                _end = w['week_start'] + timedelta(days=6)
-                with st.expander(f"**Week {w['week']}** ({w['week_start'].strftime('%b %d')} – {_end.strftime('%b %d')}) — {w['progression_note']}"):
-                    for d in w["days"]:
-                        st.markdown(f"**Day {d['day_num']}** ({d['date'].strftime('%a %b %d')})")
-                        for f in d["focus"]:
-                            st.markdown(f"- {f}")
+                for d in w["days"]:
+                    flat_days.append((w["week"], d))
+
+            # Bible App style: horizontal day selector, Day X of Y, clickable modes
+            if "admin_plan_selected_day" not in st.session_state:
+                st.session_state.admin_plan_selected_day = 0
+            if "admin_plan_completed" not in st.session_state:
+                st.session_state.admin_plan_completed = {}
+
+            st.markdown("---")
+            st.markdown("**Select day** — *Day X of Y*")
+            # Day selector: show ~4 at a time, scroll via slider/select
+            day_options = [f"Day {i+1} ({d['date'].strftime('%b %d')})" for i, (_, d) in enumerate(flat_days)]
+            _default_day = st.session_state.get("admin_plan_selected_day", 0)
+            sel_idx = st.selectbox("Jump to day", range(total_days), index=min(_default_day, total_days - 1), format_func=lambda i: day_options[i], key="admin_plan_day_sel")
+            st.session_state.admin_plan_selected_day = sel_idx
+
+            _, day_data = flat_days[sel_idx]
+            st.markdown(f"### Day {sel_idx + 1} of {total_days}")
+            st.caption(f"{day_data['date'].strftime('%A, %b %d')}")
+
+            # List of modes (Performance, Skating Mechanics, etc.) — click to expand, see full workout
+            focus_items = day_data.get("focus_items", [])
+            if focus_items:
+                for fi in focus_items:
+                    completed = st.session_state.admin_plan_completed.get(sel_idx, set()) or set()
+                    done = fi["mode_key"] in completed
+                    with st.expander(f"{'✓ ' if done else ''}{fi['label']}", expanded=not done):
+                        _workout_text = fi.get("workout") or "(No workout)"
+                        if _workout_text != "(No workout)":
+                            render_workout_readable(_workout_text)
+                        else:
+                            st.caption(_workout_text)
+                        if st.button("Completed Workout", key=f"admin_done_{sel_idx}_{fi['mode_key']}"):
+                            if sel_idx not in st.session_state.admin_plan_completed:
+                                st.session_state.admin_plan_completed[sel_idx] = set()
+                            st.session_state.admin_plan_completed[sel_idx].add(fi["mode_key"])
+                            st.rerun()
+            else:
+                # Legacy: plan without focus_items
+                for f in day_data.get("focus", []):
+                    st.markdown(f"- {f}")
+
+            st.markdown("---")
+            st.subheader("Assign plan to player")
+            st.caption("Assign this full plan (with workouts) to a player. They will see it in Bible App format when they log in.")
+            all_profiles = list_profiles()
+            # Exclude admin; show display_name or user_id
+            player_options = [(p, p.get("display_name") or p.get("user_id") or "Unknown") for p in all_profiles]
+            if player_options:
+                _selected_label = st.selectbox(
+                    "Select player",
+                    options=range(len(player_options)),
+                    format_func=lambda i: player_options[i][1],
+                    key="admin_assign_player",
+                )
+                _target_profile = player_options[_selected_label][0]
+                if st.button("Assign plan to this player", key="admin_assign_btn"):
+                    _plan_to_save = _serialize_plan_for_storage(_plan)
+                    _target_profile["assigned_plan"] = _plan_to_save
+                    _target_profile["assigned_plan_completed"] = {}
+                    save_profile(_target_profile)
+                    st.success(f"Plan assigned to {_target_profile.get('display_name') or _target_profile.get('user_id')}. They will see it on next login.")
+                    st.rerun()
+            else:
+                st.caption("No other profiles found. Create accounts for players first.")

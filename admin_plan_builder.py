@@ -4,7 +4,16 @@ Only exposed to admin user "Erich Jaeger" via UI gating.
 Templates for 3–7 days/week; progression notes; optional drill generation with variety.
 """
 from datetime import date, timedelta
-from typing import Any, Optional
+from typing import Any, Callable, Optional
+
+# Display label for each mode (Bible App style: Devotional = Performance, etc.)
+MODE_DISPLAY_LABELS: dict[str, str] = {
+    "performance": "Performance",
+    "skating_mechanics": "Skating Mechanics",
+    "skills_only": "Puck Mastery",
+    "energy_systems": "Conditioning",
+    "mobility": "Mobility/Recovery",
+}
 
 # Week templates: day_index (0-based) -> list of category focus strings
 # Each day has PRIMARY + optional SECONDARY + Mobility/Recovery as warmup/cooldown
@@ -97,6 +106,120 @@ def generate_plan(
             "days": days_out,
             "progression_note": get_progression_note(w),
         })
+    return plan
+
+
+def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
+    """
+    Map plan focus string to engine params (mode, focus, strength_day_type, session_len_min, etc.).
+    Returns None if focus should be skipped (e.g. optional Conditioning).
+    """
+    s = (focus_str or "").strip().lower()
+    if not s:
+        return None
+    # Skip optional conditioning
+    if "optional" in s and "conditioning" in s:
+        return None
+
+    out: dict[str, Any] = {"location": "no_gym", "strength_day_type": "full"}
+
+    # Performance
+    if "performance" in s:
+        out["mode"] = "performance"
+        out["location"] = "gym"
+        if "lower" in s or "leg" in s:
+            out["strength_day_type"] = "leg"
+        elif "upper" in s:
+            out["strength_day_type"] = "upper"
+        elif "power" in s:
+            out["strength_day_type"] = "full"
+            out["strength_emphasis"] = "power"
+        else:
+            out["strength_day_type"] = "full"
+        out["session_len_min"] = 35
+        out["focus"] = None
+        return out
+
+    # Skating Mechanics
+    if "skating" in s or "mechanics" in s:
+        out["mode"] = "skating_mechanics"
+        out["session_len_min"] = 12
+        if "accel" in s or "plyo" in s:
+            out["focus"] = "skating_accel_plyo"
+        elif "agility" in s or "footwork" in s:
+            out["focus"] = "skating_agility"
+        elif "bounds" in s or "starts" in s:
+            out["focus"] = "skating_bounds_starts"
+        else:
+            out["focus"] = None
+        return out
+
+    # Puck Mastery
+    if "puck" in s or "skills" in s:
+        out["mode"] = "skills_only"
+        out["session_len_min"] = 25 if "light" in s else 20
+        out["focus"] = None
+        return out
+
+    # Conditioning
+    if "conditioning" in s:
+        out["mode"] = "energy_systems"
+        out["session_len_min"] = 12 if "short" in s or "finisher" in s else 15
+        if "intervals" in s:
+            out["focus"] = "conditioning_intervals"
+        elif "repeat" in s or "sprint" in s:
+            out["focus"] = "conditioning_repeat_sprints"
+        elif "cones" in s:
+            out["focus"] = "conditioning_cones"
+        else:
+            out["focus"] = "conditioning"
+        return out
+
+    # Mobility/Recovery
+    if "mobility" in s or "recovery" in s:
+        out["mode"] = "mobility"
+        out["session_len_min"] = 25 if "only" in s else 12
+        out["focus"] = "mobility"
+        return out
+
+    return None
+
+
+def generate_plan_with_workouts(
+    plan: list[dict[str, Any]],
+    generate_callback: Callable[[int, str, dict[str, Any]], str],
+    base_seed: int = 42,
+) -> list[dict[str, Any]]:
+    """
+    Hydrate plan with full workouts for each focus slot. Uses different seeds per slot
+    to reduce duplicates. generate_callback(day_idx, focus_str, params) -> workout_text.
+    """
+    flat_day_idx = 0
+    for w in plan:
+        for d in w["days"]:
+            focus_items: list[dict[str, Any]] = []
+            for f_str in d.get("focus", []):
+                params = parse_focus_to_engine_params(f_str)
+                if params is None:
+                    continue
+                seed = base_seed + flat_day_idx * 100 + len(focus_items)
+                params["seed"] = seed
+                try:
+                    workout = generate_callback(flat_day_idx, f_str, params)
+                except Exception:
+                    workout = "(Workout generation failed)"
+                mode_key = params.get("mode", "unknown")
+                label = MODE_DISPLAY_LABELS.get(mode_key, mode_key.replace("_", " ").title())
+                focus_items.append({
+                    "label": label,
+                    "mode_key": mode_key,
+                    "original": f_str,
+                    "workout": workout,
+                    "params": {k: v for k, v in params.items() if k != "seed"},
+                })
+            d["focus_items"] = focus_items
+            d["focus"] = [fi["label"] for fi in focus_items]  # keep for backward compat
+            flat_day_idx += 1
     return plan
 
 
