@@ -204,17 +204,19 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
     row_cols = st.columns(total_days)
     for i in range(total_days):
-        with row_cols[i]:
-            day_data = flat_days[i][1]
-            day_date = day_data.get("date")
-            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
-            _completed = completed.get(i) or completed.get(str(i)) or []
-            _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
-            focus_items_i = day_data.get("focus_items", [])
-            day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
-            past = day_date < today_date if hasattr(day_date, "__lt__") else False
-            missed = past and not day_complete
-            label = f"{'✓ ' if day_complete else ''}{i + 1}"
+            with row_cols[i]:
+                day_data = flat_days[i][1]
+                day_date = day_data.get("date")
+                date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
+                _completed = completed.get(i) or completed.get(str(i)) or []
+                _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
+                focus_items_i = day_data.get("focus_items", [])
+                day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
+                past = day_date < today_date if hasattr(day_date, "__lt__") else False
+                missed = past and not day_complete
+                if day_complete:
+                    st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+                label = f"{'✓ ' if day_complete else ''}{i + 1}"
             if missed:
                 label = f"{i + 1} ⚠"
             btn_type = "primary" if i == sel_idx else "secondary"
@@ -702,6 +704,15 @@ st.markdown("""
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
+    /* Sidebar & equipment: ensure text visible on mobile (avoid white on white) */
+    [data-testid="stSidebar"] { background-color: #f8fafc !important; }
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] { color: #1e293b !important; }
+    [data-testid="stSidebar"] .stMarkdown,
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #0f172a !important; }
+    [data-testid="stSidebar"] p { color: #334155 !important; }
+    [data-testid="stSidebar"] .stCaption { color: #475569 !important; }
+
     /* Plan day selector: single row, horizontal scroll bar */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] {
@@ -710,41 +721,48 @@ st.markdown("""
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        min-width: 4rem; flex: 0 0 auto;
+        min-width: 4.5rem; flex: 0 0 auto;
     }
 
     /* Plan day selector: dark grey cards, number + date, selected=white border+date pill */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        background: #334155 !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
+        background: #1e293b !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 3rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        min-width: 3.25rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
         background: transparent !important; color: white !important; border: none !important;
+        white-space: nowrap !important;
     }
     .plan-day-date {
-        background: transparent; color: #94a3b8; font-size: 0.7rem; text-align: center; margin: 0.2rem 0 0 0;
+        background: transparent; color: #475569; font-size: 0.7rem; text-align: center; margin: 0.2rem 0 0 0;
     }
     .plan-day-date-selected {
         background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
         border-radius: 999px !important; display: inline-block !important;
     }
+    /* Player day complete: whole day card turns green */
+    .plan-day-complete { display: none; }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
+        background: #16a34a !important;
+    }
 
     /* Admin plan day selector: same dark card design */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        background: #334155 !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
+        background: #1e293b !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 3rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        min-width: 3.25rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 1rem;
         background: transparent !important; color: white !important; border: none !important;
+        white-space: nowrap !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #94a3b8 !important; margin-top: 0.2rem !important;
+        background: transparent !important; color: #475569 !important; margin-top: 0.2rem !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
         background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
@@ -756,12 +774,12 @@ st.markdown("""
         background: #16a34a !important;
     }
 
-    /* Admin mode buttons (Performance, etc.) - lighter blue */
+    /* Admin mode buttons: blue when incomplete, light green + checkmark when workout complete */
     #admin-plan-modes ~ * .stButton button {
         background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
     }
     #admin-plan-modes ~ * .stButton button[kind="primary"] {
-        background: #60a5fa !important; color: white !important; border: 1px solid #3b82f6 !important;
+        background: #86efac !important; color: #14532d !important; border: 1px solid #22c55e !important;
     }
 
     /* Form card */
