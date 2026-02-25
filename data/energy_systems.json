@@ -200,7 +200,7 @@
     "intensity": "med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "Box/Bench",
+    "equipment": "Box",
     "space": "1 box",
     "step_by_step": "Alternate step-ups continuously",
     "coaching_cues": "Full foot on box",

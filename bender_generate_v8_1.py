@@ -166,6 +166,11 @@ def _equip_norm(s: str) -> str:
 
 
 def drill_equipment_list(d: Dict[str, Any]) -> List[str]:
+    """
+    Parse equipment string into list of required items (each must be satisfied).
+    Comma separates distinct equipment tags (AND: all required).
+    '&' / 'and' within a tag is normalized; multiple words in one tag stay together.
+    """
     raw = norm(get(d, "equipment", default=""))
     if not raw:
         return []
@@ -293,14 +298,163 @@ def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, 
     }
 
 
+# Canonical equipment list by Bender mode (clean UI). Each canonical name maps to data
+# values that satisfy it (for filtering).
+EQUIPMENT_EXPAND: Dict[str, List[str]] = {
+    "None": ["None"],
+    "Barbell": ["Barbell", "Barbell & bench"],
+    "Bench": ["Bench", "Barbell & bench", "Dumbbells & bench", "Dumbbell & bench", "Bench or box", "Bench or chair", "Bench or wall", "Dumbbells & incline bench", "Box/Bench"],
+    "Squat Rack": ["Squat Rack", "Barbell & rack"],
+    "Bands": ["Bands", "Band or cable", "Cable or band"],
+    "Resistance band": ["Resistance band"],
+    "Kettlebells": ["Kettlebells", "Dumbbell or kettlebell"],
+    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or trap bar", "Light dumbbell", "Light dumbbells"],
+    "Trap bar": ["Trap bar"],
+    "Bar or rings": ["Bar or rings"],
+    "Cable machine": ["Cable machine"],
+    "Pull-up bar": ["Pull-up bar"],
+    "Medicine ball": ["Medicine ball"],
+    "Exercise ball": ["Exercise ball"],
+    "Box": ["Box", "Box/Bench"],
+    "Slider or TRX": ["Slider or TRX"],
+    "Landmine setup": ["Landmine setup"],
+    "Shooting pad & net": ["Shooting pad & net", "Shooting pad & pucks"],
+    "Stickhandling ball": ["Stickhandling ball", "Stick & ball"],
+    "Cones": ["Cones", "Colored cones"],
+    "Agility Ladder": ["Agility Ladder", "Ladder"],
+    "Hurdles": ["Hurdles"],
+    "Mini hurdles": ["Mini hurdles"],
+    "Line/Tape": ["Line/Tape"],
+    "Reaction ball": ["Reaction ball"],
+    "Partner": ["Partner"],
+    "Stationary bike": ["Stationary bike"],
+    "Treadmill": ["Treadmill", "Curved treadmill"],
+    "Hill": ["Hill"],
+    "Stairs": ["Stairs"],
+    "Foam roller": ["Foam roller"],
+}
+# Everyone is assumed to have these (hockey stick, puck, chair, stick obstacle, stick & puck).
+EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Chair", "Stick obstacle"]
+
+CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
+    "Performance": [
+        "None",
+        "Barbell",
+        "Bench",
+        "Squat Rack",
+        "Dumbbells",
+        "Kettlebells",
+        "Trap bar",
+        "Bands",
+        "Resistance band",
+        "Bar or rings",
+        "Cable machine",
+        "Pull-up bar",
+        "Medicine ball",
+        "Exercise ball",
+        "Box",
+        "Slider or TRX",
+        "Landmine setup",
+    ],
+    "Puck Mastery": [
+        "Stickhandling ball",
+        "Shooting pad & net",
+    ],
+    "Conditioning": [
+        "None",
+        "Cones",
+        "Stationary bike",
+        "Treadmill",
+        "Hill",
+        "Stairs",
+        "Box",
+    ],
+    "Skating Mechanics": [
+        "None",
+        "Cones",
+        "Agility Ladder",
+        "Hurdles",
+        "Mini hurdles",
+        "Line/Tape",
+        "Reaction ball",
+        "Partner",
+    ],
+    "Mobility": [
+        "None",
+        "Foam roller",
+        "Bench",
+    ],
+}
+
+
+def get_canonical_equipment_by_mode() -> Dict[str, List[str]]:
+    """Return equipment list grouped by Bender mode for the UI."""
+    return CANONICAL_EQUIPMENT_BY_MODE
+
+
+def _legacy_to_canonical_map() -> Dict[str, str]:
+    """Map each legacy/data equipment value to its canonical name."""
+    m: Dict[str, str] = {}
+    for canonical, legacies in EQUIPMENT_EXPAND.items():
+        for leg in legacies:
+            key = norm(leg).lower()
+            if key and key not in m:
+                m[key] = canonical
+    return m
+
+
+def canonicalize_equipment_list(equipment: Optional[List[str]]) -> List[str]:
+    """
+    Convert profile equipment (may contain legacy names) to canonical names for display.
+    Dedupes and preserves order (canonical order by first appearance in CANONICAL_EQUIPMENT_BY_MODE).
+    """
+    if not equipment:
+        return []
+    leg2can = _legacy_to_canonical_map()
+    seen: set = set()
+    out: List[str] = []
+    for raw in equipment:
+        s = norm(raw)
+        if not s:
+            continue
+        canonical = leg2can.get(s.lower(), s)
+        if canonical not in seen:
+            seen.add(canonical)
+            out.append(canonical)
+    return out
+
+
+def expand_user_equipment(
+    user_equipment: Optional[List[str]],
+    add_assumed: bool = True,
+) -> List[str]:
+    """
+    Expand canonical names to data values for filtering. Optionally add assumed equipment.
+    Pass the result to the engine so drills match correctly.
+    """
+    if not user_equipment:
+        return list(EQUIPMENT_ASSUMED) if add_assumed else []
+    out: List[str] = []
+    for name in user_equipment:
+        name = norm(name)
+        if not name:
+            continue
+        expanded = EQUIPMENT_EXPAND.get(name, [name])
+        for e in expanded:
+            if e and e not in out:
+                out.append(e)
+    if add_assumed:
+        for a in EQUIPMENT_ASSUMED:
+            if a not in out:
+                out.append(a)
+    return out
+
+
 def get_all_equipment_from_data(data: Dict[str, List[Dict[str, Any]]]) -> List[str]:
     """
-    Collect all unique equipment values from drill data. Used by the Streamlit UI
-    for the profile equipment list. When new exercises are added to movement.json,
-    performance.json, etc., add their "equipment" field as usual — it will appear
-    in the app's equipment list automatically (no separate list to maintain).
-    Matches equipment in the CSV exports (same source data). Excludes "Wall".
-    Returns sorted list with "None" first if present, then rest alphabetically.
+    Legacy: collect unique equipment from data. Prefer get_canonical_equipment_by_mode()
+    for the UI. Kept for CSV export and backward compatibility.
+    Excludes "Wall".
     """
     seen_lower: Dict[str, str] = {}
     for category, drills in data.items():
@@ -318,7 +472,6 @@ def get_all_equipment_from_data(data: Dict[str, List[Dict[str, Any]]]) -> List[s
                 continue
             if key not in seen_lower:
                 seen_lower[key] = s
-    # "None" first if present, then rest sorted
     out = []
     if "none" in seen_lower:
         out.append(seen_lower["none"])

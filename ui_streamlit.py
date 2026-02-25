@@ -493,7 +493,7 @@ def _generate_via_engine(payload: dict) -> dict:
     shooting_min = payload.get("shooting_min", None)
 
     profile = st.session_state.get("current_profile") or {}
-    user_equipment = list(profile.get("equipment") or [])
+    user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
     out_text = ENGINE.generate_session(
         data=data,
         age=age,
@@ -528,6 +528,77 @@ def _generate_via_api(payload: dict) -> dict:
     if r.status_code != 200:
         raise RuntimeError(r.text)
     return r.json()
+
+
+def _generate_long_workout(
+    total_min: int,
+    strength_day: str,
+    athlete_id: str,
+    age: int,
+    user_equipment: list,
+) -> str:
+    """
+    Generate a long combined workout: Performance + Skating + Puck Mastery + Conditioning.
+    Uses plan logic: strength block, then skating, puck, conditioning. Each block from engine.
+    user_equipment: canonical list from profile; expanded + assumed before calling engine.
+    """
+    user_equipment = ENGINE.expand_user_equipment(user_equipment)
+    # Time split (warmup lives inside performance block)
+    # Performance (incl. warmup + mobility): ~40%, Skating ~15%, Puck ~25%, Conditioning ~20%
+    perf_min = max(25, int(total_min * 0.40))
+    skate_min = max(10, int(total_min * 0.15))
+    puck_min = max(15, int(total_min * 0.25))
+    cond_min = max(10, total_min - perf_min - skate_min - puck_min)
+    if cond_min < 8:
+        cond_min = 8
+        puck_min = max(15, total_min - perf_min - skate_min - cond_min)
+
+    day_type = "leg" if strength_day == "lower" else ("upper" if strength_day == "upper" else "full")
+    parts = []
+
+    blocks = [
+        ("performance", perf_min, {"strength_day_type": day_type, "location": "gym", "conditioning": False}),
+        ("skating_mechanics", skate_min, {}),
+        ("skills_only", puck_min, {}),
+        ("energy_systems", cond_min, {"location": "no_gym", "focus": "conditioning_cones"}),
+    ]
+    for i, (mode, mins, extra) in enumerate(blocks):
+        payload = {
+            "athlete_id": athlete_id,
+            "age": age,
+            "minutes": mins,
+            "mode": mode,
+            "focus": extra.get("focus"),
+            "location": extra.get("location", "no_gym"),
+            "strength_day_type": extra.get("strength_day_type"),
+            "strength_emphasis": "strength",
+            "skate_within_24h": False,
+            "conditioning": extra.get("conditioning"),
+            "conditioning_type": None,
+            "user_equipment": user_equipment,
+        }
+        if mode == "performance":
+            payload["strength_day_type"] = day_type
+            payload["location"] = "gym"
+            payload["conditioning"] = False
+        if mode == "skills_only":
+            payload["shooting_shots"] = max(100, mins * 4)
+            payload["stickhandling_min"] = mins // 2
+            payload["shooting_min"] = mins - (mins // 2)
+        try:
+            resp = _generate_via_engine(payload) if not USE_API else _generate_via_api(payload)
+            text = (resp.get("output_text") or "").strip()
+            if not text:
+                continue
+            # Keep first block full; strip first line (BENDER header) from rest
+            if i > 0 and "\n" in text:
+                first_newline = text.index("\n")
+                if "BENDER SINGLE WORKOUT" in text[:first_newline]:
+                    text = text[first_newline:].lstrip()
+            parts.append(text)
+        except Exception:
+            continue
+    return "\n\n".join(parts) if parts else ""
 
 
 # -----------------------------
@@ -644,6 +715,8 @@ if "auth_page" not in st.session_state:
     st.session_state.auth_page = "login"  # "login" or "create_account" when not logged in
 if "admin_plan" not in st.session_state:
     st.session_state.admin_plan = None
+if "admin_long_workout_text" not in st.session_state:
+    st.session_state.admin_long_workout_text = None
 
 # ---------- Not logged in: Log in (first) or Create account (separate page) ----------
 if st.session_state.current_user_id is None:
@@ -653,7 +726,6 @@ if st.session_state.current_user_id is None:
         if st.session_state.get("creation_success"):
             st.success(st.session_state.creation_success)
             del st.session_state.creation_success
-        st.caption("Enter your username and password.")
         login_username = st.text_input(
             "Username (first and last name)",
             key="login_username",
@@ -748,17 +820,19 @@ if st.session_state.page == "equipment_onboarding":
     prof = st.session_state.current_profile or {}
     st.markdown("#### Set up your equipment")
     st.caption("Choose what you have so we can build the right workouts. You can change this anytime in the sidebar.")
-    if "equipment_options" not in st.session_state:
-        try:
-            data = ENGINE.load_all_data()
-            st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
-        except Exception:
-            st.session_state.equipment_options = ["None"]
-    equipment_options = st.session_state.equipment_options
+    try:
+        equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
+    except Exception:
+        equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
+    current_equip = set(ENGINE.canonicalize_equipment_list(prof.get("equipment") or []))
     selected = []
-    for opt in equipment_options:
-        if st.checkbox(opt, value=opt in (prof.get("equipment") or []), key=f"onb_{opt}"):
-            selected.append(opt)
+    for mode_name, opts in equipment_by_mode.items():
+        st.markdown(f"**{mode_name}**")
+        for opt in opts:
+            if st.checkbox(opt, value=opt in current_equip, key=f"onb_{mode_name}_{opt}"):
+                if opt not in selected:
+                    selected.append(opt)
+        st.caption("")
     if st.button("Save and continue", key="onb_save"):
         if not selected:
             st.warning("Select at least one option (e.g. \"None\" for no equipment) so we can build workouts.")
@@ -780,27 +854,31 @@ if not _equipment_setup_done(st.session_state.current_profile or {}):
 
 display_name = (st.session_state.current_profile or {}).get("display_name") or st.session_state.current_user_id or ""
 
-# Sidebar: equipment (dynamic list from data) + Sign out
+# Sidebar: equipment by mode (canonical list) + Sign out
 with st.sidebar:
     st.markdown(f"**{display_name}**")
     st.divider()
     st.subheader("Equipment")
     st.caption("Check what you have. Workouts only include exercises that use this equipment.")
-    if "equipment_options" not in st.session_state:
-        try:
-            data = ENGINE.load_all_data()
-            st.session_state.equipment_options = ENGINE.get_all_equipment_from_data(data)
-        except Exception:
-            st.session_state.equipment_options = ["None"]
-    equipment_options = st.session_state.equipment_options
+    try:
+        equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
+    except Exception:
+        equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
     prof = st.session_state.current_profile or {}
-    current_equip = prof.get("equipment") or []
-    for opt in equipment_options:
-        st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{opt}")
+    current_equip = set(ENGINE.canonicalize_equipment_list(prof.get("equipment") or []))
+    all_canonical = []
+    _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
+    for mode_name, opts in equipment_by_mode.items():
+        st.markdown(f"**{mode_name}**")
+        for opt in opts:
+            all_canonical.append((mode_name, opt))
+            if opt in _equip_tooltips:
+                st.caption(_equip_tooltips[opt])
+            st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
     if st.button("Save equipment", key="sidebar_save"):
         new_equip = [
-            opt for opt in equipment_options
-            if st.session_state.get(f"sidebar_{opt}", opt in current_equip)
+            opt for _mode, opt in all_canonical
+            if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)
         ]
         prof["equipment"] = new_equip
         st.session_state.current_profile = prof
@@ -839,11 +917,13 @@ except ImportError:
 
 _admin = is_admin_user(display_name)
 if _admin:
-    _tab_bender, _tab_admin = st.tabs(["Bender", "Admin: Plan Builder"])
+    _tab_bender, _tab_admin, _tab_long = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Long Workout"])
     _bender_ctx = _tab_bender
 else:
     _bender_ctx = nullcontext()
     _tab_admin = None
+    _tab_long = None
+    _tab_long = None
 
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
@@ -939,7 +1019,7 @@ with _bender_ctx:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         if generate_clicked:
             profile = st.session_state.get("current_profile") or {}
-            user_equipment = list(profile.get("equipment") or [])
+            user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
             payload = {
                 "athlete_id": athlete_id,
                 "age": int(age),
@@ -1063,4 +1143,29 @@ if _tab_admin is not None:
                         st.markdown(f"**Day {d['day_num']}** ({d['date'].strftime('%a %b %d')})")
                         for f in d["focus"]:
                             st.markdown(f"- {f}")
+
+# Admin tab: Long Workout (only for Erich Jaeger)
+if _tab_long is not None:
+    with _tab_long:
+        st.subheader("Admin: Long Workout")
+        st.caption("Generate a longer combined session: Strength + Skating + Puck Mastery + Conditioning (plan logic).")
+        _long_min = st.selectbox("Session length", [75, 90, 105, 120], format_func=lambda x: f"{x} min", key="admin_long_min")
+        _long_day = st.selectbox("Strength day", ["lower", "upper", "full"], format_func=lambda x: x.capitalize(), key="admin_long_day")
+        if st.button("Generate long workout", key="admin_long_gen"):
+            with st.spinner("Building long workout…"):
+                _out = _generate_long_workout(
+                    total_min=int(_long_min),
+                    strength_day=_long_day,
+                    athlete_id=athlete_id,
+                    age=age,
+                    user_equipment=list((st.session_state.current_profile or {}).get("equipment") or []),
+                )
+            st.session_state.admin_long_workout_text = _out
+            st.rerun()
+        if st.session_state.get("admin_long_workout_text"):
+            st.divider()
+            if st.button("Clear long workout", key="admin_long_clear"):
+                st.session_state.admin_long_workout_text = None
+                st.rerun()
+            render_workout_readable(st.session_state.admin_long_workout_text)
 
