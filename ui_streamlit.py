@@ -5,7 +5,8 @@ import os
 import random
 import re
 import secrets
-from datetime import datetime
+from contextlib import nullcontext
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import streamlit as st
@@ -641,6 +642,8 @@ if "page" not in st.session_state:
     st.session_state.page = "main"
 if "auth_page" not in st.session_state:
     st.session_state.auth_page = "login"  # "login" or "create_account" when not logged in
+if "admin_plan" not in st.session_state:
+    st.session_state.admin_plan = None
 
 # ---------- Not logged in: Log in (first) or Create account (separate page) ----------
 if st.session_state.current_user_id is None:
@@ -826,226 +829,238 @@ with _col_signout:
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
 athlete_id = athlete_id.strip() or "athlete"
 
-form_container = st.container()
+# Admin: Plan Builder tab (only for Erich Jaeger)
+try:
+    from admin_plan_builder import is_admin_user, generate_plan, get_template_for_days
+except ImportError:
+    is_admin_user = lambda _: False
+    generate_plan = lambda *a, **k: []
+    get_template_for_days = lambda _: []
+
+_admin = is_admin_user(display_name)
+if _admin:
+    _tab_bender, _tab_admin = st.tabs(["Bender", "Admin: Plan Builder"])
+    _bender_ctx = _tab_bender
+else:
+    _bender_ctx = nullcontext()
+    _tab_admin = None
+
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
 
-with form_container:
-    st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
-    st.markdown("#### Session options")
-    minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
-    minutes = int(minutes)
+with _bender_ctx:
+    form_container = st.container()
+    with form_container:
+        st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
+        st.markdown("#### Session options")
+        minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+        minutes = int(minutes)
 
-    mode_label = st.selectbox("Mode", DISPLAY_MODES)
-    mode = LABEL_TO_MODE[mode_label]
+        mode_label = st.selectbox("Mode", DISPLAY_MODES)
+            mode = LABEL_TO_MODE[mode_label]
 
-    if mode == "puck_mastery":
-        skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-        effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
-    else:
-        effective_mode = mode
-
-    if effective_mode in ("performance", "energy_systems"):
-        location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
-    else:
-        location = "no_gym"
-
-    focus = None
-    strength_day_type = None
-    strength_emphasis = "strength"
-    skate_within_24h = False
-    conditioning_focus = None
-
-    if effective_mode == "performance":
-        if location == "gym":
-            day = st.selectbox("Strength day", ["lower", "upper", "full"])
-            strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
-            em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
-            strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+        if mode == "puck_mastery":
+            skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+            effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
         else:
-            # No-gym: premade circuit + mobility only; no circuit focus or post-lift options
-            st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
-            strength_day_type = "full"
-            strength_emphasis = "strength"
-            skate_within_24h = False
+            effective_mode = mode
 
-    elif effective_mode == "energy_systems":
-        if location == "gym":
-            mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
-            conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
+        if effective_mode in ("performance", "energy_systems"):
+            location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
         else:
-            st.caption("No-gym: cones / no equipment")
-            conditioning_focus = "conditioning_cones"
-        focus = conditioning_focus
+            location = "no_gym"
 
-    elif effective_mode == "mobility":
-        focus = "mobility"
+            focus = None
+        strength_day_type = None
+        strength_emphasis = "strength"
+        skate_within_24h = False
+        conditioning_focus = None
 
-    conditioning = False
-    conditioning_type = None
-    if effective_mode == "performance" and location == "gym":
-        conditioning = st.checkbox("Post-lift conditioning?", value=False)
-        if conditioning:
-            conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
-        else:
-            conditioning_type = None
+        if effective_mode == "performance":
+            if location == "gym":
+                day = st.selectbox("Strength day", ["lower", "upper", "full"])
+                strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+                strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+            else:
+                st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
+                strength_day_type = "full"
+                strength_emphasis = "strength"
+                skate_within_24h = False
 
-    # Auto-clear old output if key inputs change
-    inputs_fingerprint = (
-        athlete_id.strip().lower(),
-        int(age),
-        int(minutes),
-        effective_mode,
-        location,
-        focus,
-        strength_day_type,
-        strength_emphasis,
-        skate_within_24h,
-        conditioning,
-        conditioning_type,
-    )
+        elif effective_mode == "energy_systems":
+            if location == "gym":
+                mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
+                conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
+            else:
+                st.caption("No-gym: cones / no equipment")
+                conditioning_focus = "conditioning_cones"
+            focus = conditioning_focus
 
-    if st.session_state.last_inputs_fingerprint is None:
-        st.session_state.last_inputs_fingerprint = inputs_fingerprint
-    else:
-        if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
-            if st.session_state.last_session_id or st.session_state.last_output_text:
-                clear_last_output()
+        elif effective_mode == "mobility":
+            focus = "mobility"
+
+        conditioning = False
+        conditioning_type = None
+        if effective_mode == "performance" and location == "gym":
+            conditioning = st.checkbox("Post-lift conditioning?", value=False)
+            if conditioning:
+                conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+            else:
+                conditioning_type = None
+
+        # Auto-clear old output if key inputs change
+        inputs_fingerprint = (
+            athlete_id.strip().lower(),
+            int(age),
+            int(minutes),
+            effective_mode,
+            location,
+            focus,
+            strength_day_type,
+            strength_emphasis,
+            skate_within_24h,
+            conditioning,
+            conditioning_type,
+        )
+
+        if st.session_state.last_inputs_fingerprint is None:
             st.session_state.last_inputs_fingerprint = inputs_fingerprint
-
-    # Generate action (prominent in main area)
-    col_btn, _ = st.columns([1, 3])
-    with col_btn:
-        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
-    if generate_clicked:
-        profile = st.session_state.get("current_profile") or {}
-        user_equipment = list(profile.get("equipment") or [])
-        payload = {
-            "athlete_id": athlete_id,
-            "age": int(age),
-            "minutes": int(minutes),
-            "mode": effective_mode,
-            "focus": focus,  # controlled tokens only
-            "location": location,
-            # Strength tokens
-            "strength_day_type": strength_day_type,
-            "strength_emphasis": strength_emphasis,
-            "skate_within_24h": skate_within_24h,
-            # Post-lift conditioning
-            "conditioning": conditioning,
-            "conditioning_type": conditioning_type,
-            "user_equipment": user_equipment,
-        }
-
-        try:
-            with st.spinner("Generating workout..."):
-                if USE_API:
-                    resp = _generate_via_api(payload)
-                else:
-                    resp = _generate_via_engine(payload)
-
-            st.session_state.last_session_id = resp.get("session_id")
-            st.session_state.last_output_text = resp.get("output_text")
-            st.session_state.scroll_to_workout = True
-            st.success("Generated")
-        except Exception as e:
-            st.error(str(e))
-
-# -----------------------------
-# Display last generated workout (Tabbed)
-# -----------------------------
-if st.session_state.last_output_text:
-    st.divider()
-    # Anchor for scroll-after-generate
-    st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
-    if st.session_state.get("scroll_to_workout"):
-        st.session_state.scroll_to_workout = False
-        st.components.v1.html(
-            "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
-            height=0,
-        )
-    # Row: tabs + Clear workout
-    _col_tabs, _col_clear = st.columns([5, 1])
-    with _col_tabs:
-        tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
-    with _col_clear:
-        if st.button("Clear workout", type="secondary", use_container_width=True):
-            clear_last_output()
-            st.rerun()
-
-    # -------------------------
-    # TAB 1: Workout
-    # -------------------------
-    with tab_workout:
-        st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
-        # Small badge: mode + duration
-        badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
-        st.markdown(f'<span class="workout-result-badge">{badge_label}</span>', unsafe_allow_html=True)
-
-        # No-gym performance: show circuits-only view ONLY
-        if effective_mode == "performance" and location == "no_gym":
-            render_no_gym_strength_circuits_only(st.session_state.last_output_text)
         else:
-            render_workout_readable(st.session_state.last_output_text)
+            if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
+                if st.session_state.last_session_id or st.session_state.last_output_text:
+                    clear_last_output()
+                st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
+        # Generate action (prominent in main area)
+        col_btn, _ = st.columns([1, 3])
+        with col_btn:
+            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        if generate_clicked:
+            profile = st.session_state.get("current_profile") or {}
+            user_equipment = list(profile.get("equipment") or [])
+            payload = {
+                "athlete_id": athlete_id,
+                "age": int(age),
+                "minutes": int(minutes),
+                "mode": effective_mode,
+                "focus": focus,
+                "location": location,
+                "strength_day_type": strength_day_type,
+                "strength_emphasis": strength_emphasis,
+                "skate_within_24h": skate_within_24h,
+                "conditioning": conditioning,
+                "conditioning_type": conditioning_type,
+                "user_equipment": user_equipment,
+            }
 
-    # -------------------------
-    # TAB 2: Download / Copy
-    # -------------------------
-    with tab_download:
-        safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
-        date_str = datetime.now().strftime("%Y-%m-%d")
-        download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
-        st.download_button(
-            label="Download workout (.txt)",
-            data=st.session_state.last_output_text,
-            file_name=download_filename,
-            mime="text/plain",
-        )
-        st.caption("Your browser will download the file when you click above.")
-        st.write("")
+            try:
+                with st.spinner("Generating workout..."):
+                    if USE_API:
+                        resp = _generate_via_api(payload)
+                    else:
+                        resp = _generate_via_engine(payload)
 
-        if not (effective_mode == "performance" and location == "no_gym"):
-            with st.expander("Copy workout (raw text)"):
-                st.code(st.session_state.last_output_text)
-                st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
+                st.session_state.last_session_id = resp.get("session_id")
+                st.session_state.last_output_text = resp.get("output_text")
+                st.session_state.scroll_to_workout = True
+                st.success("Generated")
+            except Exception as e:
+                st.error(str(e))
 
+    # Display last generated workout (Tabbed)
+    if st.session_state.last_output_text:
+        st.divider()
+        st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
+        if st.session_state.get("scroll_to_workout"):
+            st.session_state.scroll_to_workout = False
+            st.components.v1.html(
+                "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
+                height=0,
+            )
+        _col_tabs, _col_clear = st.columns([5, 1])
+        with _col_tabs:
+            tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
+        with _col_clear:
+            if st.button("Clear workout", type="secondary", use_container_width=True):
+                clear_last_output()
+                st.rerun()
 
-    # -------------------------
-    # TAB 3: Feedback (Google Form)
-    # -------------------------
-    with tab_feedback:
+        with tab_workout:
+            st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
+            badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
+            st.markdown(f'<span class="workout-result-badge">{badge_label}</span>', unsafe_allow_html=True)
+            if effective_mode == "performance" and location == "no_gym":
+                render_no_gym_strength_circuits_only(st.session_state.last_output_text)
+            else:
+                render_workout_readable(st.session_state.last_output_text)
+
+        with tab_download:
+            safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
+            date_str = datetime.now().strftime("%Y-%m-%d")
+            download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
+            st.download_button(
+                label="Download workout (.txt)",
+                data=st.session_state.last_output_text,
+                file_name=download_filename,
+                mime="text/plain",
+            )
+            st.caption("Your browser will download the file when you click above.")
+            st.write("")
+            if not (effective_mode == "performance" and location == "no_gym"):
+                with st.expander("Copy workout (raw text)"):
+                    st.code(st.session_state.last_output_text)
+                    st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
+
+        with tab_feedback:
         st.write("Leave feedback so I can improve workouts.")
 
         # Map your internal mode token to the form’s expected label
-        form_mode_value = {
-            "skills_only": "Puck Mastery (Both)",
-            "shooting": "Puck Mastery (Shooting)",
-            "stickhandling": "Puck Mastery (Stickhandling)",
-            "performance": "Performance",
-            "energy_systems": "Conditioning",
-            "skating_mechanics": "Skating Mechanics",
-            "mobility": "Mobility",
-        }.get(effective_mode, mode_label)
+            form_mode_value = {
+                "skills_only": "Puck Mastery (Both)",
+                "shooting": "Puck Mastery (Shooting)",
+                "stickhandling": "Puck Mastery (Stickhandling)",
+                "performance": "Performance",
+                "energy_systems": "Conditioning",
+                "skating_mechanics": "Skating Mechanics",
+                "mobility": "Mobility",
+            }.get(effective_mode, mode_label)
+            if effective_mode in ("performance", "energy_systems"):
+                form_location_value = "Gym" if location == "gym" else "No Gym"
+            else:
+                form_location_value = "No Gym"
+            form_emphasis_value = strength_emphasis if effective_mode == "performance" else ""
+            prefill_url = build_prefilled_feedback_url(
+                athlete=athlete_id.strip(),
+                mode_label=form_mode_value,
+                location_label=form_location_value,
+                emphasis_key=form_emphasis_value,
+                rating=4,
+                notes="",
+            )
+            st.link_button("Leave Feedback (auto-filled)", prefill_url)
+            st.link_button("Open Feedback Form (blank)", FORM_BASE)
 
-        # Location label: only meaningful for performance/energy_systems
-        if effective_mode in ("performance", "energy_systems"):
-            form_location_value = "Gym" if location == "gym" else "No Gym"
-        else:
-            form_location_value = "No Gym"  # or "N/A" if your form supports that
-
-        form_emphasis_value = strength_emphasis if effective_mode == "performance" else ""
-
-        prefill_url = build_prefilled_feedback_url(
-            athlete=athlete_id.strip(),
-            mode_label=form_mode_value,
-            location_label=form_location_value,
-            emphasis_key=form_emphasis_value,
-            rating=4,
-            notes="",
-        )
-
-        st.link_button("Leave Feedback (auto-filled)", prefill_url)
-        st.link_button("Open Feedback Form (blank)", FORM_BASE)
+# Admin tab: Plan Builder (only for Erich Jaeger)
+if _tab_admin is not None:
+    with _tab_admin:
+        st.subheader("Admin: Plan Builder")
+        st.caption("Multi-week workout plans. Category focus per day.")
+        _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
+        _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
+        _start = st.date_input("Start date", value=date.today(), key="admin_start")
+        if st.button("Generate plan", key="admin_gen"):
+            _plan = generate_plan(_w, _d, _start)
+            st.session_state.admin_plan = _plan
+            st.rerun()
+        if st.session_state.get("admin_plan"):
+            _plan = st.session_state.admin_plan
+            for w in _plan:
+                _end = w['week_start'] + timedelta(days=6)
+                with st.expander(f"**Week {w['week']}** ({w['week_start'].strftime('%b %d')} – {_end.strftime('%b %d')}) — {w['progression_note']}"):
+                    for d in w["days"]:
+                        st.markdown(f"**Day {d['day_num']}** ({d['date'].strftime('%a %b %d')})")
+                        for f in d["focus"]:
+                            st.markdown(f"- {f}")
 

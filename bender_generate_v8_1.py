@@ -788,6 +788,38 @@ def format_drill(d: Dict[str, Any]) -> str:
     return line
 
 
+def build_skating_mechanics_sequential(
+    chosen: List[Dict[str, Any]], block_seconds: int
+) -> List[str]:
+    """
+    Skating mechanics as single events: do one drill for its time, then move to the next.
+    Allocates block_seconds across drills (20–90s each). Total time matches block.
+    """
+    lines: List[str] = []
+    if not chosen:
+        return lines
+    n = len(chosen)
+    base = block_seconds // n
+    per_drill_sec = clamp(base, 15, 90)  # 15–90s per drill so total fits block
+    remainder = block_seconds - (per_drill_sec * n)
+    times_sec = [per_drill_sec] * n
+    times_sec[-1] += remainder  # remainder is 0 or positive (integer division); total = block_seconds
+    total_actual = sum(times_sec)
+    lines.append("Do each in order. Rest as needed between; then move to the next.")
+    for d, t in zip(chosen, times_sec):
+        name = _display_name(d)
+        cues = norm(get(d, "coaching_cues", default=""))
+        steps = norm(get(d, "step_by_step", default=""))
+        lines.append(f"- {name} — {t}s")
+        if cues:
+            lines.append(f"  Cues: {cues}")
+        if steps:
+            lines.append(f"  Steps: {steps}")
+    total_min = max(1, total_actual // 60)
+    lines.append(f"Total: ~{total_min} min")
+    return lines
+
+
 # ------------------------------
 # Warmup (Strength-only rules)
 # ------------------------------
@@ -2995,6 +3027,7 @@ def generate_session(
         if category == "performance" and (not strength_full_gym):
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age) and equipment_ok(d, "none")]
         else:
+            # Skating mechanics pulls from combined pool: movement + speed_agility + skating_mechanics
             drills = [d for d in data[category] if is_active(d) and age_ok(d, age)]
         if user_equipment is not None:
             drills = [d for d in drills if equipment_ok_for_user(d, user_equipment)]
@@ -3007,6 +3040,9 @@ def generate_session(
         lines.append(f"\n{section_title} (~{minutes} min)")
         if not chosen:
             lines.append("- [No matching drills found]")
+        elif category == "movement" and session_mode == "skating_mechanics":
+            # Single events with time each; total matches block
+            lines.extend(build_skating_mechanics_sequential(chosen, seconds))
         else:
             if category in ("movement", "speed_agility", "skating_mechanics"):
                 per = max(30, min(90, seconds // max(1, len(chosen) * 3)))
