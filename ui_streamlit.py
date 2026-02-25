@@ -704,19 +704,32 @@ st.markdown("""
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
 
-    /* Sidebar & equipment: ensure text visible on mobile (black text) */
-    [data-testid="stSidebar"] { background-color: #f8fafc !important; }
+    /* Sidebar & equipment: black text for mobile Safari (labels invisible without this) */
+    [data-testid="stSidebar"] { background-color: #ffffff !important; }
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
-    [data-testid="stSidebar"] span { color: #000000 !important; }
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] .stCheckbox > label,
+    [data-testid="stSidebar"] [data-testid="stCheckbox"] label,
+    [data-testid="stSidebar"] div[data-testid="stCheckbox"] * {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
     [data-testid="stSidebar"] .stMarkdown,
-    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 { color: #000000 !important; }
-    [data-testid="stSidebar"] p { color: #000000 !important; }
-    [data-testid="stSidebar"] .stCaption { color: #000000 !important; }
-    [data-testid="stSidebar"] .stCheckbox label { color: #000000 !important; }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
 
-    /* Equipment onboarding & main-area checkboxes: black text for mobile */
-    .stCheckbox label, [data-testid="stCheckbox"] label { color: #000000 !important; }
+    /* Equipment onboarding & main-area checkboxes: black text for mobile Safari */
+    .stCheckbox label, [data-testid="stCheckbox"] label {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        opacity: 1 !important;
+    }
 
     /* Plan day selector: single row, horizontal scroll bar */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1013,9 +1026,13 @@ if st.session_state.page == "equipment_onboarding":
     for mode_name, opts in equipment_by_mode.items():
         st.markdown(f"**{mode_name}**")
         for opt in opts:
-            if st.checkbox(opt, value=opt in current_equip, key=f"onb_{mode_name}_{opt}"):
-                if opt not in selected:
-                    selected.append(opt)
+            _ocb, _olab = st.columns([1, 5])
+            with _ocb:
+                if st.checkbox(" ", value=opt in current_equip, key=f"onb_{mode_name}_{opt}", label_visibility="collapsed"):
+                    if opt not in selected:
+                        selected.append(opt)
+            with _olab:
+                st.markdown(f"<span style='color:#000000;font-weight:500;'>{opt}</span>", unsafe_allow_html=True)
         st.caption("")
     if st.button("Save and continue", key="onb_save"):
         if not selected:
@@ -1059,7 +1076,11 @@ with st.sidebar:
             all_canonical.append((mode_name, opt))
             if opt in _equip_tooltips:
                 st.caption(_equip_tooltips[opt])
-            st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
+            _ecb, _elab = st.columns([1, 5])
+            with _ecb:
+                st.checkbox(" ", value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}", label_visibility="collapsed")
+            with _elab:
+                st.markdown(f"<span style='color:#000000;font-weight:500;'>{opt}</span>", unsafe_allow_html=True)
     if st.button("Save equipment", key="sidebar_save"):
         new_equip = [
             opt for _mode, opt in all_canonical
