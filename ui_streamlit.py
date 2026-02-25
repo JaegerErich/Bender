@@ -739,15 +739,35 @@ st.markdown("""
         background: #f1f5f9 !important; color: #1e293b !important; border-color: white !important;
     }
 
-    /* Admin plan day selector (same style) */
+    /* Admin plan day selector: grey outer rect, light blue number rect on top */
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) > * {
+        background: #e2e8f0 !important; padding: 0.35rem; border-radius: 10px; margin: 0 0.15rem;
+    }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button {
-        min-width: 3.5rem; min-height: 2.5rem; border-radius: 10px 10px 0 0; font-weight: 600; font-size: 1rem;
+        min-width: 2.8rem; min-height: 2.2rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
+        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button[kind="primary"] {
-        background: #1e293b !important; color: white !important; border: 2px solid white !important; border-bottom: none !important;
+        background: #60a5fa !important; color: white !important; border: 1px solid #3b82f6 !important;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .stButton button[kind="secondary"] {
-        background: #475569 !important; color: #cbd5e1 !important; border: 1px solid #64748b !important; border-bottom: none !important;
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .plan-day-date {
+        background: transparent !important; color: #475569 !important; border: none !important; margin-top: 0.2rem !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]:has(> *:nth-child(6)) .plan-day-date-selected {
+        background: transparent !important; color: #1e293b !important;
+    }
+    /* Day complete: blue box turns green (instead of checkmark) */
+    .admin-day-complete { display: none; }
+    .admin-day-complete + * .stButton button {
+        background: #22c55e !important; color: white !important; border-color: #16a34a !important;
+    }
+
+    /* Admin mode buttons (Performance, etc.) - lighter blue */
+    #admin-plan-modes ~ * .stButton button {
+        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
+    }
+    #admin-plan-modes ~ * .stButton button[kind="primary"] {
+        background: #60a5fa !important; color: white !important; border: 1px solid #3b82f6 !important;
     }
 
     /* Form card */
@@ -1426,9 +1446,9 @@ if _tab_admin is not None:
                         _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                         focus_i = day_data_i.get("focus_items", [])
                         day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
-                        label = f"{'✓ ' if day_done else ''}{i + 1}"
-                        btn_type = "primary" if i == sel_idx else "secondary"
-                        if st.button(label, key=f"admin_plan_day_{i}", type=btn_type):
+                        if day_done:
+                            st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+                        if st.button(f"{i + 1}", key=f"admin_plan_day_{i}", type="primary" if i == sel_idx else "secondary"):
                             st.session_state.admin_plan_selected_day = i
                             st.rerun()
                         date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
@@ -1446,6 +1466,7 @@ if _tab_admin is not None:
                 st.caption("✓ Day complete")
 
             # List of modes — click to open workout page (Back / Workout Complete there)
+            st.markdown('<div id="admin-plan-modes" aria-hidden="true"></div>', unsafe_allow_html=True)
             focus_items = day_data.get("focus_items", [])
             if focus_items:
                 for fi in focus_items:
