@@ -824,7 +824,8 @@ if st.session_state.page == "equipment_onboarding":
         equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
     except Exception:
         equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
-    current_equip = set(ENGINE.canonicalize_equipment_list(prof.get("equipment") or []))
+    _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
+    current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
     selected = []
     for mode_name, opts in equipment_by_mode.items():
         st.markdown(f"**{mode_name}**")
@@ -865,7 +866,8 @@ with st.sidebar:
     except Exception:
         equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
     prof = st.session_state.current_profile or {}
-    current_equip = set(ENGINE.canonicalize_equipment_list(prof.get("equipment") or []))
+    _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
+    current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
     all_canonical = []
     _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
     for mode_name, opts in equipment_by_mode.items():
