@@ -128,8 +128,13 @@ def get_progression_note(week_index: int) -> str:
 def get_template_for_days(days_per_week: int, age: Optional[int] = None) -> list[list[str]]:
     """Return day templates for given days/week. If age <= 12 use foundation templates (skating + puck every week)."""
     d = max(3, min(7, int(days_per_week)))
-    if age is not None and _determine_stage(age) == "foundation":
-        return FOUNDATION_WEEK_TEMPLATES.get(d, FOUNDATION_WEEK_TEMPLATES[3])
+    if age is not None:
+        try:
+            age_int = int(age)
+            if _determine_stage(age_int) == "foundation":
+                return FOUNDATION_WEEK_TEMPLATES.get(d, FOUNDATION_WEEK_TEMPLATES[3])
+        except (TypeError, ValueError):
+            pass
     return WEEK_TEMPLATES.get(d, WEEK_TEMPLATES[3])
 
 

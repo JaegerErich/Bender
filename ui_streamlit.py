@@ -1148,18 +1148,28 @@ with st.sidebar:
         st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
-# Signed-in line + Sign out (visible in main area)
-_col_user, _col_signout = st.columns([4, 1])
+# Signed-in line + three-dots menu (⋮) in upper right with Sign out inside
+_col_user, _col_menu = st.columns([4, 1])
 with _col_user:
     st.caption(f"Signed in as **{display_name}**")
-with _col_signout:
-    if st.button("Sign out", key="main_signout"):
-        st.session_state.current_user_id = None
-        st.session_state.current_profile = None
-        st.session_state.page = "main"
-        if "uid" in st.query_params:
-            del st.query_params["uid"]
-        st.rerun()
+with _col_menu:
+    if hasattr(st, "popover"):
+        with st.popover("\u22EE"):  # three dots (⋮) — click to open menu
+            if st.button("Sign out", key="main_signout"):
+                st.session_state.current_user_id = None
+                st.session_state.current_profile = None
+                st.session_state.page = "main"
+                if "uid" in st.query_params:
+                    del st.query_params["uid"]
+                st.rerun()
+    else:
+        if st.button("Sign out", key="main_signout"):
+            st.session_state.current_user_id = None
+            st.session_state.current_profile = None
+            st.session_state.page = "main"
+            if "uid" in st.query_params:
+                del st.query_params["uid"]
+            st.rerun()
 
 # Athlete = logged-in user (for history, download filename, feedback)
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
@@ -1434,9 +1444,15 @@ if _tab_admin is not None:
                 profile = _target_profile_for_plan or (st.session_state.get("current_profile") or {})
                 _expand = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])
                 user_equipment = _expand(profile.get("equipment")) if ENGINE else []
-                _plan_age = max(6, min(99, int(profile.get("age") or 16)))
+                try:
+                    _plan_age = max(6, min(99, int(profile.get("age") or 16)))
+                except (TypeError, ValueError):
+                    _plan_age = 16
                 _plan_athlete = (profile.get("display_name") or profile.get("user_id") or "athlete").strip()
-                _plan = generate_plan(_w, _d, _start, age=_plan_age)
+                try:
+                    _plan = generate_plan(_w, _d, _start, age=_plan_age)
+                except TypeError:
+                    _plan = generate_plan(_w, _d, _start)
 
                 _progress = st.progress(0.0, text="Generating workouts…")
                 _total_slots = sum(
