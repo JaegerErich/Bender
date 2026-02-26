@@ -766,12 +766,30 @@ st.markdown("""
         gap: 0.2rem !important;
     }
 
-    /* Plan day selector: black/white cards, number + date aligned, selected=white border */
+    /* Plan day selector: black/white cards, number + date centered, selected=white border */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
         background: #1a1a1a !important; padding: 0.35rem 0.25rem; border-radius: 10px; margin: 0 0.08rem; border: 2px solid #333333;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
+    }
+    /* Inner vertical stack: center workout number and date (Streamlit wraps column content in a block) */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
+        display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; gap: 0 !important;
+    }
+    /* Fallback: any direct child of day card (in case DOM structure differs) */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > * {
+        display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important; box-sizing: border-box !important;
+    }
+    /* Center the button (workout number) within its wrapper */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * .stButton {
+        display: flex !important; justify-content: center !important; width: 100% !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
@@ -784,7 +802,7 @@ st.markdown("""
         white-space: nowrap !important;
     }
     .plan-day-date {
-        background: transparent; color: #cccccc; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
+        background: transparent; color: #cccccc; font-size: 0.65rem; text-align: center !important; margin: 0.12rem 0 0 0; line-height: 1.2; width: 100%; display: block;
     }
     .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.2rem 0.5rem !important;
@@ -797,9 +815,16 @@ st.markdown("""
         background: #16a34a !important;
     }
 
-    /* Admin plan day selector: same black/white card design */
+    /* Admin plan day selector: same black/white card design, number + date centered */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
         background: #1a1a1a !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid #333333;
+        display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
+        display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; gap: 0 !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton {
+        display: flex !important; justify-content: center !important; width: 100% !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
@@ -810,7 +835,7 @@ st.markdown("""
         white-space: nowrap !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #cccccc !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
+        background: transparent !important; color: #cccccc !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2; text-align: center !important; width: 100%; display: block;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.2rem 0.5rem !important;
