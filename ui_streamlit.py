@@ -764,9 +764,12 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
+    /* Parent-based selector when marker and columns are in different Streamlit blocks */
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: visible !important;
-        width: 20.8rem !important; max-width: 100% !important; min-width: 0 !important;
+        width: 21rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.5rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: thin !important;
         flex-direction: row !important; flex-wrap: nowrap !important;
@@ -778,12 +781,16 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
         min-width: 4rem !important; width: 4rem !important; max-width: 4rem !important; flex: 0 0 4rem !important; gap: 0 !important; box-sizing: border-box !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         gap: 0.2rem !important;
     }
     /* Mobile + Safari: keep day cards in one horizontal row; inside each card show number + date side-by-side */
@@ -792,20 +799,24 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
+        div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-direction: row !important; flex-direction: row !important;
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
             overflow-x: auto !important; overflow-y: visible !important;
             -webkit-overflow-scrolling: touch !important;
-            width: 100% !important; max-width: 100% !important; min-width: 0 !important;
+            width: 20rem !important; max-width: 100% !important; min-width: 0 !important;
         }
         /* Each day card: fixed width, never stack vertically */
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
+        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
+        div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
             -webkit-flex: 0 0 3.8rem !important; flex: 0 0 3.8rem !important;
             min-width: 3.8rem !important; width: 3.8rem !important; max-width: 3.8rem !important;
             display: -webkit-flex !important; display: flex !important;
