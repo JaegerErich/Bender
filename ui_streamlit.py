@@ -648,11 +648,12 @@ def _generate_via_engine(payload: dict) -> dict:
     # Skills-only extras (optional later: expose shot volume)
     shooting_shots = payload.get("shooting_shots", None)
     stickhandling_min = payload.get("stickhandling_min", None)
-    shooting_min = payload.get("shooting_min", None)
+        shooting_min = payload.get("shooting_min", None)
 
-    profile = st.session_state.get("current_profile") or {}
-    user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
-    out_text = ENGINE.generate_session(
+        profile = st.session_state.get("current_profile") or {}
+        equipment = profile.get("equipment")
+        user_equipment = ENGINE.expand_user_equipment(equipment) if equipment else None
+        out_text = ENGINE.generate_session(
         data=data,
         age=age,
         seed=seed,
@@ -1448,9 +1449,20 @@ with _bender_ctx:
                         resp = _generate_via_engine(payload)
 
                 st.session_state.last_session_id = resp.get("session_id")
-                st.session_state.last_output_text = resp.get("output_text")
-                st.session_state.scroll_to_workout = True
-                st.success("Generated")
+                out_text = resp.get("output_text")
+                if out_text and out_text.strip():
+                    st.session_state.last_output_text = out_text
+                    st.session_state.scroll_to_workout = True
+                    st.success("Generated")
+                else:
+                    st.session_state.last_output_text = (
+                        "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
+                        "Generation returned no content. This can happen if:\n"
+                        "- Data files (performance.json) are missing or empty\n"
+                        "- All drills were filtered out by equipment/age\n\n"
+                        "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
+                    )
+                    st.warning("Generated but no exercises were returned — see message below.")
             except Exception as e:
                 st.error(str(e))
 
@@ -1555,7 +1567,8 @@ if _tab_admin is not None:
                 data = _load_engine_data()
                 profile = _target_profile_for_plan or (st.session_state.get("current_profile") or {})
                 _expand = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])
-                user_equipment = _expand(profile.get("equipment")) if ENGINE else []
+                _equip = profile.get("equipment")
+                user_equipment = _expand(_equip) if (ENGINE and _equip) else None
                 try:
                     _plan_age = max(6, min(99, int(profile.get("age") or 16)))
                 except (TypeError, ValueError):
