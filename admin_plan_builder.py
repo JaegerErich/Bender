@@ -2,6 +2,7 @@
 Admin Plan Builder: multi-week workout plans for Bender.
 Only exposed to admin users (see ADMIN_USERS) via UI gating.
 Templates for 3–7 days/week; progression notes; optional drill generation with variety.
+Age-based: foundation (<=12) uses templates that always include skating + puck mastery.
 """
 from datetime import date, timedelta
 from typing import Any, Callable, Optional
@@ -14,6 +15,17 @@ MODE_DISPLAY_LABELS: dict[str, str] = {
     "energy_systems": "Conditioning",
     "mobility": "Mobility/Recovery",
 }
+
+
+def _determine_stage(age: int) -> str:
+    """Foundation <=12, development 13-15, performance 16-18, advanced 19+."""
+    if age <= 12:
+        return "foundation"
+    if age <= 15:
+        return "development"
+    if age <= 18:
+        return "performance"
+    return "advanced"
 
 # Week templates: day_index (0-based) -> list of category focus strings
 # Each day has PRIMARY + optional SECONDARY + Mobility/Recovery as warmup/cooldown
@@ -55,6 +67,46 @@ WEEK_TEMPLATES: dict[int, list[list[str]]] = {
     ],
 }
 
+# Foundation (age <=12): every week includes skating mechanics + puck mastery; no Heavy Leg/Explosive.
+# Performance days become "Foundation (Skating + Puck + Strength)" so generator returns youth template.
+FOUNDATION_WEEK_TEMPLATES: dict[int, list[list[str]]] = {
+    3: [
+        ["Skating Mechanics (accel/plyo)", "Foundation (Skating + Puck + Strength)", "Puck Mastery"],
+        ["Puck Mastery (technical)", "Conditioning (intervals)", "Mobility/Recovery"],
+        ["Skating Mechanics (agility/footwork)", "Foundation (Skating + Puck + Strength)", "Puck Mastery (hands)"],
+    ],
+    4: [
+        ["Skating Mechanics (accel/plyo)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (technical)", "Conditioning (intervals)", "Mobility/Recovery"],
+        ["Skating Mechanics (agility/footwork)", "Foundation (Skating + Puck + Strength)", "Puck Mastery"],
+        ["Puck Mastery (reactive/game-like)", "Conditioning (repeat sprints)", "Mobility/Recovery"],
+    ],
+    5: [
+        ["Skating Mechanics (accel/plyo)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (technical)", "Conditioning (intervals)", "Mobility/Recovery"],
+        ["Skating Mechanics (agility/footwork)", "Foundation (Skating + Puck + Strength)", "Puck Mastery"],
+        ["Puck Mastery (reactive/game-like)", "Conditioning (repeat sprints)", "Mobility/Recovery"],
+        ["Skating Mechanics (bounds/starts)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+    ],
+    6: [
+        ["Skating Mechanics (accel/plyo)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (technical)", "Conditioning (intervals)", "Mobility/Recovery"],
+        ["Skating Mechanics (agility/footwork)", "Foundation (Skating + Puck + Strength)", "Puck Mastery"],
+        ["Puck Mastery (reactive/game-like)", "Conditioning (repeat sprints)", "Mobility/Recovery"],
+        ["Skating Mechanics (bounds/starts)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (small-area/competitive)", "optional Conditioning (short finisher)", "Mobility/Recovery"],
+    ],
+    7: [
+        ["Skating Mechanics (accel/plyo)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (technical)", "Conditioning (intervals)", "Mobility/Recovery"],
+        ["Skating Mechanics (agility/footwork)", "Foundation (Skating + Puck + Strength)", "Puck Mastery"],
+        ["Puck Mastery (reactive/game-like)", "Conditioning (repeat sprints)", "Mobility/Recovery"],
+        ["Skating Mechanics (bounds/starts)", "Foundation (Skating + Puck + Strength)", "light Puck Mastery"],
+        ["Puck Mastery (competitive)", "optional Conditioning finisher", "Mobility/Recovery"],
+        ["Mobility/Recovery ONLY (longer recovery session)"],
+    ],
+}
+
 
 ADMIN_USERS = {"Erich Jaeger", "Austin Azzinnaro"}
 
@@ -73,9 +125,11 @@ def get_progression_note(week_index: int) -> str:
     return "Base volume (normal)"
 
 
-def get_template_for_days(days_per_week: int) -> list[list[str]]:
-    """Return day templates for given days/week. Falls back to 3 if invalid."""
+def get_template_for_days(days_per_week: int, age: Optional[int] = None) -> list[list[str]]:
+    """Return day templates for given days/week. If age <= 12 use foundation templates (skating + puck every week)."""
     d = max(3, min(7, int(days_per_week)))
+    if age is not None and _determine_stage(age) == "foundation":
+        return FOUNDATION_WEEK_TEMPLATES.get(d, FOUNDATION_WEEK_TEMPLATES[3])
     return WEEK_TEMPLATES.get(d, WEEK_TEMPLATES[3])
 
 
@@ -83,13 +137,15 @@ def generate_plan(
     weeks: int,
     days_per_week: int,
     start_date_opt: date | None = None,
+    age: Optional[int] = None,
 ) -> list[dict[str, Any]]:
     """
     Generate a multi-week plan. Returns list of week dicts:
     [{"week": 1, "days": [...], "progression_note": "..."}, ...]
+    If age <= 12, uses foundation templates (skating + puck mastery every week; no heavy leg/explosive).
     """
     weeks = max(1, min(16, int(weeks)))
-    template = get_template_for_days(days_per_week)
+    template = get_template_for_days(days_per_week, age)
     plan: list[dict[str, Any]] = []
     start = start_date_opt or date.today()
 
@@ -125,6 +181,15 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
         return None
 
     out: dict[str, Any] = {"location": "no_gym", "strength_day_type": "full"}
+
+    # Foundation (age <=12): same as performance mode; generator routes to foundation template by age
+    if "foundation" in s and ("skating" in s or "puck" in s or "strength" in s):
+        out["mode"] = "performance"
+        out["location"] = "gym"
+        out["strength_day_type"] = "leg"
+        out["session_len_min"] = 45
+        out["focus"] = None
+        return out
 
     # Performance
     if "performance" in s:

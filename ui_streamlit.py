@@ -1430,14 +1430,13 @@ if _tab_admin is not None:
         _col_gen, _col_clear = st.columns(2)
         with _col_gen:
             if st.button("Generate plan", type="primary", key="admin_gen_full"):
-                _plan = generate_plan(_w, _d, _start)
                 data = _load_engine_data()
                 profile = _target_profile_for_plan or (st.session_state.get("current_profile") or {})
                 _expand = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])
                 user_equipment = _expand(profile.get("equipment")) if ENGINE else []
-                _plan_age = int(profile.get("age") or 16)
-                _plan_age = max(6, min(99, _plan_age))
+                _plan_age = max(6, min(99, int(profile.get("age") or 16)))
                 _plan_athlete = (profile.get("display_name") or profile.get("user_id") or "athlete").strip()
+                _plan = generate_plan(_w, _d, _start, age=_plan_age)
 
                 _progress = st.progress(0.0, text="Generating workouts…")
                 _total_slots = sum(

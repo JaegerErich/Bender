@@ -298,6 +298,111 @@ def load_all_data(data_dir: str = "data", **kwargs) -> Dict[str, List[Dict[str, 
     }
 
 
+# ------------------------------
+# Age-based athlete stage (foundation / development / performance / advanced)
+# ------------------------------
+ATHLETE_STAGES = ("foundation", "development", "performance", "advanced")
+
+
+def determine_stage(age: int) -> str:
+    """Map age to athlete stage. foundation <=12, development 13-15, performance 16-18, advanced 19+."""
+    a = max(0, int(age))
+    if a <= 12:
+        return "foundation"
+    if a <= 15:
+        return "development"
+    if a <= 18:
+        return "performance"
+    return "advanced"
+
+
+def get_contrast_pattern(d: Dict[str, Any]) -> Optional[str]:
+    """Derive contrast block pattern from tags for explosive day pairing. vertical | rotation | lateral | elastic | warmup."""
+    tags = norm(get(d, "tags", "")).lower()
+    if not tags:
+        return None
+    if "rotational" in tags or "rotation" in tags or "chop" in tags or "landmine" in tags or "half-kneeling" in tags or "med ball" in tags and "throw" in tags:
+        return "rotation"
+    if "lateral" in tags or "skater" in tags or "bound" in tags or "split" in tags and "plyo" in tags:
+        return "lateral"
+    if "vertical" in tags or "box jump" in tags or "depth" in tags or "squat jump" in tags or "broad" in tags or "clean" in tags or "snatch" in tags or "push press" in tags or "power" in tags and "primary" in tags:
+        return "vertical"
+    if "elastic" in tags or "drop" in tags or "primer" in tags:
+        return "elastic"
+    if "warmup" in tags:
+        return "warmup"
+    return None
+
+
+def _cns_level(d: Dict[str, Any]) -> str:
+    return norm(get(d, "cns_load", "")).lower()
+
+
+def _progression_level(d: Dict[str, Any]) -> str:
+    return norm(get(d, "progression_level", "")).lower()
+
+
+def drill_ok_for_stage(d: Dict[str, Any], stage: str) -> bool:
+    """True if drill is allowed for this athlete stage (computed from age_min/age_max, progression_level, cns_load)."""
+    if stage == "foundation":
+        if _cns_level(d) == "high":
+            return False
+        pl = _progression_level(d)
+        if pl not in ("", "foundation", "intermediate"):
+            return False
+        return True
+    if stage == "development":
+        pl = _progression_level(d)
+        if pl == "advanced" and _cns_level(d) == "high":
+            return False
+        return True
+    return True
+
+
+def filter_drills_for_athlete(
+    drills: List[Dict[str, Any]],
+    age: int,
+    session_type: str,
+    program_day_type: Optional[str],
+    user_equipment: Optional[List[str]] = None,
+    full_gym: bool = True,
+) -> List[Dict[str, Any]]:
+    """Filter drills by age, status, equipment, stage, and optional program_day_type."""
+    stage = determine_stage(age)
+    out = [d for d in drills if is_active(d) and age_ok(d, age)]
+    if user_equipment is not None:
+        out = [d for d in out if equipment_ok_for_user(d, user_equipment)]
+    out = [d for d in out if drill_ok_for_stage(d, stage)]
+    if program_day_type:
+        pt = program_day_type.lower().strip()
+        # heavy_leg and heavy_lower are interchangeable in data
+        pt_aliases = {pt}
+        if pt == "heavy_leg":
+            pt_aliases.add("heavy_lower")
+        elif pt == "heavy_lower":
+            pt_aliases.add("heavy_leg")
+
+        def _matches_day_type(drill: Dict[str, Any]) -> bool:
+            allowed = get(drill, "program_day_type", default=None)
+            if isinstance(allowed, list):
+                return any(norm(str(a)) in pt_aliases for a in allowed)
+            if isinstance(allowed, str):
+                return norm(allowed) in pt_aliases
+            return True
+        out = [d for d in out if _matches_day_type(d)]
+    return out
+
+
+def get_stage_weights(age: int) -> Dict[str, float]:
+    """Weights for weekly plan category allocation by stage."""
+    stage = determine_stage(age)
+    if stage == "foundation":
+        return {"skating_mechanics": 0.4, "puck_mastery": 0.3, "strength": 0.15, "explosive": 0.1, "conditioning": 0.05}
+    if stage == "development":
+        return {"skating_mechanics": 0.3, "strength": 0.25, "explosive": 0.2, "puck_mastery": 0.15, "conditioning": 0.1}
+    return {"strength": 0.35, "explosive": 0.3, "skating_mechanics": 0.15, "conditioning": 0.1, "puck_mastery": 0.1}
+
+
 # Canonical equipment list by Bender mode (clean UI). Each canonical name maps to data
 # values that satisfy it (for filtering).
 EQUIPMENT_EXPAND: Dict[str, List[str]] = {
@@ -803,6 +908,23 @@ def primary_region(d: Dict[str, Any]) -> str:
     normalized to lowercase. Safe if key is missing.
     """
     return norm(get(d, "primary_region", default="")).lower()
+
+
+def _unilateral(d: Dict[str, Any]) -> bool:
+    """True if drill is unilateral (unilateral=TRUE or true)."""
+    v = get(d, "unilateral", None)
+    if v is None:
+        return False
+    return norm(str(v)).lower() in ("true", "1", "yes")
+
+
+def _tags_contain(d: Dict[str, Any], *keywords: str) -> bool:
+    """True if drill tags (string or list) contain any of the given keywords (case-insensitive)."""
+    tags_val = get(d, "tags", "")
+    tags_str = ", ".join(tags_val) if isinstance(tags_val, list) else str(tags_val or "")
+    t = tags_str.lower()
+    return any(kw.lower() in t for kw in keywords)
+
 
 def cns_load_level(d: Dict[str, Any]) -> str:
     return _std_level(get(d, "cns_load", default=get(d, "CNS_load", default="low")))
@@ -2155,6 +2277,471 @@ def is_machine_conditioning(d: dict) -> bool:
 
 
 # ------------------------------
+# Foundation session (age <=12): warmup → skating mechanics → puck → strength fundamentals → optional conditioning
+# ------------------------------
+def _is_foundation_safe_strength(d: Dict[str, Any]) -> bool:
+    """No heavy barbell, no olympic lifts, no max strength 3-5 rep. Bodyweight + light med ball/DB only."""
+    if not drill_ok_for_stage(d, "foundation"):
+        return False
+    eq = norm(get(d, "equipment", default=""))
+    if not eq or eq in ("none", "no", "bodyweight"):
+        return True
+    eq_lower = eq.lower()
+    if "barbell" in eq_lower or "squat rack" in eq_lower or "trap bar" in eq_lower:
+        return False
+    if strength_focus(d) == "max_strength":
+        return False
+    return True
+
+
+def build_foundation_session(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    focus_rule: Optional[Dict[str, Any]] = None,
+    user_equipment: Optional[List[str]] = None,
+) -> List[str]:
+    """Foundation template: warmup 5-8 min, skating mechanics (mandatory) 10-15, puck 10-15, strength circuit 10-15, optional conditioning 5-8."""
+    lines: List[str] = []
+    total_sec = session_len_min * 60
+    wu_sec = min(8 * 60, max(5 * 60, int(total_sec * 0.12)))
+    sk_sec = min(15 * 60, max(10 * 60, int(total_sec * 0.25)))
+    puck_sec = min(15 * 60, max(10 * 60, int(total_sec * 0.25)))
+    strength_sec = min(15 * 60, max(10 * 60, int(total_sec * 0.25)))
+    cond_sec = total_sec - wu_sec - sk_sec - puck_sec - strength_sec
+    if cond_sec < 4 * 60:
+        cond_sec = 0
+        strength_sec = total_sec - wu_sec - sk_sec - puck_sec
+
+    warmups = data.get("warmup", [])
+    wu = build_strength_warmup(warmups, age, rnd, day_type="full")
+    lines.append(f"\nWARMUP / MOVEMENT PREP (~{format_seconds_short(wu_sec)})")
+    for d in (wu or [])[:8]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
+
+    skating = data.get("skating_mechanics", []) or data.get("movement", [])
+    sk_pool = [d for d in skating if is_active(d) and age_ok(d, age)]
+    if user_equipment is not None:
+        sk_pool = [d for d in sk_pool if equipment_ok_for_user(d, user_equipment)]
+    sk_pool = [d for d in sk_pool if drill_ok_for_stage(d, "foundation")]
+    sk_chosen = pick_n(sk_pool, n=min(4, max(2, sk_sec // 180)), rnd=rnd, focus_rule=focus_rule) if sk_pool else []
+    lines.append(f"\nSKATING MECHANICS (~{format_seconds_short(sk_sec)}) — mandatory")
+    if not sk_chosen:
+        lines.append("- Choose 2–3 skating mechanics drills from your program; focus on posture and edge control.")
+    else:
+        lines.extend(build_skating_mechanics_sequential(sk_chosen, sk_sec))
+
+    stick = data.get("stickhandling", [])
+    puck_pool = [d for d in stick if is_active(d) and age_ok(d, age)]
+    puck_chosen = pick_n(puck_pool, n=min(3, max(2, puck_sec // 240)), rnd=rnd, focus_rule=focus_rule) if puck_pool else []
+    lines.append(f"\nPUCK MASTERY (~{format_seconds_short(puck_sec)}) — strongly preferred")
+    if not puck_chosen:
+        lines.append("- 10–15 min stickhandling or shooting of choice.")
+    else:
+        lines.append(f"Format: ~{puck_sec // 60} min total.")
+        for d in puck_chosen:
+            lines.append(format_drill(d))
+
+    perf = data.get("performance", [])
+    bw_pool = [d for d in perf if is_active(d) and age_ok(d, age) and _is_foundation_safe_strength(d)]
+    if user_equipment is not None:
+        bw_pool = [d for d in bw_pool if equipment_ok_for_user(d, user_equipment)]
+    n_circuit = min(5, max(3, strength_sec // 120))
+    circuit = pick_n(bw_pool, n=n_circuit, rnd=rnd, focus_rule=focus_rule) if bw_pool else []
+    lines.append(f"\nSTRENGTH FUNDAMENTALS CIRCUIT (~{format_seconds_short(strength_sec)}) — bodyweight + light load only")
+    if not circuit:
+        lines.append("- Bodyweight circuit: squat, lunge, push-up, plank, glute bridge. 2–3 rounds.")
+    else:
+        lines.append(f"Format: {n_circuit} exercises, 2–3 rounds. 30–45s work / 15–20s rest.")
+        for d in circuit:
+            lines.append(format_drill(d))
+
+    if cond_sec >= 5 * 60:
+        cond_pool = data.get("energy_systems", [])
+        cond_pool = [d for d in cond_pool if is_active(d) and age_ok(d, age) and equipment_ok(d, "none")]
+        c_drills = pick_conditioning_drills(cond_pool, age, rnd, cond_sec // 60, focus_rule or get_focus_rules(None, "energy_systems"))
+        lines.append(f"\nCONDITIONING (optional) (~{format_seconds_short(cond_sec)})")
+        if c_drills:
+            lines.extend(build_conditioning_block(c_drills, cond_sec))
+        else:
+            lines.append("- 5–8 min intervals or tag game.")
+
+    return lines
+
+
+# ------------------------------
+# Development session (age 13-15): strength base + power OR explosive-lite (max 2 contrast blocks)
+# ------------------------------
+def build_development_strength_session(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    program_day_type: Optional[str],
+    focus_rule: Optional[Dict[str, Any]] = None,
+    user_equipment: Optional[List[str]] = None,
+    full_gym: bool = True,
+) -> List[str]:
+    """Development: mode (a) strength base + power, or (b) explosive-lite with max 2 contrast blocks."""
+    use_explosive_lite = (program_day_type or "").lower() in ("heavy_explosive", "explosive")
+    if use_explosive_lite:
+        return build_explosive_session(
+            data, age, rnd, session_len_min, focus_rule=focus_rule, user_equipment=user_equipment,
+            max_contrast_blocks=2, include_elastic_primer=True,
+        )
+    strength_drills = filter_drills_for_athlete(
+        data.get("performance", []), age, "performance", None, user_equipment, full_gym
+    )
+    strength_drills = [d for d in strength_drills if _cns_level(d) != "high" or _progression_level(d) in ("intermediate", "advanced")]
+    warmups = data.get("warmup", [])
+    mobility = data.get("mobility", [])
+    lines: List[str] = []
+    wu = build_strength_warmup(warmups, age, rnd, day_type="full")
+    lines.append("\nWARMUP (~5 min)")
+    for d in (wu or [])[:8]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
+    mod_lift = [d for d in strength_drills if strength_focus(d) in ("hypertrophy", "strength") and not _cns_level(d) == "high"]
+    mod_pick = pick_n(mod_lift, n=1, rnd=rnd, focus_rule=focus_rule) if mod_lift else []
+    if mod_pick:
+        lines.append("\nSTRENGTH (1 moderate lift)")
+        lines.append(format_strength_drill_with_prescription(mod_pick[0], sets=3, reps="8-10", rest_sec=90))
+    rot_mb = [d for d in strength_drills if "med ball" in norm(get(d, "equipment", default="")).lower() or "rotation" in norm(get(d, "tags", default="")).lower()]
+    rot_pick = pick_n(rot_mb, n=1, rnd=rnd, focus_rule=focus_rule) if rot_mb else []
+    if rot_pick:
+        lines.append("\nROTATION (med ball or cable)")
+        lines.append(format_drill(rot_pick[0]))
+    lat_plyo = [d for d in strength_drills if strength_focus(d) == "power" and get_contrast_pattern(d) == "lateral"]
+    lat_pick = pick_n(lat_plyo, n=1, rnd=rnd, focus_rule=focus_rule) if lat_plyo else []
+    if lat_pick:
+        lines.append("\nLATERAL PLYO (1 exercise)")
+        lines.append(format_drill(lat_pick[0]))
+    core = [d for d in strength_drills if norm(get(d, "primary_region", default="")) == "core" and is_stability_candidate(d)]
+    core_pick = pick_n(core, n=1, rnd=rnd, focus_rule=focus_rule) if core else []
+    lines.append("\nCORE STABILITY FINISHER")
+    if core_pick:
+        lines.append(format_drill(core_pick[0]))
+    else:
+        lines.append("- Plank, dead bug, or side plank. 2–3 sets.")
+    return lines
+
+
+# ------------------------------
+# Heavy Leg Day (program_day_type heavy_leg / heavy_lower) — performance stage only
+# ------------------------------
+def build_heavy_leg_session(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    focus_rule: Optional[Dict[str, Any]] = None,
+    user_equipment: Optional[List[str]] = None,
+    full_gym: bool = True,
+) -> List[str]:
+    """
+    Heavy Leg Day: Warmup → Primary Bilateral → Heavy Unilateral → Posterior Chain →
+    Frontal/Adductor → Iso/Decel. Uses program_day_type heavy_leg/heavy_lower. Main lifts 3–6 reps.
+    """
+    lines: List[str] = []
+    perf = data.get("performance", [])
+    warmups = data.get("warmup", [])
+    pool = filter_drills_for_athlete(perf, age, "performance", "heavy_leg", user_equipment, full_gym)
+    pool = [d for d in pool if is_active(d) and age_ok(d, age)]
+    if user_equipment is not None:
+        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+    used_ids: set = set()
+
+    def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
+        avoid = avoid or set()
+        cand = [d for d in candidates if norm(get(d, "id", "")) not in avoid]
+        if not cand:
+            return None
+        picked = pick_n(cand, n=1, rnd=rnd, focus_rule=focus_rule)
+        return picked[0] if picked else None
+
+    # A) Warmup (low fatigue / low intensity)
+    wu = build_strength_warmup(warmups, age, rnd, day_type="leg")
+    lines.append("\nWARMUP (~5–8 min) — low intensity")
+    for d in (wu or [])[:8]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
+
+    # Prefer loaded for main strength slots
+    loaded_only = [d for d in pool if norm(get(d, "load_type", "")).lower() == "loaded"]
+
+    # B) Primary Bilateral Strength (1): primary_region=lower, lift_role=primary, strength_focus=max_strength
+    bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
+    b_pick = _pick_one(bilateral, used_ids)
+    if b_pick:
+        used_ids.add(norm(get(b_pick, "id", "")))
+        lines.append("\nPRIMARY BILATERAL STRENGTH (pick 1)")
+        lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
+
+    # C) Heavy Unilateral (1): unilateral=TRUE, lift_role primary or secondary, strength_focus=max_strength
+    unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
+    c_pick = _pick_one(unilateral_heavy, used_ids)
+    if c_pick:
+        used_ids.add(norm(get(c_pick, "id", "")))
+        lines.append("\nHEAVY UNILATERAL STRENGTH (pick 1)")
+        lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
+
+    # D) Posterior Chain / Hinge (1): movement_pattern=hinge, primary_region=lower, strength_focus hypertrophy or strength
+    hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
+    d_pick = _pick_one(hinge, used_ids)
+    if d_pick:
+        used_ids.add(norm(get(d_pick, "id", "")))
+        lines.append("\nPOSTERIOR CHAIN / HINGE (pick 1)")
+        reps_d = get(d_pick, "default_reps", "6-10")
+        lines.append(format_strength_drill_with_prescription(d_pick, sets=3, reps=str(reps_d), rest_sec=120))
+
+    # E) Frontal-Plane / Adductor (1): tags adductors OR frontal_plane OR lateral_strength
+    frontal = [d for d in pool if _tags_contain(d, "adductor", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
+    e_pick = _pick_one(frontal, used_ids)
+    if e_pick:
+        used_ids.add(norm(get(e_pick, "id", "")))
+        lines.append("\nFRONTAL-PLANE / ADDUCTOR (pick 1)")
+        reps_e = get(e_pick, "default_reps", "6-10/side")
+        lines.append(format_strength_drill_with_prescription(e_pick, sets=3, reps=str(reps_e), rest_sec=90))
+
+    # F) Iso/Decel / Braking (1): tags isometric OR deceleration OR hard_stop
+    iso_decel = [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop") and norm(get(d, "id", "")) not in used_ids]
+    f_pick = _pick_one(iso_decel, used_ids)
+    if f_pick:
+        used_ids.add(norm(get(f_pick, "id", "")))
+        lines.append("\nISO / DECEL / BRAKING (pick 1) — low volume")
+        dur = get(f_pick, "default_duration_sec") or get(f_pick, "default_reps", "20-40s")
+        if isinstance(dur, int):
+            lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=f"{dur}s", rest_sec=60))
+        else:
+            lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=str(dur), rest_sec=60))
+
+    # G) Optional calf/tibialis — skip for now (future)
+    return lines
+
+
+# ------------------------------
+# Upper + Core Stability Day (program_day_type upper_core_stability)
+# ------------------------------
+def build_upper_core_stability_session(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    focus_rule: Optional[Dict[str, Any]] = None,
+    user_equipment: Optional[List[str]] = None,
+    full_gym: bool = True,
+) -> List[str]:
+    """
+    Upper + Core Stability: Scap/RC Prep (2) → Primary Press (1) → Primary Pull (1) →
+    Core Anti-Rotation (1–2) → Controlled Rotation (1) → Carry optional (1).
+    """
+    lines: List[str] = []
+    perf = data.get("performance", [])
+    warmups = data.get("warmup", [])
+    pool = filter_drills_for_athlete(perf, age, "performance", "upper_core_stability", user_equipment, full_gym)
+    pool = [d for d in pool if is_active(d) and age_ok(d, age)]
+    if user_equipment is not None:
+        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+    used_ids: set = set()
+
+    def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
+        avoid = avoid or set()
+        cand = [d for d in candidates if norm(get(d, "id", "")) not in avoid]
+        if not cand:
+            return None
+        picked = pick_n(cand, n=1, rnd=rnd, focus_rule=focus_rule)
+        return picked[0] if picked else None
+
+    def _pick_n(candidates: List[Dict[str, Any]], n: int, avoid: Optional[set] = None) -> List[Dict[str, Any]]:
+        avoid = avoid or set()
+        cand = [d for d in candidates if norm(get(d, "id", "")) not in avoid]
+        if not cand or n <= 0:
+            return []
+        return pick_n(cand, n=min(n, len(cand)), rnd=rnd, focus_rule=focus_rule)
+
+    # Warmup
+    wu = build_strength_warmup(warmups, age, rnd, day_type="upper")
+    lines.append("\nWARMUP (~5–8 min)")
+    for d in (wu or [])[:8]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
+
+    # A) Scap/Rotator Cuff Prep (2): tags scap_control OR rotator_cuff OR serratus, fatigue_cost=low
+    scap_pool = [d for d in pool if _tags_contain(d, "scap_control", "rotator_cuff", "serratus") and fatigue_cost_level(d) == "low"]
+    scap_picks = _pick_n(scap_pool, 2, used_ids)
+    if scap_picks:
+        for d in scap_picks:
+            used_ids.add(norm(get(d, "id", "")))
+        lines.append("\nSCAP / ROTATOR CUFF PREP (pick 2)")
+        for d in scap_picks:
+            lines.append(format_drill(d))
+
+    # B) Primary Press (1): movement_pattern=push, primary_region=upper, stability or hypertrophy, prefer unilateral
+    press_pool = [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy") and norm(get(d, "id", "")) not in used_ids]
+    uni_press = [d for d in press_pool if _unilateral(d)]
+    b_pick = _pick_one(uni_press or press_pool, used_ids)
+    if b_pick:
+        used_ids.add(norm(get(b_pick, "id", "")))
+        lines.append("\nPRIMARY PRESS (pick 1)")
+        reps_b = get(b_pick, "default_reps", "8-10")
+        lines.append(format_strength_drill_with_prescription(b_pick, sets=3, reps=str(reps_b), rest_sec=90))
+
+    # C) Primary Pull (1): movement_pattern=pull, tags posture OR scap_control
+    pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids]
+    c_pick = _pick_one(pull_pool, used_ids)
+    if c_pick:
+        used_ids.add(norm(get(c_pick, "id", "")))
+        lines.append("\nPRIMARY PULL (pick 1)")
+        reps_c = get(c_pick, "default_reps", "8-10")
+        lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps=str(reps_c), rest_sec=90))
+
+    # D) Core Anti-Rotation / Anti-Extension (1–2)
+    core_pool = [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and norm(get(d, "id", "")) not in used_ids]
+    core_picks = _pick_n(core_pool, 2, used_ids)
+    if core_picks:
+        for d in core_picks:
+            used_ids.add(norm(get(d, "id", "")))
+        lines.append("\nCORE ANTI-ROTATION / ANTI-EXTENSION (pick 1–2)")
+        for d in core_picks:
+            lines.append(format_drill(d))
+
+    # E) Controlled Rotation / Tempo (1): tags controlled_rotation OR core_control, avoid power throws
+    rot_pool = [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power" and norm(get(d, "id", "")) not in used_ids]
+    e_pick = _pick_one(rot_pool, used_ids)
+    if e_pick:
+        used_ids.add(norm(get(e_pick, "id", "")))
+        lines.append("\nCONTROLLED ROTATION / TEMPO (pick 1)")
+        lines.append(format_drill(e_pick))
+
+    # F) Carry Finisher (optional 1): movement_pattern=carry OR tags carry, coach_preference
+    carry_pool = [d for d in pool if (movement_pattern(d) == "carry" or _tags_contain(d, "carry")) and norm(get(d, "id", "")) not in used_ids]
+    f_pick = _pick_one(carry_pool, used_ids)
+    if f_pick:
+        used_ids.add(norm(get(f_pick, "id", "")))
+        lines.append("\nCARRY FINISHER (optional)")
+        lines.append(format_drill(f_pick))
+
+    return lines
+
+
+# ------------------------------
+# Explosive session: warmup → elastic primer → 3 contrast blocks (vertical, rotation, lateral)
+# ------------------------------
+def build_explosive_session(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    focus_rule: Optional[Dict[str, Any]] = None,
+    user_equipment: Optional[List[str]] = None,
+    max_contrast_blocks: int = 3,
+    include_elastic_primer: bool = True,
+) -> List[str]:
+    """Explosive day: Warmup → Elastic CNS primer → Contrast Block 1 (Vertical) → 2 (Rotation) → 3 (Lateral)."""
+    lines: List[str] = []
+    perf = data.get("performance", [])
+    warmups = data.get("warmup", [])
+    stage = determine_stage(age)
+    pool = filter_drills_for_athlete(perf, age, "performance", "heavy_explosive", user_equipment, full_gym=True)
+    pool = [d for d in pool if is_active(d) and age_ok(d, age)]
+    if user_equipment is not None:
+        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+
+    wu = build_strength_warmup(warmups, age, rnd, day_type="full")
+    lines.append("\nWARMUP (~5–8 min)")
+    for d in (wu or [])[:8]:
+        if get(d, "id") == "WARN":
+            lines.append(format_drill(d))
+        else:
+            lines.append(format_warmup_drill_compact(d))
+
+    # Elastic CNS Primer: load_type=bodyweight, tags elastic OR reactive, fatigue_cost != high
+    if include_elastic_primer:
+        elastic = [d for d in pool if norm(get(d, "load_type", "")).lower() == "bodyweight"
+                   and _tags_contain(d, "elastic", "reactive") and fatigue_cost_level(d) != "high"]
+        if not elastic:
+            elastic = [d for d in pool if get_contrast_pattern(d) == "elastic"]
+        if not elastic:
+            elastic = [d for d in pool if strength_focus(d) == "power" and _tags_contain(d, "jump", "pogo") and fatigue_cost_level(d) != "high"]
+        primer = pick_n(elastic, n=1, rnd=rnd, focus_rule=focus_rule) if elastic else []
+        if primer:
+            lines.append("\nELASTIC CNS PRIMER")
+            lines.append(format_drill(primer[0]))
+
+    # Contrast Block 1 — Vertical: ONE high-CNS lift (lift_role=primary, strength_focus=power, cns_load=high, unilateral=FALSE) + vertical plyo (bodyweight, power, tags vertical/landing_control/drop_jump)
+    vertical_lift = [d for d in pool if get_contrast_pattern(d) == "vertical" and lift_role(d) == "primary" and strength_focus(d) == "power" and _cns_level(d) == "high" and not _unilateral(d)]
+    if not vertical_lift:
+        vertical_lift = [d for d in pool if get_contrast_pattern(d) == "vertical" and strength_focus(d) in ("power", "max_strength")]
+    vertical_plyo = [d for d in pool if norm(get(d, "load_type", "")).lower() == "bodyweight" and strength_focus(d) == "power" and _tags_contain(d, "vertical", "landing_control", "drop_jump", "box jump", "depth")]
+    if not vertical_plyo:
+        vertical_plyo = [d for d in pool if get_contrast_pattern(d) == "vertical" and strength_focus(d) == "power"]
+    # Contrast Block 2 — Rotation: lift (push or rotation, avoid max_strength, moderate cns) + plyo (power, tags rotational)
+    rotation_lift = [d for d in pool if movement_pattern(d) in ("push", "rotation") and strength_focus(d) != "max_strength" and _cns_level(d) in ("medium", "moderate", "low", "")]
+    if not rotation_lift:
+        rotation_lift = [d for d in pool if get_contrast_pattern(d) == "rotation"]
+    rotation_plyo = [d for d in pool if strength_focus(d) == "power" and _tags_contain(d, "rotational", "rotation", "med ball", "scoop", "slam")]
+    if not rotation_plyo:
+        rotation_plyo = [d for d in pool if get_contrast_pattern(d) == "rotation" and strength_focus(d) == "power"]
+    # Contrast Block 3 — Lateral: lift (unilateral=TRUE, loaded, tags skating_specific/lateral_strength/unilateral_power) + plyo (bodyweight, power, tags lateral/skating_specific)
+    lateral_lift = [d for d in pool if _unilateral(d) and norm(get(d, "load_type", "")).lower() in ("loaded", "load") and _tags_contain(d, "skating_specific", "lateral_strength", "unilateral_power", "lateral")]
+    if not lateral_lift:
+        lateral_lift = [d for d in pool if get_contrast_pattern(d) == "lateral"]
+    lateral_plyo = [d for d in pool if norm(get(d, "load_type", "")).lower() == "bodyweight" and strength_focus(d) == "power" and _tags_contain(d, "lateral", "skating_specific", "skater", "bound")]
+    if not lateral_plyo:
+        lateral_plyo = [d for d in pool if get_contrast_pattern(d) == "lateral" and strength_focus(d) == "power"]
+
+    used: set = set()
+    blocks = []
+    if max_contrast_blocks >= 1 and (vertical_lift or vertical_plyo):
+        v_lift = pick_n([d for d in vertical_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        v_plyo = pick_n([d for d in vertical_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        if v_lift:
+            used.add(norm(get(v_lift[0], "id", "")))
+        if v_plyo:
+            used.add(norm(get(v_plyo[0], "id", "")))
+        blocks.append(("VERTICAL", v_lift or [], v_plyo or []))
+    if max_contrast_blocks >= 2 and (rotation_lift or rotation_plyo):
+        r_lift = pick_n([d for d in rotation_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        r_plyo = pick_n([d for d in rotation_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        if r_lift:
+            used.add(norm(get(r_lift[0], "id", "")))
+        if r_plyo:
+            used.add(norm(get(r_plyo[0], "id", "")))
+        blocks.append(("ROTATION", r_lift or [], r_plyo or []))
+    if max_contrast_blocks >= 3 and (lateral_lift or lateral_plyo):
+        l_lift = pick_n([d for d in lateral_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        l_plyo = pick_n([d for d in lateral_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
+        if l_lift:
+            used.add(norm(get(l_lift[0], "id", "")))
+        if l_plyo:
+            used.add(norm(get(l_plyo[0], "id", "")))
+        blocks.append(("LATERAL", l_lift or [], l_plyo or []))
+
+    for name, lifts, plyos in blocks:
+        lines.append(f"\nCONTRAST BLOCK — {name}")
+        lines.append("Lift then plyo. Rest 2–3 min between pairs. Quality over volume.")
+        for d in lifts:
+            lines.append(format_strength_drill_with_prescription(d, sets=3, reps="3-5", rest_sec=180))
+        for d in plyos:
+            lines.append(format_drill(d))
+    if not blocks:
+        lines.append("\nCONTRAST (general power)")
+        lines.append("- Pair one strength/power lift with one plyo. 3 sets each. Rest 2–3 min between pairs.")
+
+    return lines
+
+
+# ------------------------------
 # Strength session builder (full gym template)
 # ------------------------------
 def build_hockey_strength_session(
@@ -3003,6 +3590,7 @@ def generate_session(
     stickhandling_min: Optional[int] = None,
     shooting_min: Optional[int] = None,
     strength_day_type: Optional[str] = None,
+    program_day_type: Optional[str] = None,
     strength_full_gym: bool = False,
     include_post_lift_conditioning: Optional[bool] = None,
     post_lift_conditioning_type: Optional[str] = None,
@@ -3073,25 +3661,94 @@ def generate_session(
 
         focus_rule = get_focus_rules(focus, category)
 
-        # Performance (strength)
+        # Performance (strength) — age-based routing: foundation (<=12), development (13-15), performance (16+)
         if session_mode == "performance" and category == "performance":
-            dt = (strength_day_type or "leg").lower().strip()
-            if dt in ("lower", "lower_body", "legs", "leg_day"):
-                dt = "leg"
-            elif dt in ("upper_body", "upper_day"):
-                dt = "upper"
-            elif dt not in ("leg", "upper", "full"):
-                dt = "leg"
-
-            # Enforce minimum performance session length
             session_len_min = max(20, session_len_min)
-
             include_finisher = include_post_lift_conditioning
             if skate_within_24h:
                 include_finisher = False
-                include_post_lift_conditioning = False
+
+            stage = determine_stage(age)
+
+            # Foundation (<=12): no heavy leg / explosive; youth template with skating + puck + strength fundamentals
+            if stage == "foundation":
+                strength_lines = build_foundation_session(
+                    data=data,
+                    age=age,
+                    rnd=rnd,
+                    session_len_min=session_len_min,
+                    focus_rule=focus_rule,
+                    user_equipment=user_equipment,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
+
+            # Development (13-15): strength base + power OR explosive-lite (max 2 contrast blocks)
+            if stage == "development":
+                pt = (program_day_type or strength_day_type or "leg").lower().strip()
+                strength_lines = build_development_strength_session(
+                    data=data,
+                    age=age,
+                    rnd=rnd,
+                    session_len_min=session_len_min,
+                    program_day_type=pt if pt in ("heavy_explosive", "explosive") else None,
+                    focus_rule=focus_rule,
+                    user_equipment=user_equipment,
+                    full_gym=strength_full_gym,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
+
+            # Performance / Advanced (16+): map to heavy_leg, upper_core_stability, or heavy_explosive
+            pt = (program_day_type or strength_day_type or "leg").lower().strip()
+            if pt in ("heavy_explosive", "explosive", "full"):
+                pt = "heavy_explosive"
+            elif pt in ("upper", "upper_body", "upper_day", "upper_core_stability"):
+                pt = "upper_core_stability"
+            else:
+                pt = "heavy_leg"
+
+            if pt == "heavy_explosive":
+                strength_lines = build_explosive_session(
+                    data=data,
+                    age=age,
+                    rnd=rnd,
+                    session_len_min=session_len_min,
+                    focus_rule=focus_rule,
+                    user_equipment=user_equipment,
+                    max_contrast_blocks=3,
+                    include_elastic_primer=True,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
+
+            if pt == "heavy_leg":
+                strength_lines = build_heavy_leg_session(
+                    data=data,
+                    age=age,
+                    rnd=rnd,
+                    session_len_min=session_len_min,
+                    focus_rule=focus_rule,
+                    user_equipment=user_equipment,
+                    full_gym=strength_full_gym,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
+
+            if pt == "upper_core_stability":
+                strength_lines = build_upper_core_stability_session(
+                    data=data,
+                    age=age,
+                    rnd=rnd,
+                    session_len_min=session_len_min,
+                    focus_rule=focus_rule,
+                    user_equipment=user_equipment,
+                    full_gym=strength_full_gym,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
+
+            # Fallback: leg/upper without specific program_day_type → generic strength session
+            dt = "leg" if pt in ("heavy_leg", "leg") else "upper"
             strength_lines = build_hockey_strength_session(
-                strength_drills=data["performance"],
+                strength_drills=filter_drills_for_athlete(
+                    data["performance"], age, "performance", pt, user_equipment, strength_full_gym
+                ) or data["performance"],
                 warmups=data["warmup"],
                 mobility_drills=data["mobility"],
                 conditioning_drills=data["energy_systems"],
@@ -3339,5 +3996,42 @@ def main():
     print(plan)
 
 
+def run_age_stage_tests() -> None:
+    """Print one example performance session for each stage (age 11, 14, 17) and assert stage rules."""
+    data = load_all_data()
+    seed = 42
+    forbidden_age11 = ("barbell", "squat rack", "trap bar deadlift", "clean", "snatch", "power clean", "hang clean")
+    for age, day_type in [(11, None), (14, None), (17, "heavy_explosive")]:
+        stage = determine_stage(age)
+        print(f"\n{'='*60}\nAGE {age} | STAGE {stage} | program_day_type={day_type or 'leg'}\n{'='*60}")
+        plan = generate_session(
+            data=data,
+            age=age,
+            seed=seed,
+            focus=None,
+            session_mode="performance",
+            session_len_min=45,
+            athlete_id="age_test",
+            use_memory=False,
+            strength_day_type="leg" if age == 14 else ("full" if age == 17 else "leg"),
+            program_day_type=day_type,
+            strength_full_gym=(age >= 14),
+            user_equipment=None,
+        )
+        print(plan)
+        plan_lower = plan.lower()
+        if age == 11:
+            for bad in forbidden_age11:
+                assert bad not in plan_lower, f"Age 11 plan must not contain '{bad}'"
+            assert "skating mechanics" in plan_lower, "Age 11 plan must include skating mechanics block"
+        elif age == 17 and day_type == "heavy_explosive":
+            assert "elastic" in plan_lower and "primer" in plan_lower, "Age 17 explosive must have elastic CNS primer"
+            assert plan_lower.count("contrast block") >= 3, "Age 17 explosive must have 3 contrast blocks"
+    print("\n--- Age stage tests passed. ---")
+
+
 if __name__ == "__main__":
-    main()
+    if os.environ.get("BENDER_AGE_TEST"):
+        run_age_stage_tests()
+    else:
+        main()
