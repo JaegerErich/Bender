@@ -2468,6 +2468,8 @@ def build_heavy_leg_session(
     if user_equipment is not None:
         filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
         pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
+    if not pool:
+        pool = [d for d in perf if is_active(d) and age_ok(d, age) and primary_region(d) == "lower"]
     used_ids: set = set()
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -2536,6 +2538,15 @@ def build_heavy_leg_session(
         else:
             lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=str(dur), rest_sec=60))
 
+    # Fallback: if no strength sections were added (structure filters had no matches), add a general strength block
+    if pool and not used_ids:
+        remaining = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
+        fallback_pick = _pick_one(remaining, used_ids) if remaining else None
+        if fallback_pick:
+            lines.append("\nSTRENGTH (pick 1)")
+            reps_f = get(fallback_pick, "default_reps", "6-10")
+            lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
+
     # G) Optional calf/tibialis — skip for now (future)
     return lines
 
@@ -2564,6 +2575,8 @@ def build_upper_core_stability_session(
     if user_equipment is not None:
         filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
         pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
+    if not pool:
+        pool = [d for d in perf if is_active(d) and age_ok(d, age) and (primary_region(d) == "upper" or primary_region(d) == "core")]
     used_ids: set = set()
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -2644,6 +2657,15 @@ def build_upper_core_stability_session(
         used_ids.add(norm(get(f_pick, "id", "")))
         lines.append("\nCARRY FINISHER (optional)")
         lines.append(format_drill(f_pick))
+
+    # Fallback: if no strength sections were added, add a general upper/core block
+    if pool and not used_ids:
+        remaining = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
+        fallback_pick = _pick_one(remaining, used_ids) if remaining else None
+        if fallback_pick:
+            lines.append("\nSTRENGTH (pick 1)")
+            reps_f = get(fallback_pick, "default_reps", "8-10")
+            lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
     return lines
 
