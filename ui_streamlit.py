@@ -233,6 +233,8 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.rerun()
             date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
             st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
+            if missed:
+                st.markdown('<p class="plan-day-missed">Missed day</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -1013,19 +1015,18 @@ st.markdown("""
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
         border-radius: 999px !important; display: inline-block !important;
     }
-    /* Player day complete: whole day card turns green, number crossed off */
+    /* Missed day: small text under date, within card */
+    .plan-day-missed {
+        font-size: 0.5rem !important; color: #f87171 !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
+    }
+    /* Player day complete: whole day card turns green */
     .plan-day-complete { display: none; }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete),
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete),
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
         background: #16a34a !important;
     }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button {
-        text-decoration: line-through !important;
-    }
-
     /* Admin plan day selector: same as player plan — 5 visible, scroll, fixed card size, number then date */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
         background: transparent !important; color: #cccccc !important; margin: 0 !important; padding: 0 !important; font-size: 0.6rem !important; line-height: 1.15 !important; text-align: center !important; width: 100% !important; display: block !important;
@@ -1040,11 +1041,6 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
         background: #16a34a !important;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button {
-        text-decoration: line-through !important;
-    }
-
     /* Admin mode buttons: white/gray theme (incomplete = outline, complete = filled white) */
     #admin-plan-modes ~ * .stButton button {
         background: transparent !important; color: #ffffff !important; border: 1px solid #666666 !important;
