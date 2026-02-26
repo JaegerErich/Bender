@@ -400,7 +400,8 @@ def clear_last_output():
 # Pretty workout renderer (UI only)
 # -----------------------------
 _SECTION_RE = re.compile(
-    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift|youth)\b",
+    r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift|youth|"
+    r"primary bilateral|primary press|primary pull|heavy unilateral|posterior chain|frontal-plane|^iso\b|scap\s|core anti-rotation|controlled rotation|carry finisher|elastic cns|contrast block|strength)\b",
     re.IGNORECASE,
 )
 
@@ -443,6 +444,24 @@ def _header_style(title: str) -> str:
         return "Skating Mechanics"
     if "mobility" in t:
         return "Mobility"
+    if "primary bilateral" in t or "heavy unilateral" in t:
+        return "Strength"
+    if "posterior chain" in t or "hinge" in t:
+        return "Posterior Chain"
+    if "frontal" in t or "adductor" in t:
+        return "Frontal / Adductor"
+    if "iso" in t or "decel" in t or "braking" in t:
+        return "Iso / Decel"
+    if "scap" in t or "rotator" in t:
+        return "Scap / RC Prep"
+    if "primary press" in t or "primary pull" in t:
+        return "Strength"
+    if "core anti-rotation" in t or "anti-extension" in t:
+        return "Core"
+    if "controlled rotation" in t or "carry" in t:
+        return "Core / Carry"
+    if "elastic" in t or "contrast" in t:
+        return "Power"
     return "Section"
 
 def render_workout_readable(text: str) -> None:
