@@ -2454,7 +2454,8 @@ def build_heavy_leg_session(
     pool = filter_drills_for_athlete(perf, age, "performance", "heavy_leg", user_equipment, full_gym)
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
-        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
     used_ids: set = set()
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -2549,7 +2550,8 @@ def build_upper_core_stability_session(
     pool = filter_drills_for_athlete(perf, age, "performance", "upper_core_stability", user_equipment, full_gym)
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
-        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
     used_ids: set = set()
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
@@ -2655,7 +2657,8 @@ def build_explosive_session(
     pool = filter_drills_for_athlete(perf, age, "performance", "heavy_explosive", user_equipment, full_gym=True)
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
-        pool = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
+        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
 
     wu = build_strength_warmup(warmups, age, rnd, day_type="full")
     lines.append("\nWARMUP (~5–8 min)")
@@ -3705,6 +3708,31 @@ def generate_session(
                 pt = "upper_core_stability"
             else:
                 pt = "heavy_leg"
+
+            # No-gym: use bodyweight circuits (heavy_leg/upper_core/explosive expect gym equipment)
+            if not strength_full_gym:
+                dt = "leg" if pt in ("heavy_leg", "leg") else "upper"
+                strength_lines = build_hockey_strength_session(
+                    strength_drills=filter_drills_for_athlete(
+                        data["performance"], age, "performance", pt, user_equipment, strength_full_gym
+                    ) or data["performance"],
+                    warmups=data["warmup"],
+                    mobility_drills=data["mobility"],
+                    conditioning_drills=data["energy_systems"],
+                    circuits=data.get("circuits", []),
+                    age=age,
+                    rnd=rnd,
+                    day_type=dt,
+                    session_len_min=session_len_min,
+                    emphasis=strength_emphasis,
+                    focus_rule=focus_rule,
+                    include_finisher=include_finisher,
+                    full_gym=False,
+                    post_lift_conditioning_type=post_lift_conditioning_type,
+                    skate_within_24h=skate_within_24h,
+                    user_equipment=user_equipment,
+                )
+                return _finalize_and_return("\n".join(lines + strength_lines))
 
             if pt == "heavy_explosive":
                 strength_lines = build_explosive_session(
