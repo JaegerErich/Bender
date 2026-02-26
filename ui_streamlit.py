@@ -735,25 +735,26 @@ st.markdown("""
         opacity: 1 !important;
     }
 
-    /* Plan day selector: single row, horizontal scroll bar (player + admin + Safari/mobile) */
+    /* Plan day selector: 5 days visible at a time, horizontal scroll, all days in one row (app/browser/Safari) */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
-        overflow-x: auto !important; overflow-y: visible !important; max-width: 100%; padding-bottom: 0.5rem;
+        overflow-x: auto !important; overflow-y: visible !important;
+        max-width: 22rem !important; width: 100%; padding-bottom: 0.5rem;
         -webkit-overflow-scrolling: touch; scrollbar-width: thin;
         flex-direction: row !important; flex-wrap: nowrap !important;
     }
-    @media (max-width: 768px) {
+    @media (max-width: 380px) {
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
-            flex-direction: row !important; flex-wrap: nowrap !important;
+            max-width: 100% !important;
         }
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
-        min-width: 3.2rem; flex: 0 0 auto; gap: 0;
+        min-width: 4rem !important; width: 4rem !important; flex: 0 0 4rem !important; gap: 0;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
