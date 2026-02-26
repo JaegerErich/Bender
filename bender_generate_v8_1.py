@@ -2444,6 +2444,23 @@ def build_development_strength_session(
     return lines
 
 
+def _heavy_leg_time_profile(session_len_min: int) -> Dict[str, bool]:
+    """
+    Returns which sections B–F to include based on session length.
+    Sections are dropped from the bottom (F first) when time is short.
+    Approximate times: Warmup ~6 min, B ~13 min, C ~9 min, D ~8 min, E ~6 min, F ~3 min.
+    """
+    m = max(15, int(session_len_min))
+    include = {
+        "bilateral": True,   # B) Primary Bilateral — always when we have time for any strength
+        "unilateral": m >= 28,
+        "hinge": m >= 36,
+        "frontal": m >= 42,
+        "iso_decel": m >= 46,
+    }
+    return include
+
+
 # ------------------------------
 # Heavy Leg Day (program_day_type heavy_leg / heavy_lower) — performance stage only
 # ------------------------------
@@ -2480,10 +2497,11 @@ def build_heavy_leg_session(
         picked = pick_n(cand, n=1, rnd=rnd, focus_rule=focus_rule)
         return picked[0] if picked else None
 
-    # A) Warmup (low fatigue / low intensity)
+    # A) Warmup (low fatigue / low intensity) — fewer drills when session is short
     wu = build_strength_warmup(warmups, age, rnd, day_type="leg")
+    warmup_cap = 5 if session_len_min <= 30 else 8
     lines.append("\nWARMUP (~5–8 min) — low intensity")
-    for d in (wu or [])[:8]:
+    for d in (wu or [])[:warmup_cap]:
         if get(d, "id") == "WARN":
             lines.append(format_drill(d))
         else:
@@ -2491,64 +2509,88 @@ def build_heavy_leg_session(
 
     # Prefer loaded for main strength slots
     loaded_only = [d for d in pool if norm(get(d, "load_type", "")).lower() == "loaded"]
+    time_profile = _heavy_leg_time_profile(session_len_min)
 
     # B) Primary Bilateral Strength (1): primary_region=lower, lift_role=primary, strength_focus=max_strength
-    bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
-    b_pick = _pick_one(bilateral, used_ids)
-    if b_pick:
-        used_ids.add(norm(get(b_pick, "id", "")))
-        lines.append("\nPRIMARY BILATERAL STRENGTH (pick 1)")
-        lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
+    if time_profile["bilateral"]:
+        bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
+        b_pick = _pick_one(bilateral, used_ids)
+        if b_pick:
+            used_ids.add(norm(get(b_pick, "id", "")))
+            lines.append("\nPRIMARY BILATERAL STRENGTH")
+            lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
 
     # C) Heavy Unilateral (1): unilateral=TRUE, lift_role primary or secondary, strength_focus=max_strength
-    unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
-    c_pick = _pick_one(unilateral_heavy, used_ids)
-    if c_pick:
-        used_ids.add(norm(get(c_pick, "id", "")))
-        lines.append("\nHEAVY UNILATERAL STRENGTH (pick 1)")
-        lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
+    if time_profile["unilateral"]:
+        unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
+        c_pick = _pick_one(unilateral_heavy, used_ids)
+        if c_pick:
+            used_ids.add(norm(get(c_pick, "id", "")))
+            lines.append("\nHEAVY UNILATERAL STRENGTH")
+            lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
 
     # D) Posterior Chain / Hinge (1): movement_pattern=hinge, primary_region=lower, strength_focus hypertrophy or strength
-    hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
-    d_pick = _pick_one(hinge, used_ids)
-    if d_pick:
-        used_ids.add(norm(get(d_pick, "id", "")))
-        lines.append("\nPOSTERIOR CHAIN / HINGE (pick 1)")
-        reps_d = get(d_pick, "default_reps", "6-10")
-        lines.append(format_strength_drill_with_prescription(d_pick, sets=3, reps=str(reps_d), rest_sec=120))
+    if time_profile["hinge"]:
+        hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
+        d_pick = _pick_one(hinge, used_ids)
+        if d_pick:
+            used_ids.add(norm(get(d_pick, "id", "")))
+            lines.append("\nPOSTERIOR CHAIN / HINGE")
+            reps_d = get(d_pick, "default_reps", "6-10")
+            lines.append(format_strength_drill_with_prescription(d_pick, sets=3, reps=str(reps_d), rest_sec=120))
 
     # E) Frontal-Plane / Adductor (1): tags adductors OR frontal_plane OR lateral_strength
-    frontal = [d for d in pool if _tags_contain(d, "adductor", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
-    e_pick = _pick_one(frontal, used_ids)
-    if e_pick:
-        used_ids.add(norm(get(e_pick, "id", "")))
-        lines.append("\nFRONTAL-PLANE / ADDUCTOR (pick 1)")
-        reps_e = get(e_pick, "default_reps", "6-10/side")
-        lines.append(format_strength_drill_with_prescription(e_pick, sets=3, reps=str(reps_e), rest_sec=90))
+    if time_profile["frontal"]:
+        frontal = [d for d in pool if _tags_contain(d, "adductor", "adductors", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
+        e_pick = _pick_one(frontal, used_ids)
+        if e_pick:
+            used_ids.add(norm(get(e_pick, "id", "")))
+            lines.append("\nFRONTAL-PLANE / ADDUCTOR")
+            reps_e = get(e_pick, "default_reps", "6-10/side")
+            lines.append(format_strength_drill_with_prescription(e_pick, sets=3, reps=str(reps_e), rest_sec=90))
 
     # F) Iso/Decel / Braking (1): tags isometric OR deceleration OR hard_stop
-    iso_decel = [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop") and norm(get(d, "id", "")) not in used_ids]
-    f_pick = _pick_one(iso_decel, used_ids)
-    if f_pick:
-        used_ids.add(norm(get(f_pick, "id", "")))
-        lines.append("\nISO / DECEL / BRAKING (pick 1) — low volume")
-        dur = get(f_pick, "default_duration_sec") or get(f_pick, "default_reps", "20-40s")
-        if isinstance(dur, int):
-            lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=f"{dur}s", rest_sec=60))
-        else:
-            lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=str(dur), rest_sec=60))
+    if time_profile["iso_decel"]:
+        iso_decel = [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop") and norm(get(d, "id", "")) not in used_ids]
+        f_pick = _pick_one(iso_decel, used_ids)
+        if f_pick:
+            used_ids.add(norm(get(f_pick, "id", "")))
+            lines.append("\nISO / DECEL / BRAKING — low volume")
+            dur = get(f_pick, "default_duration_sec") or get(f_pick, "default_reps", "20-40s")
+            if isinstance(dur, int):
+                lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=f"{dur}s", rest_sec=60))
+            else:
+                lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=str(dur), rest_sec=60))
 
     # Fallback: if no strength sections were added (structure filters had no matches), add a general strength block
     if pool and not used_ids:
         remaining = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
         fallback_pick = _pick_one(remaining, used_ids) if remaining else None
         if fallback_pick:
-            lines.append("\nSTRENGTH (pick 1)")
+            lines.append("\nSTRENGTH")
             reps_f = get(fallback_pick, "default_reps", "6-10")
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
     # G) Optional calf/tibialis — skip for now (future)
     return lines
+
+
+def _upper_core_stability_time_profile(session_len_min: int) -> Dict[str, Any]:
+    """
+    Returns which sections A–F to include based on session length.
+    Sections dropped from bottom (F first) when time is short.
+    Approx times: Warmup ~6 min, A ~6 min, B ~7 min, C ~7 min, D ~5–8 min, E ~4 min, F ~3 min.
+    """
+    m = max(15, int(session_len_min))
+    return {
+        "scap_prep": True,           # A) Scap/RC Prep — always for shoulder health
+        "primary_press": True,       # B) Primary Press — always when any strength
+        "primary_pull": m >= 26,
+        "core": m >= 32,
+        "core_n": 2 if m >= 40 else 1,  # D) pick 1 when short, 2 when time allows
+        "controlled_rotation": m >= 38,
+        "carry": m >= 44,
+    }
 
 
 # ------------------------------
@@ -2594,76 +2636,86 @@ def build_upper_core_stability_session(
             return []
         return pick_n(cand, n=min(n, len(cand)), rnd=rnd, focus_rule=focus_rule)
 
-    # Warmup
+    # Warmup — fewer drills when session is short
     wu = build_strength_warmup(warmups, age, rnd, day_type="upper")
+    warmup_cap = 5 if session_len_min <= 30 else 8
     lines.append("\nWARMUP (~5–8 min)")
-    for d in (wu or [])[:8]:
+    for d in (wu or [])[:warmup_cap]:
         if get(d, "id") == "WARN":
             lines.append(format_drill(d))
         else:
             lines.append(format_warmup_drill_compact(d))
 
-    # A) Scap/Rotator Cuff Prep (2): tags scap_control OR rotator_cuff OR serratus, fatigue_cost=low
-    scap_pool = [d for d in pool if _tags_contain(d, "scap_control", "rotator_cuff", "serratus") and fatigue_cost_level(d) == "low"]
-    scap_picks = _pick_n(scap_pool, 2, used_ids)
-    if scap_picks:
-        for d in scap_picks:
-            used_ids.add(norm(get(d, "id", "")))
-        lines.append("\nSCAP / ROTATOR CUFF PREP (pick 2)")
-        for d in scap_picks:
-            lines.append(format_drill(d))
+    time_profile = _upper_core_stability_time_profile(session_len_min)
 
-    # B) Primary Press (1): movement_pattern=push, primary_region=upper, stability or hypertrophy, prefer unilateral
-    press_pool = [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy") and norm(get(d, "id", "")) not in used_ids]
-    uni_press = [d for d in press_pool if _unilateral(d)]
-    b_pick = _pick_one(uni_press or press_pool, used_ids)
-    if b_pick:
-        used_ids.add(norm(get(b_pick, "id", "")))
-        lines.append("\nPRIMARY PRESS (pick 1)")
-        reps_b = get(b_pick, "default_reps", "8-10")
-        lines.append(format_strength_drill_with_prescription(b_pick, sets=3, reps=str(reps_b), rest_sec=90))
+    # A) Scap/Rotator Cuff Prep (pick 2): tags scap_control OR rotator_cuff OR serratus, fatigue_cost=low
+    if time_profile["scap_prep"]:
+        scap_pool = [d for d in pool if _tags_contain(d, "scap_control", "rotator_cuff", "serratus") and fatigue_cost_level(d) == "low"]
+        scap_picks = _pick_n(scap_pool, 2, used_ids)
+        if scap_picks:
+            for d in scap_picks:
+                used_ids.add(norm(get(d, "id", "")))
+            lines.append("\nSCAP / ROTATOR CUFF PREP (pick 2)")
+            for d in scap_picks:
+                lines.append(format_drill(d))
 
-    # C) Primary Pull (1): movement_pattern=pull, tags posture OR scap_control
-    pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids]
-    c_pick = _pick_one(pull_pool, used_ids)
-    if c_pick:
-        used_ids.add(norm(get(c_pick, "id", "")))
-        lines.append("\nPRIMARY PULL (pick 1)")
-        reps_c = get(c_pick, "default_reps", "8-10")
-        lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps=str(reps_c), rest_sec=90))
+    # B) Primary Press (pick 1): movement_pattern=push, primary_region=upper, stability or hypertrophy, prefer unilateral
+    if time_profile["primary_press"]:
+        press_pool = [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy") and norm(get(d, "id", "")) not in used_ids]
+        uni_press = [d for d in press_pool if _unilateral(d)]
+        b_pick = _pick_one(uni_press or press_pool, used_ids)
+        if b_pick:
+            used_ids.add(norm(get(b_pick, "id", "")))
+            lines.append("\nPRIMARY PRESS")
+            reps_b = get(b_pick, "default_reps", "8-10")
+            lines.append(format_strength_drill_with_prescription(b_pick, sets=3, reps=str(reps_b), rest_sec=90))
 
-    # D) Core Anti-Rotation / Anti-Extension (1–2)
-    core_pool = [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and norm(get(d, "id", "")) not in used_ids]
-    core_picks = _pick_n(core_pool, 2, used_ids)
-    if core_picks:
-        for d in core_picks:
-            used_ids.add(norm(get(d, "id", "")))
-        lines.append("\nCORE ANTI-ROTATION / ANTI-EXTENSION (pick 1–2)")
-        for d in core_picks:
-            lines.append(format_drill(d))
+    # C) Primary Pull (pick 1): movement_pattern=pull, tags posture OR scap_control
+    if time_profile["primary_pull"]:
+        pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids]
+        c_pick = _pick_one(pull_pool, used_ids)
+        if c_pick:
+            used_ids.add(norm(get(c_pick, "id", "")))
+            lines.append("\nPRIMARY PULL")
+            reps_c = get(c_pick, "default_reps", "8-10")
+            lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps=str(reps_c), rest_sec=90))
 
-    # E) Controlled Rotation / Tempo (1): tags controlled_rotation OR core_control, avoid power throws
-    rot_pool = [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power" and norm(get(d, "id", "")) not in used_ids]
-    e_pick = _pick_one(rot_pool, used_ids)
-    if e_pick:
-        used_ids.add(norm(get(e_pick, "id", "")))
-        lines.append("\nCONTROLLED ROTATION / TEMPO (pick 1)")
-        lines.append(format_drill(e_pick))
+    # D) Core Anti-Rotation / Anti-Extension (pick 1–2)
+    if time_profile["core"]:
+        core_n = time_profile.get("core_n", 1)
+        core_pool = [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and norm(get(d, "id", "")) not in used_ids]
+        core_picks = _pick_n(core_pool, core_n, used_ids)
+        if core_picks:
+            for d in core_picks:
+                used_ids.add(norm(get(d, "id", "")))
+            lines.append("\nCORE ANTI-ROTATION / ANTI-EXTENSION")
+            for d in core_picks:
+                lines.append(format_drill(d))
 
-    # F) Carry Finisher (optional 1): movement_pattern=carry OR tags carry, coach_preference
-    carry_pool = [d for d in pool if (movement_pattern(d) == "carry" or _tags_contain(d, "carry")) and norm(get(d, "id", "")) not in used_ids]
-    f_pick = _pick_one(carry_pool, used_ids)
-    if f_pick:
-        used_ids.add(norm(get(f_pick, "id", "")))
-        lines.append("\nCARRY FINISHER (optional)")
-        lines.append(format_drill(f_pick))
+    # E) Controlled Rotation / Tempo (pick 1): tags controlled_rotation OR core_control, avoid power throws
+    if time_profile["controlled_rotation"]:
+        rot_pool = [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power" and norm(get(d, "id", "")) not in used_ids]
+        e_pick = _pick_one(rot_pool, used_ids)
+        if e_pick:
+            used_ids.add(norm(get(e_pick, "id", "")))
+            lines.append("\nCONTROLLED ROTATION / TEMPO")
+            lines.append(format_drill(e_pick))
+
+    # F) Carry Finisher (optional pick 1): movement_pattern=carry OR tags carry, coach_preference
+    if time_profile["carry"]:
+        carry_pool = [d for d in pool if (movement_pattern(d) == "carry" or _tags_contain(d, "carry")) and norm(get(d, "id", "")) not in used_ids]
+        f_pick = _pick_one(carry_pool, used_ids)
+        if f_pick:
+            used_ids.add(norm(get(f_pick, "id", "")))
+            lines.append("\nCARRY FINISHER")
+            lines.append(format_drill(f_pick))
 
     # Fallback: if no strength sections were added, add a general upper/core block
     if pool and not used_ids:
         remaining = [d for d in pool if norm(get(d, "id", "")) not in used_ids]
         fallback_pick = _pick_one(remaining, used_ids) if remaining else None
         if fallback_pick:
-            lines.append("\nSTRENGTH (pick 1)")
+            lines.append("\nSTRENGTH")
             reps_f = get(fallback_pick, "default_reps", "8-10")
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
@@ -2702,6 +2754,9 @@ def build_explosive_session(
         else:
             lines.append(format_warmup_drill_compact(d))
 
+    # Track used drill IDs — no repeat within workout or within a block
+    used: set = set()
+
     # Elastic CNS Primer: load_type=bodyweight, tags elastic OR reactive, fatigue_cost != high
     if include_elastic_primer:
         elastic = [d for d in pool if norm(get(d, "load_type", "")).lower() == "bodyweight"
@@ -2712,6 +2767,7 @@ def build_explosive_session(
             elastic = [d for d in pool if strength_focus(d) == "power" and _tags_contain(d, "jump", "pogo") and fatigue_cost_level(d) != "high"]
         primer = pick_n(elastic, n=1, rnd=rnd, focus_rule=focus_rule) if elastic else []
         if primer:
+            used.add(norm(get(primer[0], "id", "")))
             lines.append("\nELASTIC CNS PRIMER")
             lines.append(format_drill(primer[0]))
 
@@ -2737,29 +2793,28 @@ def build_explosive_session(
     if not lateral_plyo:
         lateral_plyo = [d for d in pool if get_contrast_pattern(d) == "lateral" and strength_focus(d) == "power"]
 
-    used: set = set()
     blocks = []
     if max_contrast_blocks >= 1 and (vertical_lift or vertical_plyo):
         v_lift = pick_n([d for d in vertical_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
-        v_plyo = pick_n([d for d in vertical_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if v_lift:
             used.add(norm(get(v_lift[0], "id", "")))
+        v_plyo = pick_n([d for d in vertical_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if v_plyo:
             used.add(norm(get(v_plyo[0], "id", "")))
         blocks.append(("VERTICAL", v_lift or [], v_plyo or []))
     if max_contrast_blocks >= 2 and (rotation_lift or rotation_plyo):
         r_lift = pick_n([d for d in rotation_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
-        r_plyo = pick_n([d for d in rotation_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if r_lift:
             used.add(norm(get(r_lift[0], "id", "")))
+        r_plyo = pick_n([d for d in rotation_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if r_plyo:
             used.add(norm(get(r_plyo[0], "id", "")))
         blocks.append(("ROTATION", r_lift or [], r_plyo or []))
     if max_contrast_blocks >= 3 and (lateral_lift or lateral_plyo):
         l_lift = pick_n([d for d in lateral_lift if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
-        l_plyo = pick_n([d for d in lateral_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if l_lift:
             used.add(norm(get(l_lift[0], "id", "")))
+        l_plyo = pick_n([d for d in lateral_plyo if norm(get(d, "id", "")) not in used], 1, rnd=rnd, focus_rule=focus_rule)
         if l_plyo:
             used.add(norm(get(l_plyo[0], "id", "")))
         blocks.append(("LATERAL", l_lift or [], l_plyo or []))
