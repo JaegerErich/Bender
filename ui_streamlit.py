@@ -695,43 +695,47 @@ def _generate_via_api(payload: dict) -> dict:
 _sidebar_state = "collapsed" if st.session_state.get("collapse_sidebar_after_save") else "expanded"
 if st.session_state.get("collapse_sidebar_after_save"):
     st.session_state.collapse_sidebar_after_save = False
-st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state=_sidebar_state)
+_page_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "b_logo.png")
+if not os.path.isfile(_page_icon):
+    _page_icon = None
+st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state=_sidebar_state, page_icon=_page_icon if _page_icon else "🏒")
 
 # Custom CSS: single-column main; sidebar for equipment
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-    .stApp { background: #0f172a !important; }
+    .stApp { background: #000000 !important; }
     .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; background: transparent; }
-    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #f1f5f9 !important; letter-spacing: -0.02em; }
-    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.25rem; }
-    label { font-family: 'DM Sans', sans-serif !important; color: #e2e8f0 !important; }
+    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
+    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 0.95rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
+    .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 0.85rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
+    label { font-family: 'DM Sans', sans-serif !important; color: #ffffff !important; }
 
-    /* Sidebar: dark mode to match app */
-    [data-testid="stSidebar"] { background-color: #1e293b !important; }
+    /* Sidebar: black to match Bender branding */
+    [data-testid="stSidebar"] { background-color: #000000 !important; }
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] .stCheckbox > label,
     [data-testid="stSidebar"] [data-testid="stCheckbox"] label,
     [data-testid="stSidebar"] div[data-testid="stCheckbox"] * {
-        color: #f1f5f9 !important;
-        -webkit-text-fill-color: #f1f5f9 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         opacity: 1 !important;
         visibility: visible !important;
     }
     [data-testid="stSidebar"] .stMarkdown,
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption {
-        color: #f1f5f9 !important;
-        -webkit-text-fill-color: #f1f5f9 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* Equipment checkboxes: light text for dark mode + mobile Safari */
+    /* Equipment checkboxes: white text for black theme + mobile Safari */
     .stCheckbox label, [data-testid="stCheckbox"] label {
-        color: #f1f5f9 !important;
-        -webkit-text-fill-color: #f1f5f9 !important;
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
         opacity: 1 !important;
     }
 
@@ -762,11 +766,11 @@ st.markdown("""
         gap: 0.2rem !important;
     }
 
-    /* Plan day selector: dark grey cards, number + date aligned, selected=white border+date pill */
+    /* Plan day selector: black/white cards, number + date aligned, selected=white border */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
-        background: #1e293b !important; padding: 0.35rem 0.25rem; border-radius: 10px; margin: 0 0.08rem; border: 2px solid transparent;
+        background: #1a1a1a !important; padding: 0.35rem 0.25rem; border-radius: 10px; margin: 0 0.08rem; border: 2px solid #333333;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
@@ -780,10 +784,10 @@ st.markdown("""
         white-space: nowrap !important;
     }
     .plan-day-date {
-        background: transparent; color: #94a3b8; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
+        background: transparent; color: #cccccc; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
     }
     .plan-day-date-selected {
-        background: #334155 !important; color: #f1f5f9 !important; padding: 0.2rem 0.5rem !important;
+        background: #333333 !important; color: #ffffff !important; padding: 0.2rem 0.5rem !important;
         border-radius: 999px !important; display: inline-block !important;
     }
     /* Player day complete: whole day card turns green */
@@ -793,9 +797,9 @@ st.markdown("""
         background: #16a34a !important;
     }
 
-    /* Admin plan day selector: same dark card design */
+    /* Admin plan day selector: same black/white card design */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
-        background: #1e293b !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid transparent;
+        background: #1a1a1a !important; padding: 0.4rem; border-radius: 10px; margin: 0 0.2rem; border: 2px solid #333333;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
@@ -806,10 +810,10 @@ st.markdown("""
         white-space: nowrap !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #94a3b8 !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
+        background: transparent !important; color: #cccccc !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
-        background: #334155 !important; color: #f1f5f9 !important; padding: 0.2rem 0.5rem !important;
+        background: #333333 !important; color: #ffffff !important; padding: 0.2rem 0.5rem !important;
         border-radius: 999px !important;
     }
     /* Admin day complete: card turns green */
@@ -818,100 +822,113 @@ st.markdown("""
         background: #16a34a !important;
     }
 
-    /* Admin mode buttons: blue when incomplete, light green + checkmark when workout complete */
+    /* Admin mode buttons: white/gray theme (incomplete = outline, complete = filled white) */
     #admin-plan-modes ~ * .stButton button {
-        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
+        background: transparent !important; color: #ffffff !important; border: 1px solid #666666 !important;
     }
     #admin-plan-modes ~ * .stButton button[kind="primary"] {
-        background: #86efac !important; color: #14532d !important; border: 1px solid #22c55e !important;
+        background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Player My Plan mode buttons: same style as admin */
+    /* Player My Plan mode buttons: same black/white style */
     #plan-modes ~ * .stButton button {
-        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
+        background: transparent !important; color: #ffffff !important; border: 1px solid #666666 !important;
     }
     #plan-modes ~ * .stButton button[kind="primary"] {
-        background: #86efac !important; color: #14532d !important; border: 1px solid #22c55e !important;
+        background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Form card (dark mode) */
+    /* Form card (black/white theme) */
     .form-card {
-        background: #1e293b;
+        background: #1a1a1a;
         border-radius: 12px;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        border: 1px solid #334155;
+        box-shadow: 0 1px 3px rgba(255,255,255,0.05);
+        border: 1px solid #333333;
     }
 
-    /* Workout result cards (dark mode) */
+    /* Workout result cards (black/white theme) */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: #1e293b !important;
-        border: 1px solid #334155 !important;
+        background: #1a1a1a !important;
+        border: 1px solid #333333 !important;
         border-radius: 12px !important;
         padding: 1rem 1.25rem !important;
         margin-bottom: 0.75rem !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
+        box-shadow: 0 1px 3px rgba(255,255,255,0.05) !important;
     }
 
-    /* Tabs: clearly separate Workout / Download / Feedback */
+    /* Tabs: black/white theme */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.75rem;
-        border-bottom: 1px solid #334155;
+        border-bottom: 1px solid #333333;
         padding-bottom: 0;
     }
     .stTabs [data-baseweb="tab"] {
         font-family: 'DM Sans', sans-serif;
-        color: #94a3b8;
+        color: #cccccc;
         padding: 0.5rem 1rem;
         margin-right: 0.25rem;
-        border: 1px solid #e2e8f0;
+        border: 1px solid #333333;
         border-bottom: none;
         border-radius: 8px 8px 0 0;
-        background: #f1f5f9;
+        background: #1a1a1a;
     }
     .stTabs [data-baseweb="tab"]:first-child { margin-left: 0; }
     .stTabs [aria-selected="true"] {
-        color: #0ea5e9 !important;
-        background: white !important;
-        border-color: #e2e8f0;
-        border-bottom: 1px solid white !important;
+        color: #000000 !important;
+        background: #ffffff !important;
+        border-color: #333333;
+        border-bottom: 1px solid #000000 !important;
         margin-bottom: -1px;
     }
-    .stTabs [data-baseweb="tab"]:hover { background: #e2e8f0 !important; }
+    .stTabs [data-baseweb="tab"]:hover { background: #333333 !important; color: #ffffff !important; }
     .stTabs [data-baseweb="tab"]:focus-visible {
-        outline: 2px solid #0ea5e9; outline-offset: 2px;
+        outline: 2px solid #ffffff; outline-offset: 2px;
     }
 
-    /* Form card: session options container */
+    /* Form card: session options container (black/white) */
     .main .block-container div[data-testid="stVerticalBlock"]:has(.form-card-marker) {
-        background: white;
+        background: #1a1a1a;
         border-radius: 12px;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(255,255,255,0.05);
+        border: 1px solid #333333;
     }
 
     .stButton button {
         font-family: 'DM Sans', sans-serif !important; font-weight: 600 !important;
-        background: #0ea5e9 !important; color: white !important; border: none !important;
+        background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
         border-radius: 8px !important; padding: 0.5rem 1.5rem !important;
     }
-    .stButton button:hover { background: #0284c7 !important; }
+    .stButton button:hover { background: #e0e0e0 !important; color: #000000 !important; }
 
-    .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #0f172a; font-size: 1.05rem; margin-bottom: 0.35rem; }
+    .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #ffffff; font-size: 1.05rem; margin-bottom: 0.35rem; }
     .workout-result-badge {
-        display: inline-block; background: #e0f2fe; color: #0369a1;
+        display: inline-block; background: #333333; color: #ffffff;
         padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.8rem; margin-bottom: 0.75rem;
     }
-    .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #334155 !important; }
-    .stCaption { color: #64748b !important; }
+    .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
+    .stCaption { color: #cccccc !important; }
 </style>
 """, unsafe_allow_html=True)
 
-st.title("Bender")
-st.markdown('<p class="bender-tagline">Hockey workout generator — build 2026-02</p>', unsafe_allow_html=True)
+# Bender branding: logo + tagline (black/white)
+_logo_dir = os.path.join(BASE_DIR, "assets")
+_full_logo_path = os.path.join(_logo_dir, "bender_full_logo.png")
+_b_logo_path = os.path.join(_logo_dir, "b_logo.png")
+if os.path.isfile(_full_logo_path):
+    st.image(_full_logo_path, use_container_width=True)
+else:
+    st.markdown(
+        '<div style="text-align:center; margin-bottom:0.5rem;">'
+        '<p class="bender-tagline" style="font-size:1.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:0;">BENDER</p>'
+        '<p class="bender-brand-sub">• HOCKEY TRAINING •</p>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+st.caption("Hockey workout generator — build 2026-02")
 
 # Session state init
 if "last_session_id" not in st.session_state:
@@ -1085,8 +1102,12 @@ if not _equipment_setup_done(st.session_state.current_profile or {}):
 
 display_name = (st.session_state.current_profile or {}).get("display_name") or st.session_state.current_user_id or ""
 
-# Sidebar: equipment by mode (canonical list) + Sign out
+# Sidebar: Bender branding + equipment + Sign out
 with st.sidebar:
+    if os.path.isfile(_b_logo_path):
+        st.image(_b_logo_path, width=44)
+    else:
+        st.markdown('<p style="font-weight:700; letter-spacing:0.1em; color:#ffffff; margin-bottom:0;">BENDER</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
     st.divider()
     st.subheader("Equipment")

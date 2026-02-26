@@ -1426,12 +1426,16 @@ def pick_mobility_drills(
     focus_rule: Optional[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
     pool = [d for d in drills if is_active(d) and age_ok(d, age) and mobility_intensity_ok(d)]
+    if not pool:
+        pool = [d for d in drills if is_active(d) and age_ok(d, age)]
+    if not pool:
+        return []
     return pick_n(pool, n=n, rnd=rnd, focus_rule=focus_rule)
 
 
 def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
     if not drills:
-        return ["- [No matching drills found]"]
+        return ["- Perform 2 rounds of your preferred cooldown stretches."]
 
     if block_seconds <= 8 * 60:
         rounds = 2
@@ -1452,7 +1456,7 @@ def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds:
 
 def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: int) -> List[str]:
     if not drills:
-        return ["- [No matching drills found]"]
+        return ["- Use your preferred mobility/reset routine for the time available."]
 
     n = len(drills)
     per = max(120, total_seconds // max(1, n))
@@ -2092,7 +2096,7 @@ def build_bw_strength_circuits(
         )
         lines.append("\nMOBILITY COOLDOWN CIRCUIT")
         if not mob:
-            lines.append("- [No mobility drills found]")
+            lines.append("- Perform 2 rounds of your preferred cooldown stretches.")
         else:
             lines.append("- Perform 2 rounds")
             for d in mob:
@@ -2808,7 +2812,7 @@ def build_hockey_strength_session(
     mobility_time_sec = len(m) * MOBILITY_SEC_PER_DRILL
     lines.append(f"\nMOBILITY COOLDOWN CIRCUIT (~{format_seconds_short(mobility_time_sec)})")
     if not m:
-        lines.append("- [No mobility drills found]")
+        lines.append("- Perform 2 rounds of your preferred cooldown stretches.")
     else:
         lines.append("- Perform 2 rounds")
         for d in m:
