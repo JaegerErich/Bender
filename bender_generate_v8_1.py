@@ -405,6 +405,37 @@ def filter_drills_for_athlete(
     return out
 
 
+def get_drills_pool_for_plan_slot(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    params: Dict[str, Any],
+    user_equipment: Optional[List[str]] = None,
+) -> List[Dict[str, Any]]:
+    """Return drills that could be used for a plan slot (for edit-mode alternative exercises)."""
+    mode = (params.get("mode") or "performance").lower().strip()
+    full_gym = params.get("location") == "gym" and mode == "performance"
+    strength_day_type = params.get("strength_day_type") or "full"
+    if mode == "performance":
+        pt_map = {"leg": "heavy_leg", "upper": "upper_core_stability", "full": "heavy_explosive"}
+        program_day_type = pt_map.get(strength_day_type, "heavy_leg")
+        perf = data.get("performance", [])
+        return filter_drills_for_athlete(perf, age, "performance", program_day_type, user_equipment, full_gym)
+    if mode == "skating_mechanics":
+        drills = data.get("skating_mechanics", []) or data.get("movement", [])
+        return [d for d in drills if is_active(d) and age_ok(d, age) and (equipment_ok_for_user(d, user_equipment) if user_equipment else True)]
+    if mode == "skills_only":
+        drills = (data.get("shooting", []) or []) + (data.get("stickhandling", []) or [])
+        return [d for d in drills if is_active(d) and age_ok(d, age) and (equipment_ok_for_user(d, user_equipment) if user_equipment else True)]
+    if mode == "energy_systems":
+        drills = data.get("energy_systems", []) or []
+        return [d for d in drills if is_active(d) and age_ok(d, age) and (equipment_ok_for_user(d, user_equipment) if user_equipment else True)]
+    if mode == "mobility":
+        drills = data.get("mobility", []) or []
+        return [d for d in drills if is_active(d) and age_ok(d, age)]
+    perf = data.get("performance", [])
+    return filter_drills_for_athlete(perf, age, "performance", "heavy_leg", user_equipment, full_gym)
+
+
 def get_stage_weights(age: int) -> Dict[str, float]:
     """Weights for weekly plan category allocation by stage."""
     stage = determine_stage(age)

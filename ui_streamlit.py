@@ -164,6 +164,24 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
         return
 
     today_date = date.today()
+    total_workouts = sum(len(d.get("focus_items", d.get("focus", []))) for _, d in flat_days)
+    workouts_done = 0
+    days_complete = 0
+    days_missed = 0
+    for i, (_, d) in enumerate(flat_days):
+        fi = d.get("focus_items", [])
+        if not fi:
+            fi = [{"mode_key": f} for f in d.get("focus", [])]
+        comp = completed.get(i) or completed.get(str(i)) or []
+        comp_set = set(comp) if isinstance(comp, list) else set(comp)
+        done_count = sum(1 for x in fi if x.get("mode_key") in comp_set)
+        workouts_done += done_count
+        if fi and all(x.get("mode_key") in comp_set for x in fi):
+            days_complete += 1
+        day_date = d.get("date")
+        past = day_date < today_date if hasattr(day_date, "__lt__") else False
+        if past and fi and not all(x.get("mode_key") in comp_set for x in fi):
+            days_missed += 1
     plan_start = flat_days[0][1].get("date")
     if hasattr(plan_start, "strftime"):
         days_elapsed = (today_date - plan_start).days
@@ -207,6 +225,8 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 return
         st.session_state.plan_workout_view = None
 
+    # Plan progress summary
+    st.caption(f"**Progress:** {days_complete} day{'s' if days_complete != 1 else ''} complete, {days_missed} missed • {workouts_done} of {total_workouts} workouts done")
     # Day squares (clean dark card design): single row with horizontal scroll bar
     st.markdown('<div id="plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
@@ -232,9 +252,12 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.session_state.plan_selected_day = i
                 st.rerun()
             date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
-            st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
             if missed:
-                st.markdown('<p class="plan-day-missed">Missed day</p>', unsafe_allow_html=True)
+                st.markdown(f'<div class="plan-day-date-block"><p class="{date_cls}">{date_str}</p><p class="plan-day-missed">Missed day</p></div>', unsafe_allow_html=True)
+            elif day_complete:
+                st.markdown(f'<div class="plan-day-date-block"><p class="{date_cls}">{date_str}</p><p class="plan-day-complete-label">Day complete</p></div>', unsafe_allow_html=True)
+            else:
+                st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -535,6 +558,175 @@ def render_workout_readable(text: str) -> None:
 
     flush_section(current_title or "", buffer)
 
+
+def _parse_workout_for_editing(text: str) -> list[dict]:
+    """Parse workout text into editable items. Each item: {type, ...} where type is section|strength|timed|simple|raw."""
+    if not text:
+        return []
+    items = []
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        ln = lines[i]
+        s = ln.strip()
+        if _is_section_header(s):
+            items.append({"type": "section", "title": s})
+            i += 1
+            continue
+        if s.startswith("- "):
+            # Exercise line
+            body = s[2:].strip()
+            cues = ""
+            steps = ""
+            i += 1
+            while i < len(lines) and (lines[i].strip().startswith("Cues:") or lines[i].strip().startswith("Steps:")):
+                sub = lines[i].strip()
+                if sub.lower().startswith("cues:"):
+                    cues = sub[5:].strip()
+                elif sub.lower().startswith("steps:"):
+                    steps = sub[6:].strip()
+                i += 1
+            # Parse body: "Name | X x Y | Rest Zs" or "Name — Xs" or "Name"
+            if " | " in body:
+                parts = [p.strip() for p in body.split("|")]
+                name = parts[0]
+                sets, reps, rest = None, None, None
+                for p in parts[1:]:
+                    if " x " in p.lower():
+                        sr = p.split(" x ", 1)
+                        try:
+                            sets = int(sr[0].strip())
+                        except (ValueError, TypeError):
+                            sets = 3
+                        reps = sr[1].strip() if len(sr) > 1 else "8"
+                    elif p.lower().startswith("rest "):
+                        r = p[5:].replace("s", "").strip()
+                        try:
+                            rest = int(r)
+                        except (ValueError, TypeError):
+                            rest = 60
+                items.append({"type": "strength", "name": name, "sets": sets or 3, "reps": reps or "8", "rest": rest or 60, "cues": cues, "steps": steps})
+            elif " — " in body:
+                nm, _, dur = body.partition(" — ")
+                name = nm.strip()
+                dur_s = dur.replace("s", "").strip()
+                try:
+                    duration = int(dur_s)
+                except (ValueError, TypeError):
+                    duration = 30
+                items.append({"type": "timed", "name": name.strip(), "duration": duration, "cues": cues, "steps": steps})
+            else:
+                items.append({"type": "simple", "name": body, "cues": cues, "steps": steps})
+            continue
+        if s:
+            items.append({"type": "raw", "line": ln})
+        i += 1
+    return items
+
+
+def _rebuild_workout_from_edits(items: list[dict], form_vals: dict) -> str:
+    """Rebuild workout text from parsed items and form values (from st.session_state)."""
+    out = []
+    ex_idx = 0
+    for it in items:
+        if it["type"] == "section":
+            out.append(it["title"])
+        elif it["type"] == "strength":
+            v = form_vals.get(ex_idx, {})
+            name = v.get("name", it["name"])
+            sets = v.get("sets", it.get("sets", 3))
+            reps = v.get("reps", it.get("reps", "8"))
+            rest = v.get("rest", it.get("rest", 60))
+            line = f"- {name} | {sets} x {reps} | Rest {rest}s"
+            out.append(line)
+            if it.get("cues"):
+                out.append(f"  Cues: {it['cues']}")
+            if it.get("steps"):
+                out.append(f"  Steps: {it['steps']}")
+            ex_idx += 1
+        elif it["type"] == "timed":
+            v = form_vals.get(ex_idx, {})
+            name = v.get("name", it["name"])
+            duration = v.get("duration", it.get("duration", 30))
+            line = f"- {name} — {duration}s"
+            out.append(line)
+            if it.get("cues"):
+                out.append(f"  Cues: {it['cues']}")
+            if it.get("steps"):
+                out.append(f"  Steps: {it['steps']}")
+            ex_idx += 1
+        elif it["type"] == "simple":
+            v = form_vals.get(ex_idx, {})
+            name = v.get("name", it["name"])
+            out.append(f"- {name}")
+            if it.get("cues"):
+                out.append(f"  Cues: {it['cues']}")
+            if it.get("steps"):
+                out.append(f"  Steps: {it['steps']}")
+            ex_idx += 1
+        elif it["type"] == "raw":
+            out.append(it["line"])
+    return "\n".join(out)
+
+
+def render_workout_editable(
+    text: str,
+    params: dict,
+    data: dict,
+    age: int,
+    user_equipment: list | None,
+    key_prefix: str,
+) -> str | None:
+    """
+    Render editable workout: exercise dropdowns + sets/reps. Returns modified workout text on Save, else None.
+    """
+    if not text or text == "(No workout)":
+        return None
+    items = _parse_workout_for_editing(text)
+    if not items:
+        return None
+    pool = []
+    if ENGINE:
+        pool = getattr(ENGINE, "get_drills_pool_for_plan_slot", lambda *a: [])(data, age, params, user_equipment)
+    display_names = []
+    by_name: dict[str, dict] = {}
+    for d in pool:
+        nm = getattr(ENGINE, "_display_name", lambda x: x.get("name", ""))(d) if ENGINE else d.get("name", "(unnamed)")
+        display_names.append(nm)
+        by_name[nm] = d
+    if not display_names:
+        display_names = ["(No alternatives)"]
+    form_vals = {}
+    ex_idx = 0
+    for it in items:
+        if it["type"] == "section":
+            st.subheader(it["title"][:60])
+        elif it["type"] in ("strength", "timed", "simple"):
+            pk = f"{key_prefix}_ex_{ex_idx}"
+            current_name = it["name"]
+            options = list(dict.fromkeys([current_name] + [n for n in display_names if n != current_name]))
+            sel = st.selectbox("Exercise", options=options, index=0, key=f"{pk}_sel")
+            form_vals[ex_idx] = {"name": sel}
+            if it["type"] == "strength":
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    sets = st.number_input("Sets", 1, 10, value=it.get("sets", 3), key=f"{pk}_sets")
+                with c2:
+                    reps = st.text_input("Reps", value=str(it.get("reps", "8")), key=f"{pk}_reps")
+                with c3:
+                    rest = st.number_input("Rest (s)", 0, 300, value=it.get("rest", 60), key=f"{pk}_rest")
+                form_vals[ex_idx]["sets"] = sets
+                form_vals[ex_idx]["reps"] = reps
+                form_vals[ex_idx]["rest"] = rest
+            elif it["type"] == "timed":
+                dur = st.number_input("Duration (s)", 5, 300, value=it.get("duration", 30), key=f"{pk}_dur")
+                form_vals[ex_idx]["duration"] = dur
+            ex_idx += 1
+        elif it["type"] == "raw":
+            st.caption(it["line"])
+    if st.button("Save workout", key=f"{key_prefix}_save", type="primary"):
+        return _rebuild_workout_from_edits(items, form_vals)
+    return None
 
 
 # -----------------------------
@@ -1014,6 +1206,19 @@ st.markdown("""
     .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
         border-radius: 999px !important; display: inline-block !important;
+    }
+    /* Date + missed block: date on top, missed text directly below */
+    .plan-day-date-block {
+        display: flex !important; flex-direction: column !important; align-items: center !important;
+        width: 100% !important; gap: 0 !important; margin: 0 !important; padding: 0 !important;
+    }
+    .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
+    .plan-day-date-block .plan-day-missed { margin-top: 0.05rem !important; }
+    .plan-day-date-block .plan-day-complete-label { margin-top: 0.05rem !important; }
+    /* Day complete: small text under date (white on green card) */
+    .plan-day-complete-label {
+        font-size: 0.5rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
     /* Missed day: small text under date, within card */
     .plan-day-missed {
@@ -1653,6 +1858,91 @@ with _bender_ctx:
 # Admin tab: Plan Builder (only for Erich Jaeger)
 if _tab_admin is not None:
     with _tab_admin:
+        # Edit mode: player view only, Back + Save. Hide Build plan, Generate, Assign, etc.
+        _edit_target = st.session_state.get("admin_plan_edit_target")
+        if _edit_target and st.session_state.get("admin_plan"):
+            _plan = st.session_state.admin_plan
+            _target_profile = next((p for p in list_profiles() if p.get("user_id") == _edit_target), None)
+            if st.button("← Back", key="admin_edit_back"):
+                st.session_state.admin_plan_edit_target = None
+                if "admin_workout_edit_vals" in st.session_state:
+                    del st.session_state.admin_workout_edit_vals
+                st.rerun()
+            total_days = sum(len(w["days"]) for w in _plan)
+            flat_days_edit: list[tuple[int, dict]] = []
+            for w in _plan:
+                for d in w["days"]:
+                    flat_days_edit.append((w["week"], d))
+            if "admin_plan_selected_day" not in st.session_state:
+                st.session_state.admin_plan_selected_day = 0
+            if "admin_plan_completed" not in st.session_state:
+                st.session_state.admin_plan_completed = {}
+            sel_idx = st.session_state.admin_plan_selected_day
+            wv = st.session_state.get("admin_plan_workout_view")
+            if wv is not None:
+                wv_day, wv_mode = wv
+                if wv_day < len(flat_days_edit):
+                    _, wv_day_data = flat_days_edit[wv_day]
+                    fi_edit = next((x for x in wv_day_data.get("focus_items", []) if x["mode_key"] == wv_mode), None)
+                    if fi_edit:
+                        st.markdown(f"### {fi_edit['label']} — Day {wv_day + 1} (Edit)")
+                        if st.button("← Back", key="admin_edit_workout_back"):
+                            st.session_state.admin_plan_workout_view = None
+                            st.rerun()
+                        _workout_text = fi_edit.get("workout") or ""
+                        _profile = _target_profile or {}
+                        _age = max(6, min(99, int(_profile.get("age") or 16)))
+                        _equip = getattr(ENGINE, "expand_user_equipment", lambda x: x or [])(_profile.get("equipment")) if ENGINE and _profile.get("equipment") else None
+                        try:
+                            _data = _load_engine_data()
+                        except Exception:
+                            _data = {}
+                        _saved = render_workout_editable(_workout_text, fi_edit.get("params", {}), _data, _age, _equip, f"admin_edit_{wv_day}_{wv_mode}")
+                        if _saved is not None:
+                            fi_edit["workout"] = _saved
+                            st.session_state.admin_plan_workout_view = None
+                            st.success("Workout saved.")
+                            st.rerun()
+                        st.stop()
+            st.markdown("---")
+            st.markdown(f"**Select day** — Day {sel_idx + 1} of {total_days}")
+            _row_cols = st.columns(total_days)
+            for i in range(total_days):
+                with _row_cols[i]:
+                    _dd = flat_days_edit[i][1]
+                    _ds = _dd["date"].strftime("%b %d") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:8]
+                    _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
+                    _focus_i = _dd.get("focus_items", [])
+                    _day_done = len(_focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in _focus_i)
+                    if _day_done:
+                        st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+                    if st.button(f"{i + 1}", key=f"admin_edit_day_{i}", type="primary" if i == sel_idx else "secondary"):
+                        st.session_state.admin_plan_selected_day = i
+                        st.rerun()
+                    _dc = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
+                    st.markdown(f'<p class="{_dc}">{_ds}</p>', unsafe_allow_html=True)
+            _, _day_data = flat_days_edit[sel_idx]
+            st.markdown(f"### Day {sel_idx + 1} of {total_days}")
+            st.caption(_day_data["date"].strftime("%A, %b %d") if hasattr(_day_data["date"], "strftime") else str(_day_data["date"]))
+            st.markdown("**Modes** — click to edit workout")
+            for _fi in _day_data.get("focus_items", []):
+                _done = _fi["mode_key"] in (st.session_state.admin_plan_completed.get(sel_idx, set()) or set())
+                _lbl = f"{'✓ ' if _done else ''}{_fi['label']}"
+                if st.button(_lbl, key=f"admin_edit_open_{sel_idx}_{_fi['mode_key']}", type="primary" if _done else "secondary"):
+                    st.session_state.admin_plan_workout_view = (sel_idx, _fi["mode_key"])
+                    st.rerun()
+            st.divider()
+            if st.button("Save plan", key="admin_edit_save_plan", type="primary"):
+                _plan_to_save = _serialize_plan_for_storage(_plan, st.session_state.get("admin_plan_name", ""))
+                if _target_profile:
+                    _target_profile["assigned_plan"] = _plan_to_save
+                    _target_profile["assigned_plan_completed"] = _target_profile.get("assigned_plan_completed") or {}
+                    save_profile(_target_profile)
+                    st.success("Plan saved to player.")
+                st.session_state.admin_plan_edit_target = None
+                st.rerun()
+            st.stop()
+
         st.subheader("Admin: Plan Builder")
         st.caption("Multi-week workout plans. Generate with full workouts for each day (Bible App–style view).")
         # Build plan for: dropdown to select target player (uses their equipment & age)
