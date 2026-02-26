@@ -1361,13 +1361,16 @@ with _bender_ctx:
 
         if effective_mode == "performance":
             if location == "gym":
-                day = st.selectbox("Strength day", ["lower", "upper", "full"])
-                strength_day_type = "leg" if day == "lower" else ("upper" if day == "upper" else "full")
+                # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
+                STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
+                STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
+                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
+                strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
                 em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
             else:
                 st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
-                strength_day_type = "full"
+                strength_day_type = "heavy_explosive"
                 strength_emphasis = "strength"
                 skate_within_24h = False
 

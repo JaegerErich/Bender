@@ -27,7 +27,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_002",
@@ -57,7 +62,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_003",
@@ -87,7 +95,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_004",
@@ -117,7 +128,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_005",
@@ -147,7 +161,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_006",
@@ -177,7 +194,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_007",
@@ -207,7 +227,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_008",
@@ -237,7 +260,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_009",
@@ -267,7 +293,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_010",
@@ -297,7 +326,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_011",
@@ -327,7 +359,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_012",
@@ -357,7 +392,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_013",
@@ -387,7 +425,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "BW_014",
@@ -417,7 +458,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "BW_015",
@@ -447,7 +491,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_016",
@@ -477,7 +524,10 @@
     "session_type": "strength",
     "signal": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "BW_017",
@@ -507,7 +557,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_018",
@@ -537,7 +590,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "BW_019",
@@ -567,7 +623,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "BW_020",
@@ -597,7 +656,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_001",
@@ -627,7 +689,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_002",
@@ -657,7 +722,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_003",
@@ -687,7 +755,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_004",
@@ -717,7 +788,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_005",
@@ -747,7 +821,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_006",
@@ -777,7 +854,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_007",
@@ -807,7 +887,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_008",
@@ -837,7 +920,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_009",
@@ -867,7 +955,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_010",
@@ -897,7 +988,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_011",
@@ -927,7 +1021,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_012",
@@ -957,7 +1054,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_013",
@@ -987,7 +1089,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_014",
@@ -1017,7 +1122,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_015",
@@ -1047,7 +1155,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_016",
@@ -1077,7 +1188,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_017",
@@ -1107,7 +1221,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_018",
@@ -1137,7 +1256,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_019",
@@ -1167,7 +1291,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_020",
@@ -1197,7 +1326,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_021",
@@ -1227,7 +1359,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_022",
@@ -1257,7 +1392,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_023",
@@ -1287,7 +1425,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_024",
@@ -1317,7 +1458,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_025",
@@ -1347,7 +1491,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_026",
@@ -1377,7 +1524,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_027",
@@ -1407,7 +1557,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_028",
@@ -1437,7 +1590,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_029",
@@ -1467,7 +1623,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_030",
@@ -1497,7 +1656,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_031",
@@ -1527,7 +1689,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_032",
@@ -1557,7 +1722,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_033",
@@ -1587,7 +1755,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_034",
@@ -1617,7 +1788,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_035",
@@ -1647,7 +1821,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_leg"
+    ]
   },
   {
     "id": "LS_036",
@@ -1677,7 +1854,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_037",
@@ -1707,7 +1887,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_038",
@@ -1737,7 +1920,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_039",
@@ -1767,7 +1953,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_040",
@@ -1797,7 +1986,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_041",
@@ -1827,7 +2019,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "PL_001",
@@ -1857,7 +2052,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "SC_001",
@@ -1887,7 +2085,12 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_002",
@@ -1917,7 +2120,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_003",
@@ -1947,7 +2153,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_004",
@@ -1977,7 +2186,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_005",
@@ -2007,7 +2219,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_006",
@@ -2037,7 +2252,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_007",
@@ -2067,7 +2285,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "SC_008",
@@ -2097,7 +2318,10 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_042",
@@ -2127,7 +2351,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_043",
@@ -2157,7 +2384,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_044",
@@ -2187,7 +2419,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_045",
@@ -2217,7 +2452,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_046",
@@ -2247,7 +2487,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_047",
@@ -2277,7 +2522,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_048",
@@ -2307,7 +2557,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_049",
@@ -2337,7 +2592,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_050",
@@ -2367,7 +2625,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_051",
@@ -2397,7 +2658,12 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "heavy_explosive",
+      "heavy_leg",
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_022",
@@ -2427,7 +2693,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "BW_023",
@@ -2457,7 +2726,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_052",
@@ -2487,7 +2759,10 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   },
   {
     "id": "LS_053",
@@ -2517,7 +2792,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_054",
@@ -2547,7 +2825,10 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": "1",
+    "program_day_type": [
+      "heavy_explosive"
+    ]
   },
   {
     "id": "LS_055",
@@ -2577,6 +2858,9 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": "2",
+    "program_day_type": [
+      "upper_core_stability"
+    ]
   }
 ]
