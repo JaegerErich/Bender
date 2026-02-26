@@ -204,19 +204,19 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
     row_cols = st.columns(total_days)
     for i in range(total_days):
-            with row_cols[i]:
-                day_data = flat_days[i][1]
-                day_date = day_data.get("date")
-                date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
-                _completed = completed.get(i) or completed.get(str(i)) or []
-                _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
-                focus_items_i = day_data.get("focus_items", [])
-                day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
-                past = day_date < today_date if hasattr(day_date, "__lt__") else False
-                missed = past and not day_complete
-                if day_complete:
-                    st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
-                label = f"{'✓ ' if day_complete else ''}{i + 1}"
+        with row_cols[i]:
+            day_data = flat_days[i][1]
+            day_date = day_data.get("date")
+            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
+            _completed = completed.get(i) or completed.get(str(i)) or []
+            _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
+            focus_items_i = day_data.get("focus_items", [])
+            day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
+            past = day_date < today_date if hasattr(day_date, "__lt__") else False
+            missed = past and not day_complete
+            if day_complete:
+                st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+            label = f"{'✓ ' if day_complete else ''}{i + 1}"
             if missed:
                 label = f"{i + 1} ⚠"
             btn_type = "primary" if i == sel_idx else "secondary"
@@ -242,16 +242,16 @@ def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: c
     if day_done_sel:
         st.caption("✓ Day complete")
 
-    # Modes as collapsed expanders; expand to see "View workout" → opens full page
+    # Mode buttons (same as admin): click to open workout view
+    st.markdown('<div id="plan-modes" aria-hidden="true"></div>', unsafe_allow_html=True)
     focus_items = day_data.get("focus_items", [])
     if focus_items:
         for fi in focus_items:
             done = fi["mode_key"] in _completed_set
             label = f"{'✓ ' if done else ''}{fi['label']}"
-            with st.expander(label, expanded=False):
-                if st.button("View workout →", key=f"plan_open_{sel_idx}_{fi['mode_key']}"):
-                    st.session_state.plan_workout_view = (sel_idx, fi["mode_key"])
-                    st.rerun()
+            if st.button(label, key=f"plan_open_{sel_idx}_{fi['mode_key']}", type="primary" if done else "secondary"):
+                st.session_state.plan_workout_view = (sel_idx, fi["mode_key"])
+                st.rerun()
     else:
         for f in day_data.get("focus", []):
             st.markdown(f"- {f}")
@@ -702,78 +702,93 @@ st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-    .stApp { background: #f8fafc; }
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; }
-    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #0f172a !important; letter-spacing: -0.02em; }
-    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #64748b; font-size: 0.95rem; margin-bottom: 1.25rem; }
-    label { font-family: 'DM Sans', sans-serif !important; color: #334155 !important; }
+    .stApp { background: #0f172a !important; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; background: transparent; }
+    h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #f1f5f9 !important; letter-spacing: -0.02em; }
+    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #94a3b8; font-size: 0.95rem; margin-bottom: 1.25rem; }
+    label { font-family: 'DM Sans', sans-serif !important; color: #e2e8f0 !important; }
 
-    /* Sidebar & equipment: black text for mobile Safari (labels invisible without this) */
-    [data-testid="stSidebar"] { background-color: #ffffff !important; }
+    /* Sidebar: dark mode to match app */
+    [data-testid="stSidebar"] { background-color: #1e293b !important; }
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
     [data-testid="stSidebar"] span,
     [data-testid="stSidebar"] .stCheckbox > label,
     [data-testid="stSidebar"] [data-testid="stCheckbox"] label,
     [data-testid="stSidebar"] div[data-testid="stCheckbox"] * {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+        color: #f1f5f9 !important;
+        -webkit-text-fill-color: #f1f5f9 !important;
         opacity: 1 !important;
         visibility: visible !important;
     }
     [data-testid="stSidebar"] .stMarkdown,
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] .stCaption {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+        color: #f1f5f9 !important;
+        -webkit-text-fill-color: #f1f5f9 !important;
     }
 
-    /* Equipment onboarding & main-area checkboxes: black text for mobile Safari */
+    /* Equipment checkboxes: light text for dark mode + mobile Safari */
     .stCheckbox label, [data-testid="stCheckbox"] label {
-        color: #000000 !important;
-        -webkit-text-fill-color: #000000 !important;
+        color: #f1f5f9 !important;
+        -webkit-text-fill-color: #f1f5f9 !important;
         opacity: 1 !important;
     }
 
-    /* Plan day selector: single row, horizontal scroll bar */
+    /* Plan day selector: single row, horizontal scroll bar (player + admin + Safari/mobile) */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] {
-        overflow-x: auto; max-width: 100%; padding-bottom: 0.5rem;
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+        overflow-x: auto !important; overflow-y: visible !important; max-width: 100%; padding-bottom: 0.5rem;
         -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+        flex-direction: row !important; flex-wrap: nowrap !important;
+    }
+    @media (max-width: 768px) {
+        #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+        #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+            flex-direction: row !important; flex-wrap: nowrap !important;
+        }
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
         min-width: 3.2rem; flex: 0 0 auto; gap: 0;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
         gap: 0.2rem !important;
     }
 
     /* Plan day selector: dark grey cards, number + date aligned, selected=white border+date pill */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
         background: #1e293b !important; padding: 0.35rem 0.25rem; border-radius: 10px; margin: 0 0.08rem; border: 2px solid transparent;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
     }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button {
         min-width: 2.5rem; min-height: 1.9rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important;
     }
     .plan-day-date {
-        background: transparent; color: #475569; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
+        background: transparent; color: #94a3b8; font-size: 0.65rem; text-align: center; margin: 0.12rem 0 0 0; line-height: 1.2;
     }
     .plan-day-date-selected {
-        background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
+        background: #334155 !important; color: #f1f5f9 !important; padding: 0.2rem 0.5rem !important;
         border-radius: 999px !important; display: inline-block !important;
     }
     /* Player day complete: whole day card turns green */
     .plan-day-complete { display: none; }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete),
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
         background: #16a34a !important;
     }
 
@@ -790,10 +805,10 @@ st.markdown("""
         white-space: nowrap !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #475569 !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
+        background: transparent !important; color: #94a3b8 !important; margin: 0.12rem 0 0 0 !important; font-size: 0.65rem !important; line-height: 1.2;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
-        background: #f1f5f9 !important; color: #1e293b !important; padding: 0.2rem 0.5rem !important;
+        background: #334155 !important; color: #f1f5f9 !important; padding: 0.2rem 0.5rem !important;
         border-radius: 999px !important;
     }
     /* Admin day complete: card turns green */
@@ -810,35 +825,43 @@ st.markdown("""
         background: #86efac !important; color: #14532d !important; border: 1px solid #22c55e !important;
     }
 
-    /* Form card */
+    /* Player My Plan mode buttons: same style as admin */
+    #plan-modes ~ * .stButton button {
+        background: #93c5fd !important; color: #1e3a5f !important; border: 1px solid #60a5fa !important;
+    }
+    #plan-modes ~ * .stButton button[kind="primary"] {
+        background: #86efac !important; color: #14532d !important; border: 1px solid #22c55e !important;
+    }
+
+    /* Form card (dark mode) */
     .form-card {
-        background: white;
+        background: #1e293b;
         border-radius: 12px;
         padding: 1.25rem 1.5rem;
         margin-bottom: 1.25rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        border: 1px solid #334155;
     }
 
-    /* Workout result cards */
+    /* Workout result cards (dark mode) */
     [data-testid="stVerticalBlockBorderWrapper"] {
-        background: white !important;
-        border: 1px solid #e2e8f0 !important;
+        background: #1e293b !important;
+        border: 1px solid #334155 !important;
         border-radius: 12px !important;
         padding: 1rem 1.25rem !important;
         margin-bottom: 0.75rem !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;
     }
 
     /* Tabs: clearly separate Workout / Download / Feedback */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.75rem;
-        border-bottom: 1px solid #e2e8f0;
+        border-bottom: 1px solid #334155;
         padding-bottom: 0;
     }
     .stTabs [data-baseweb="tab"] {
         font-family: 'DM Sans', sans-serif;
-        color: #64748b;
+        color: #94a3b8;
         padding: 0.5rem 1rem;
         margin-right: 0.25rem;
         border: 1px solid #e2e8f0;
