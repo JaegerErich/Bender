@@ -2670,9 +2670,9 @@ def build_upper_core_stability_session(
             reps_b = get(b_pick, "default_reps", "8-10")
             lines.append(format_strength_drill_with_prescription(b_pick, sets=3, reps=str(reps_b), rest_sec=90))
 
-    # C) Primary Pull (pick 1): movement_pattern=pull, tags posture OR scap_control
+    # C) Primary Pull (pick 1): movement_pattern=pull, tags posture OR scap_control; exclude SC_XXX
     if time_profile["primary_pull"]:
-        pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids]
+        pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids and not norm(get(d, "id", "")).upper().startswith("SC_")]
         c_pick = _pick_one(pull_pool, used_ids)
         if c_pick:
             used_ids.add(norm(get(c_pick, "id", "")))

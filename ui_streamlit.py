@@ -99,10 +99,11 @@ def _equipment_setup_done(profile: dict) -> bool:
     return bool(profile.get("equipment_setup_done"))
 
 
-def _serialize_plan_for_storage(plan: list) -> list:
-    """Convert date objects to ISO strings for JSON storage."""
+def _serialize_plan_for_storage(plan: list, plan_name: str = "") -> dict:
+    """Convert plan to dict with dates as ISO strings for JSON storage. Returns {plan: [...], plan_name: str}."""
     out = []
-    for w in plan:
+    weeks = plan if isinstance(plan, list) else plan.get("plan", plan)
+    for w in weeks:
         week_copy = dict(w)
         week_copy["days"] = []
         for d in w.get("days", []):
@@ -116,13 +117,20 @@ def _serialize_plan_for_storage(plan: list) -> list:
         if "week_start" in week_copy and hasattr(week_copy["week_start"], "isoformat"):
             week_copy["week_start"] = week_copy["week_start"].isoformat()
         out.append(week_copy)
-    return out
+    name = plan_name or (plan.get("plan_name", "") if isinstance(plan, dict) else "")
+    return {"plan": out, "plan_name": name or ""}
 
 
-def _deserialize_plan_for_display(plan: list) -> list:
-    """Convert date strings back to date objects for display."""
+def _deserialize_plan_for_display(plan: list | dict) -> tuple[list, str]:
+    """Convert date strings back to date objects. Returns (plan_list, plan_name). Handles legacy list or {plan, plan_name}."""
+    if isinstance(plan, dict):
+        weeks = plan.get("plan", [])
+        plan_name = plan.get("plan_name", "")
+    else:
+        weeks = plan or []
+        plan_name = ""
     out = []
-    for w in plan:
+    for w in weeks:
         week_copy = dict(w)
         week_copy["days"] = []
         for d in w.get("days", []):
@@ -140,12 +148,12 @@ def _deserialize_plan_for_display(plan: list) -> list:
             except (ValueError, TypeError):
                 pass
         out.append(week_copy)
-    return out
+    return (out, plan_name or "")
 
 
-def _render_plan_view(plan: list, completed: dict, profile: dict, on_complete: callable) -> None:
+def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_complete: callable) -> None:
     """Render Bible App–style plan view. completed = {day_idx: [mode_key, ...]}. on_complete(day_idx, mode_key)."""
-    plan = _deserialize_plan_for_display(plan)
+    plan, _ = _deserialize_plan_for_display(plan)
     total_days = sum(len(w["days"]) for w in plan)
     flat_days: list[tuple[int, dict]] = []
     for w in plan:
@@ -752,11 +760,27 @@ st.markdown("""
         -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* Equipment checkboxes: white text for black theme + mobile Safari */
+    /* Equipment checkboxes: white text for black theme; checked box keeps white bg, checkmark black for visibility */
     .stCheckbox label, [data-testid="stCheckbox"] label {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
         opacity: 1 !important;
+    }
+    .stCheckbox input:checked, [data-testid="stCheckbox"] input:checked,
+    input[type="checkbox"]:checked {
+        accent-color: #000000 !important;
+    }
+    /* Fallback for custom checkbox checkmark (BaseWeb/SVG) */
+    [data-testid="stCheckbox"]:has(input:checked) svg path,
+    [data-testid="stCheckbox"]:has(input:checked) svg {
+        stroke: #000000 !important; fill: #000000 !important;
+    }
+    /* Sidebar Save equipment + Sign out: dark background, white text for visibility */
+    [data-testid="stSidebar"] .stButton button {
+        background: #333333 !important; color: #ffffff !important; border: 1px solid #666666 !important;
+    }
+    [data-testid="stSidebar"] .stButton button:hover {
+        background: #555555 !important; color: #ffffff !important; border-color: #888888 !important;
     }
 
     /* Plan day selector: exactly 5 cards visible, scroll right for more (desktop + iPhone) */
@@ -989,11 +1013,17 @@ st.markdown("""
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
         border-radius: 999px !important; display: inline-block !important;
     }
-    /* Player day complete: whole day card turns green */
+    /* Player day complete: whole day card turns green, number crossed off */
     .plan-day-complete { display: none; }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete),
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete),
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) {
         background: #16a34a !important;
+    }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button {
+        text-decoration: line-through !important;
     }
 
     /* Admin plan day selector: same as player plan — 5 visible, scroll, fixed card size, number then date */
@@ -1004,10 +1034,15 @@ st.markdown("""
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
         border-radius: 999px !important;
     }
-    /* Admin day complete: card turns green */
+    /* Admin day complete: card turns green, number crossed off */
     .admin-day-complete { display: none; }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete),
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
         background: #16a34a !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button {
+        text-decoration: line-through !important;
     }
 
     /* Admin mode buttons: white/gray theme (incomplete = outline, complete = filled white) */
@@ -1393,7 +1428,7 @@ age = max(6, min(99, age))
 # My Plan tab (for players with assigned plan)
 if _tab_plan is not None and _assigned_plan:
     with _tab_plan:
-        _plan_data = _deserialize_plan_for_display(_assigned_plan)
+        _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
         _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
         if isinstance(_plan_completed, dict):
             _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
@@ -1408,6 +1443,8 @@ if _tab_plan is not None and _assigned_plan:
             save_profile(prof)
             st.rerun()
 
+        if _plan_name:
+            st.markdown(f"### {_plan_name}")
         _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 with _bender_ctx:
@@ -1633,6 +1670,23 @@ if _tab_admin is not None:
             help="Workouts will be filtered by this player's equipment (e.g. no shooting if they don't have Shooting pad & net).",
         )
         _target_profile_for_plan = _builder_options[_builder_idx][0]
+        _target_has_plan = _target_profile_for_plan and (_target_profile_for_plan.get("assigned_plan") or [])
+        if _target_has_plan:
+            _existing_plan = _target_profile_for_plan.get("assigned_plan")
+            _existing_weeks = _existing_plan.get("plan", _existing_plan) if isinstance(_existing_plan, dict) else (_existing_plan or [])
+            _existing_name = _existing_plan.get("plan_name", "") if isinstance(_existing_plan, dict) else ""
+            if st.button("Edit current plan", key="admin_edit_plan"):
+                _plan_loaded, _ = _deserialize_plan_for_display(_existing_plan)
+                st.session_state.admin_plan = _plan_loaded
+                st.session_state.admin_plan_name = _existing_name or f"{len(_existing_weeks) if isinstance(_existing_weeks, list) else 0}-Week Plan"
+                st.session_state.admin_plan_selected_day = 0
+                st.session_state.admin_plan_edit_target = _target_profile_for_plan.get("user_id")
+                _existing_completed = _target_profile_for_plan.get("assigned_plan_completed") or {}
+                st.session_state.admin_plan_completed = {
+                    int(k) if str(k).isdigit() else k: set(v) if isinstance(v, list) else (v if isinstance(v, set) else set())
+                    for k, v in _existing_completed.items()
+                }
+                st.rerun()
         _col_w, _col_d = st.columns(2)
         with _col_w:
             _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
@@ -1688,12 +1742,15 @@ if _tab_admin is not None:
                 _plan = generate_plan_with_workouts(_plan, _gen_cb, base_seed=random.randint(1, 999999))
                 _progress.empty()
                 st.session_state.admin_plan = _plan
+                st.session_state.admin_plan_name = st.session_state.get("admin_plan_name") or f"{_w}-Week Plan"
                 st.session_state.admin_plan_selected_day = 0
+                st.session_state.admin_plan_edit_target = None
                 st.rerun()
         with _col_clear:
             if st.button("Clear plan", key="admin_plan_clear"):
                 st.session_state.admin_plan = None
                 st.session_state.admin_plan_selected_day = 0
+                st.session_state.admin_plan_edit_target = None
                 if "admin_plan_completed" in st.session_state:
                     st.session_state.admin_plan_completed = {}
                 if "admin_plan_workout_view" in st.session_state:
@@ -1702,6 +1759,10 @@ if _tab_admin is not None:
 
         if st.session_state.get("admin_plan"):
             _plan = st.session_state.admin_plan
+            if "admin_plan_name" not in st.session_state:
+                st.session_state.admin_plan_name = ""
+            _plan_name = st.text_input("Plan name", value=st.session_state.admin_plan_name, key="admin_plan_name_input", placeholder="e.g. 4-Week Pre-Season")
+            st.session_state.admin_plan_name = _plan_name
             total_days = sum(len(w["days"]) for w in _plan)
             flat_days: list[tuple[int, dict]] = []
             for w in _plan:
@@ -1799,9 +1860,15 @@ if _tab_admin is not None:
                 )
                 _target_profile = player_options[_selected_label][0]
                 if st.button("Assign plan to this player", key="admin_assign_btn"):
-                    _plan_to_save = _serialize_plan_for_storage(_plan)
+                    _plan_name = st.session_state.get("admin_plan_name", "")
+                    _plan_to_save = _serialize_plan_for_storage(_plan, _plan_name)
                     _target_profile["assigned_plan"] = _plan_to_save
-                    _target_profile["assigned_plan_completed"] = {}
+                    _edit_target = st.session_state.get("admin_plan_edit_target")
+                    if _edit_target and _target_profile.get("user_id") == _edit_target:
+                        existing_completed = _target_profile.get("assigned_plan_completed") or {}
+                        _target_profile["assigned_plan_completed"] = existing_completed
+                    else:
+                        _target_profile["assigned_plan_completed"] = {}
                     save_profile(_target_profile)
                     st.success(f"Plan assigned to {_target_profile.get('display_name') or _target_profile.get('user_id')}. They will see it on next login.")
                     st.rerun()
