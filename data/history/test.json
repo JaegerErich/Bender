@@ -1,0 +1,12 @@
+{
+  "athlete_id": "test",
+  "sessions": [
+    {
+      "ts": "2026-02-26",
+      "mode": "performance",
+      "len_min": 45,
+      "drill_ids": [],
+      "circuit_ids": []
+    }
+  ]
+}

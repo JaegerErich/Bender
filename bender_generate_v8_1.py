@@ -3653,6 +3653,17 @@ def generate_session(
         _CURRENT_LAST_CIRCUIT_SIGNATURE = tuple()
 
     def _finalize_and_return(plan_text: str) -> str:
+        # Ensure performance mode always has strength content (not just warmup)
+        if session_mode == "performance":
+            strength_markers = ("PRIMARY", "POSTERIOR", "STRENGTH", "CIRCUIT", "SCAP", "CONTRAST", "HEAVY", "FRONTAL", "ISO")
+            if not any(m in plan_text for m in strength_markers):
+                perf_list = data.get("performance", [])
+                usable = [d for d in perf_list if is_active(d) and age_ok(d, age)]
+                if usable:
+                    chosen = pick_n(usable, n=min(3, len(usable)), rnd=rnd)
+                    plan_text += "\n\nSTRENGTH (fallback — pick 2–3)"
+                    for d in chosen:
+                        plan_text += "\n" + format_drill(d)
         if use_memory:
             try:
                 ids = extract_ids_from_plan(plan_text)
