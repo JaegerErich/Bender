@@ -436,6 +436,79 @@ def get_drills_pool_for_plan_slot(
     return filter_drills_for_athlete(perf, age, "performance", "heavy_leg", user_equipment, full_gym)
 
 
+def get_drills_for_section(
+    data: Dict[str, List[Dict[str, Any]]],
+    age: int,
+    params: Dict[str, Any],
+    user_equipment: Optional[List[str]] = None,
+    section_key: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """
+    Return drills suitable for a specific workout section (for edit-mode dropdown alternatives).
+    section_key is derived from the section header (e.g. high_fatigue, core_anti_rotation, shooting).
+    """
+    pool = get_drills_pool_for_plan_slot(data, age, params, user_equipment)
+    mode = (params.get("mode") or "performance").lower().strip()
+    sk = (section_key or "").strip().lower()
+    # Skills (Puck Mastery): filter shooting vs stickhandling by section
+    if mode == "skills_only" and sk:
+        if sk == "shooting":
+            drills = data.get("shooting", []) or []
+            return [d for d in drills if is_active(d) and age_ok(d, age)]
+        if sk == "stickhandling":
+            drills = data.get("stickhandling", []) or []
+            return [d for d in drills if is_active(d) and age_ok(d, age)]
+    # For other non-performance modes, return full pool (skating, conditioning, mobility)
+    if mode != "performance":
+        return pool
+    if not section_key:
+        return pool
+    day_type = (params.get("strength_day_type") or "full").strip().lower()
+    is_upper = _is_upper_day(day_type)
+    is_lower = _is_lower_day(day_type)
+    sk = (section_key or "").strip().lower()
+    # Filter pool by section logic (mirrors engine selection rules)
+    if sk in ("high_fatigue", "high fatigue"):
+        high_f = [d for d in pool if fatigue_cost_level(d) == "high"]
+        compound = [d for d in pool if movement_pattern(d) in ("squat", "hinge", "push", "pull", "lunge", "carry")]
+        if is_upper:
+            upper_hf = [d for d in pool if _is_push_pull(movement_pattern(d)) and strength_focus(d) in ("max_strength", "power", "strength")]
+            out = [d for d in (upper_hf or high_f or compound or pool) if _region_ok_for_day(d, day_type)]
+        else:
+            out = [d for d in (high_f or compound or pool) if _region_ok_for_day(d, day_type)]
+        return list({norm(get(d, "id", "")): d for d in out}.values())
+    if sk in ("core_anti_rotation", "core anti-rotation", "core_anti_extension"):
+        return [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and _region_ok_for_day(d, day_type)]
+    if sk in ("primary_press", "primary press"):
+        return [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy")]
+    if sk in ("primary_pull", "primary pull"):
+        return [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and not norm(get(d, "id", "")).upper().startswith("SC_")]
+    if sk in ("primary_bilateral", "primary bilateral"):
+        return [d for d in pool if movement_pattern(d) == "squat" and primary_region(d) == "lower"]
+    if sk in ("posterior_chain", "posterior chain", "hinge"):
+        return [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower"]
+    if sk in ("heavy_unilateral", "heavy unilateral"):
+        return [d for d in pool if _unilateral(d) and primary_region(d) == "lower"]
+    if sk in ("controlled_rotation", "controlled rotation"):
+        return [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power"]
+    if sk in ("carry_finisher", "carry", "carry finisher"):
+        return [d for d in pool if movement_pattern(d) == "carry" or _tags_contain(d, "carry")]
+    if sk in ("scap", "scap shoulder", "scap/shoulder"):
+        return [d for d in pool if is_scap_accessory(d)]
+    if sk in ("iso_decel", "iso", "decel", "braking"):
+        return [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop")]
+    if sk in ("resilience", "circuit a", "circuit b", "block a", "block b"):
+        return [d for d in pool if is_stability_candidate(d) and _region_ok_for_day(d, day_type)]
+    if sk in ("secondary", "strength circuit"):
+        return [d for d in pool if strength_focus(d) in ("hypertrophy", "strength_endurance", "strength", "max_strength") and not is_stability_candidate(d) and _region_ok_for_day(d, day_type)]
+    if sk in ("speed_power", "speed", "power", "elastic"):
+        return [d for d in pool if strength_focus(d) == "power" or _tags_contain(d, "elastic", "reactive")]
+    if sk in ("warmup",):
+        warmups = data.get("warmup", [])
+        return [d for d in warmups if is_active(d) and age_ok(d, age)]
+    return pool
+
+
 def get_stage_weights(age: int) -> Dict[str, float]:
     """Weights for weekly plan category allocation by stage."""
     stage = determine_stage(age)

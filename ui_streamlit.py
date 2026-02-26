@@ -559,22 +559,75 @@ def render_workout_readable(text: str) -> None:
     flush_section(current_title or "", buffer)
 
 
+def _section_title_to_key(title: str, ex_idx_in_section: int = 0) -> str | None:
+    """Map section header text to engine section key for drill filtering."""
+    t = (title or "").strip().lower()
+    if not t:
+        return None
+    if "speed" in t and "high fatigue" in t:
+        return "high_fatigue" if ex_idx_in_section == 1 else "speed_power"
+    if "high fatigue" in t:
+        return "high_fatigue"
+    if "core anti" in t or "anti-rotation" in t or "anti-extension" in t:
+        return "core_anti_rotation"
+    if "primary press" in t:
+        return "primary_press"
+    if "primary pull" in t:
+        return "primary_pull"
+    if "primary bilateral" in t:
+        return "primary_bilateral"
+    if "posterior chain" in t or "hinge" in t:
+        return "posterior_chain"
+    if "heavy unilateral" in t or "frontal" in t or "frontal-plane" in t or "adductor" in t:
+        return "heavy_unilateral"
+    if "iso" in t or "decel" in t or "braking" in t:
+        return "iso_decel"
+    if "controlled rotation" in t:
+        return "controlled_rotation"
+    if "carry" in t:
+        return "carry_finisher"
+    if "scap" in t or "shoulder health" in t:
+        return "scap"
+    if "resilience" in t or "circuit a" in t or "circuit b" in t or "block a" in t or "block b" in t:
+        return "resilience"
+    if "secondary" in t or "strength circuit" in t:
+        return "secondary"
+    if "speed" in t or "power" in t or "elastic" in t:
+        return "speed_power"
+    if "warmup" in t or "warm-up" in t:
+        return "warmup"
+    if "shooting" in t:
+        return "shooting"
+    if "stickhandling" in t or "puck" in t:
+        return "stickhandling"
+    if "conditioning" in t or "energy" in t:
+        return "conditioning"
+    if "skating" in t or "movement" in t:
+        return "skating_mechanics"
+    if "mobility" in t:
+        return "mobility"
+    return None
+
+
 def _parse_workout_for_editing(text: str) -> list[dict]:
-    """Parse workout text into editable items. Each item: {type, ...} where type is section|strength|timed|simple|raw."""
+    """Parse workout text into editable items. Each item: {type, ...} where type is section|strength|timed|simple|raw. Exercises include section_key for dropdown filtering."""
     if not text:
         return []
     items = []
     lines = text.splitlines()
     i = 0
+    current_section = ""
+    ex_idx_in_section = 0
     while i < len(lines):
         ln = lines[i]
         s = ln.strip()
         if _is_section_header(s):
             items.append({"type": "section", "title": s})
+            current_section = s
+            ex_idx_in_section = 0
             i += 1
             continue
         if s.startswith("- "):
-            # Exercise line
             body = s[2:].strip()
             cues = ""
             steps = ""
@@ -586,7 +639,8 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
                 elif sub.lower().startswith("steps:"):
                     steps = sub[6:].strip()
                 i += 1
-            # Parse body: "Name | X x Y | Rest Zs" or "Name — Xs" or "Name"
+            section_key = _section_title_to_key(current_section, ex_idx_in_section)
+            ex_idx_in_section += 1
             if " | " in body:
                 parts = [p.strip() for p in body.split("|")]
                 name = parts[0]
@@ -605,7 +659,7 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
                             rest = int(r)
                         except (ValueError, TypeError):
                             rest = 60
-                items.append({"type": "strength", "name": name, "sets": sets or 3, "reps": reps or "8", "rest": rest or 60, "cues": cues, "steps": steps})
+                items.append({"type": "strength", "name": name, "sets": sets or 3, "reps": reps or "8", "rest": rest or 60, "cues": cues, "steps": steps, "section_key": section_key})
             elif " — " in body:
                 nm, _, dur = body.partition(" — ")
                 name = nm.strip()
@@ -614,9 +668,9 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
                     duration = int(dur_s)
                 except (ValueError, TypeError):
                     duration = 30
-                items.append({"type": "timed", "name": name.strip(), "duration": duration, "cues": cues, "steps": steps})
+                items.append({"type": "timed", "name": name.strip(), "duration": duration, "cues": cues, "steps": steps, "section_key": section_key})
             else:
-                items.append({"type": "simple", "name": body, "cues": cues, "steps": steps})
+                items.append({"type": "simple", "name": body, "cues": cues, "steps": steps, "section_key": section_key})
             continue
         if s:
             items.append({"type": "raw", "line": ln})
@@ -679,23 +733,14 @@ def render_workout_editable(
 ) -> str | None:
     """
     Render editable workout: exercise dropdowns + sets/reps. Returns modified workout text on Save, else None.
+    Uses section-specific drill pools (e.g. high fatigue, core anti-rotation) for dropdown alternatives.
     """
     if not text or text == "(No workout)":
         return None
     items = _parse_workout_for_editing(text)
     if not items:
         return None
-    pool = []
-    if ENGINE:
-        pool = getattr(ENGINE, "get_drills_pool_for_plan_slot", lambda *a: [])(data, age, params, user_equipment)
-    display_names = []
-    by_name: dict[str, dict] = {}
-    for d in pool:
-        nm = getattr(ENGINE, "_display_name", lambda x: x.get("name", ""))(d) if ENGINE else d.get("name", "(unnamed)")
-        display_names.append(nm)
-        by_name[nm] = d
-    if not display_names:
-        display_names = ["(No alternatives)"]
+    get_pool = getattr(ENGINE, "get_drills_for_section", None) or getattr(ENGINE, "get_drills_pool_for_plan_slot", lambda *a: [])
     form_vals = {}
     ex_idx = 0
     for it in items:
@@ -704,8 +749,28 @@ def render_workout_editable(
         elif it["type"] in ("strength", "timed", "simple"):
             pk = f"{key_prefix}_ex_{ex_idx}"
             current_name = it["name"]
-            options = list(dict.fromkeys([current_name] + [n for n in display_names if n != current_name]))
-            sel = st.selectbox("Exercise", options=options, index=0, key=f"{pk}_sel")
+            section_key = it.get("section_key")
+            pool = []
+            if ENGINE:
+                get_section = getattr(ENGINE, "get_drills_for_section", None)
+                get_slot = getattr(ENGINE, "get_drills_pool_for_plan_slot", lambda *a: [])
+                if get_section:
+                    pool = get_section(data, age, params, user_equipment, section_key)
+                else:
+                    pool = get_slot(data, age, params, user_equipment)
+                if not pool and user_equipment:
+                    pool = get_section(data, age, params, None, section_key) if get_section else get_slot(data, age, params, None)
+            display_names = []
+            for d in pool:
+                nm = getattr(ENGINE, "_display_name", lambda x: x.get("name", ""))(d) if ENGINE else d.get("name", "(unnamed)")
+                display_names.append(nm)
+            if not display_names:
+                display_names = ["(No alternatives)"]
+            options = list(dict.fromkeys([current_name] + [n for n in display_names if n != current_name and n != "(No alternatives)"]))
+            if not options:
+                options = [current_name]
+            default_idx = options.index(current_name) if current_name in options else 0
+            sel = st.selectbox("Exercise", options=options, index=default_idx, key=f"{pk}_sel")
             form_vals[ex_idx] = {"name": sel}
             if it["type"] == "strength":
                 c1, c2, c3 = st.columns(3)
@@ -719,7 +784,9 @@ def render_workout_editable(
                 form_vals[ex_idx]["reps"] = reps
                 form_vals[ex_idx]["rest"] = rest
             elif it["type"] == "timed":
-                dur = st.number_input("Duration (s)", 5, 300, value=it.get("duration", 30), key=f"{pk}_dur")
+                _dur_val = it.get("duration", 30)
+                _dur_val = max(5, min(900, int(_dur_val) if _dur_val is not None else 30))
+                dur = st.number_input("Duration (s)", 5, 900, value=_dur_val, key=f"{pk}_dur")
                 form_vals[ex_idx]["duration"] = dur
             ex_idx += 1
         elif it["type"] == "raw":
@@ -982,10 +1049,13 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"],
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
     /* Parent-based selector when marker and columns are in different Streamlit blocks */
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: hidden !important;
         width: 21rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.5rem !important;
@@ -1000,27 +1070,36 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar {
         height: 6px !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-track {
         background: #2a2a2a !important; border-radius: 3px !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
     /* Card: fixed size so 5 fit in view; same size regardless of total weeks */
@@ -1028,16 +1107,22 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
         min-width: 4rem !important; width: 4rem !important; max-width: 4rem !important; flex: 0 0 4rem !important; gap: 0 !important; box-sizing: border-box !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"],
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         gap: 0.2rem !important;
     }
     /* Mobile + Safari: keep day cards in one horizontal row; inside each card show number + date side-by-side */
@@ -1046,9 +1131,12 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"],
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
-        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] {
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-direction: row !important; flex-direction: row !important;
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
@@ -1061,9 +1149,12 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *,
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
-        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
             -webkit-flex: 0 0 3.8rem !important; flex: 0 0 3.8rem !important;
             min-width: 3.8rem !important; width: 3.8rem !important; max-width: 3.8rem !important;
             display: -webkit-flex !important; display: flex !important;
@@ -1078,9 +1169,12 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
         [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
-        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
             -webkit-flex-direction: column !important; flex-direction: column !important;
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
             -webkit-align-items: center !important; align-items: center !important;
@@ -1090,9 +1184,12 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
         [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > *,
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
-        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > * {
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > * {
             -webkit-flex-direction: column !important; flex-direction: column !important;
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
             -webkit-align-items: center !important; align-items: center !important;
@@ -1100,7 +1197,8 @@ st.markdown("""
         }
         /* Nested column wrappers: keep horizontal */
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"],
-        #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
+        #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"],
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
             min-width: 0 !important;
         }
         .plan-day-date { display: inline-block !important; width: auto !important; font-size: 0.55rem !important; }
@@ -1110,14 +1208,24 @@ st.markdown("""
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"],
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
-        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"],
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"],
+        div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
             max-width: 100% !important;
         }
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * {
+        #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *,
+        #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+        [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
+        div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+        div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+        div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
             flex: 0 0 3.2rem !important; min-width: 3.2rem !important; width: 3.2rem !important; max-width: 3.2rem !important;
         }
     }
@@ -1127,9 +1235,12 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
         background: #1a1a1a !important; padding: 0.25rem 0.2rem !important; border-radius: 10px !important; margin: 0 0.04rem !important; border: 2px solid #333333 !important;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; gap: 0.1rem !important;
     }
@@ -1138,9 +1249,12 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"] {
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; width: 100% !important; gap: 0.1rem !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
@@ -1157,18 +1271,24 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * .stButton,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > * .stButton,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * .stButton,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
         display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
     /* Workout number button: fixed size box, text side-by-side for 10+ (smaller font so digits fit) */
@@ -1177,8 +1297,11 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         min-width: 2.5rem !important; width: 2.5rem !important; max-width: 2.5rem !important; height: 1.8rem !important; min-height: 1.8rem !important;
         border-radius: 8px !important; font-weight: 600 !important; font-size: 0.75rem !important;
         background: transparent !important; color: white !important; border: none !important;
@@ -1193,9 +1316,12 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button *,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button *,
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button * {
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button *,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button * {
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
     }
     /* Date: centered under number, one line */
@@ -1213,7 +1339,7 @@ st.markdown("""
         width: 100% !important; gap: 0 !important; margin: 0 !important; padding: 0 !important;
     }
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
-    .plan-day-date-block .plan-day-missed { margin-top: 0.05rem !important; }
+    .plan-day-date-block .plan-day-missed { margin-top: 0.2rem !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0.05rem !important; }
     /* Day complete: small text under date (white on green card) */
     .plan-day-complete-label {
@@ -1233,17 +1359,21 @@ st.markdown("""
         background: #16a34a !important;
     }
     /* Admin plan day selector: same as player plan — 5 visible, scroll, fixed card size, number then date */
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
         background: transparent !important; color: #cccccc !important; margin: 0 !important; padding: 0 !important; font-size: 0.6rem !important; line-height: 1.15 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
         border-radius: 999px !important;
     }
     /* Admin day complete: card turns green, number crossed off */
     .admin-day-complete { display: none; }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete),
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete),
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete),
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
         background: #16a34a !important;
     }
     /* Admin mode buttons: white/gray theme (incomplete = outline, complete = filled white) */
@@ -1905,8 +2035,10 @@ if _tab_admin is not None:
                             st.rerun()
                         st.stop()
             st.markdown("---")
+            st.markdown('<div id="admin-edit-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
             st.markdown(f"**Select day** — Day {sel_idx + 1} of {total_days}")
             _row_cols = st.columns(total_days)
+            _today_edit = date.today()
             for i in range(total_days):
                 with _row_cols[i]:
                     _dd = flat_days_edit[i][1]
@@ -1914,13 +2046,23 @@ if _tab_admin is not None:
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     _focus_i = _dd.get("focus_items", [])
                     _day_done = len(_focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in _focus_i)
+                    _past_edit = _dd["date"] < _today_edit if hasattr(_dd["date"], "__lt__") else False
+                    _missed_edit = _past_edit and not _day_done
                     if _day_done:
                         st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
-                    if st.button(f"{i + 1}", key=f"admin_edit_day_{i}", type="primary" if i == sel_idx else "secondary"):
+                    _edit_label = f"{'✓ ' if _day_done else ''}{i + 1}"
+                    if _missed_edit:
+                        _edit_label = f"{i + 1} ⚠"
+                    if st.button(_edit_label, key=f"admin_edit_day_{i}", type="primary" if i == sel_idx else "secondary"):
                         st.session_state.admin_plan_selected_day = i
                         st.rerun()
                     _dc = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
-                    st.markdown(f'<p class="{_dc}">{_ds}</p>', unsafe_allow_html=True)
+                    if _missed_edit:
+                        st.markdown(f'<div class="plan-day-date-block"><p class="{_dc}">{_ds}</p><p class="plan-day-missed">Missed day</p></div>', unsafe_allow_html=True)
+                    elif _day_done:
+                        st.markdown(f'<div class="plan-day-date-block"><p class="{_dc}">{_ds}</p><p class="plan-day-complete-label">Day complete</p></div>', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f'<p class="{_dc}">{_ds}</p>', unsafe_allow_html=True)
             _, _day_data = flat_days_edit[sel_idx]
             st.markdown(f"### Day {sel_idx + 1} of {total_days}")
             st.caption(_day_data["date"].strftime("%A, %b %d") if hasattr(_day_data["date"], "strftime") else str(_day_data["date"]))
@@ -1932,15 +2074,43 @@ if _tab_admin is not None:
                     st.session_state.admin_plan_workout_view = (sel_idx, _fi["mode_key"])
                     st.rerun()
             st.divider()
-            if st.button("Save plan", key="admin_edit_save_plan", type="primary"):
-                _plan_to_save = _serialize_plan_for_storage(_plan, st.session_state.get("admin_plan_name", ""))
-                if _target_profile:
-                    _target_profile["assigned_plan"] = _plan_to_save
-                    _target_profile["assigned_plan_completed"] = _target_profile.get("assigned_plan_completed") or {}
-                    save_profile(_target_profile)
-                    st.success("Plan saved to player.")
-                st.session_state.admin_plan_edit_target = None
-                st.rerun()
+            _col_save, _col_del = st.columns(2)
+            with _col_save:
+                if st.button("Save plan", key="admin_edit_save_plan", type="primary"):
+                    _plan_to_save = _serialize_plan_for_storage(_plan, st.session_state.get("admin_plan_name", ""))
+                    if _target_profile:
+                        _target_profile["assigned_plan"] = _plan_to_save
+                        _target_profile["assigned_plan_completed"] = _target_profile.get("assigned_plan_completed") or {}
+                        save_profile(_target_profile)
+                        st.success("Plan saved to player.")
+                    st.session_state.admin_plan_edit_target = None
+                    if "admin_plan_delete_confirm" in st.session_state:
+                        del st.session_state.admin_plan_delete_confirm
+                    st.rerun()
+            with _col_del:
+                if st.session_state.get("admin_plan_delete_confirm"):
+                    st.warning("Are you sure you want to delete this player's plan? This cannot be undone.")
+                    _cd1, _cd2 = st.columns(2)
+                    with _cd1:
+                        if st.button("Yes, delete plan", key="admin_edit_delete_confirm"):
+                            if _target_profile:
+                                _target_profile["assigned_plan"] = None
+                                _target_profile["assigned_plan_completed"] = {}
+                                save_profile(_target_profile)
+                            st.session_state.admin_plan = None
+                            st.session_state.admin_plan_edit_target = None
+                            st.session_state.admin_plan_completed = {}
+                            del st.session_state.admin_plan_delete_confirm
+                            st.success("Plan deleted.")
+                            st.rerun()
+                    with _cd2:
+                        if st.button("Cancel", key="admin_edit_delete_cancel"):
+                            del st.session_state.admin_plan_delete_confirm
+                            st.rerun()
+                else:
+                    if st.button("Delete plan", key="admin_edit_delete"):
+                        st.session_state.admin_plan_delete_confirm = True
+                        st.rerun()
             st.stop()
 
         st.subheader("Admin: Plan Builder")
