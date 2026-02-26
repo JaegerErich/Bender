@@ -371,7 +371,10 @@ def filter_drills_for_athlete(
     stage = determine_stage(age)
     out = [d for d in drills if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
-        out = [d for d in out if equipment_ok_for_user(d, user_equipment)]
+        eq_filtered = [d for d in out if equipment_ok_for_user(d, user_equipment)]
+        if eq_filtered:
+            out = eq_filtered
+        # else: keep out (unfiltered by equipment) so we still have drills to pick from
     out = [d for d in out if drill_ok_for_stage(d, stage)]
     if program_day_type:
         pt = program_day_type.lower().strip()
@@ -384,12 +387,21 @@ def filter_drills_for_athlete(
 
         def _matches_day_type(drill: Dict[str, Any]) -> bool:
             allowed = get(drill, "program_day_type", default=None)
+            if allowed is None:
+                return True
             if isinstance(allowed, list):
+                if not allowed:
+                    return True
                 return any(norm(str(a)) in pt_aliases for a in allowed)
             if isinstance(allowed, str):
                 return norm(allowed) in pt_aliases
             return True
-        out = [d for d in out if _matches_day_type(d)]
+        filtered_by_pt = [d for d in out if _matches_day_type(d)]
+        # Fallback: if program_day_type filter removes too many, use unfiltered pool
+        min_pool = 5
+        if len(filtered_by_pt) >= min_pool:
+            out = filtered_by_pt
+        # else: keep out (unfiltered by program_day_type) so structure filters still have drills
     return out
 
 

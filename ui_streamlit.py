@@ -606,7 +606,7 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
         mob_body = grab_section(mob_start, STOP_HEADERS)
         render_section(lines[mob_start].strip(), "Mobility", mob_body, as_dropdown=False)
 
-CACHE_VERSION = "2026-02-06"  # bump this when data files change
+CACHE_VERSION = "2026-02-11"  # bump this when data files change
 
 @st.cache_resource
 def _load_engine_data(cache_version: str = CACHE_VERSION):
