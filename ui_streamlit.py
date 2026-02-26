@@ -648,12 +648,12 @@ def _generate_via_engine(payload: dict) -> dict:
     # Skills-only extras (optional later: expose shot volume)
     shooting_shots = payload.get("shooting_shots", None)
     stickhandling_min = payload.get("stickhandling_min", None)
-        shooting_min = payload.get("shooting_min", None)
+    shooting_min = payload.get("shooting_min", None)
 
-        profile = st.session_state.get("current_profile") or {}
-        equipment = profile.get("equipment")
-        user_equipment = ENGINE.expand_user_equipment(equipment) if equipment else None
-        out_text = ENGINE.generate_session(
+    profile = st.session_state.get("current_profile") or {}
+    equipment = profile.get("equipment")
+    user_equipment = ENGINE.expand_user_equipment(equipment) if equipment else None
+    out_text = ENGINE.generate_session(
         data=data,
         age=age,
         seed=seed,
