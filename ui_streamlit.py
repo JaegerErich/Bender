@@ -739,12 +739,13 @@ st.markdown("""
         opacity: 1 !important;
     }
 
-    /* Plan day selector: exactly 5 cards visible, then horizontal scroll (desktop + iPhone) */
+    /* Plan day selector: exactly 5 cards visible, scroll right for more (desktop + iPhone) */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: visible !important;
-        width: 100% !important; max-width: 20.8rem !important; padding-bottom: 0.5rem !important;
+        width: 20.8rem !important; max-width: 100% !important; min-width: 0 !important;
+        padding-bottom: 0.5rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: thin !important;
         flex-direction: row !important; flex-wrap: nowrap !important;
         box-sizing: border-box !important;
@@ -792,11 +793,11 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * > * {
         display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important; box-sizing: border-box !important; gap: 0.05rem !important;
     }
-    /* Workout number button: fixed size so same for 1 vs 10 vs 100 */
+    /* Workout number button: single line for 1 or 10+ (no vertical stacking of digits) */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * .stButton,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > * .stButton {
-        display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important;
+        display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
@@ -805,10 +806,17 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button {
-        width: 2.5rem !important; min-width: 2.5rem !important; height: 1.9rem !important; min-height: 1.9rem !important;
+        min-width: 2.5rem !important; width: auto !important; max-width: 3.2rem !important; height: 1.9rem !important; min-height: 1.9rem !important;
         border-radius: 8px !important; font-weight: 600 !important; font-size: 0.85rem !important;
         background: transparent !important; color: white !important; border: none !important;
-        white-space: nowrap !important; padding: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;
+        white-space: nowrap !important; padding: 0 0.35rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; flex-wrap: nowrap !important;
+        overflow: hidden !important; text-overflow: clip !important; word-break: keep-all !important;
+    }
+    /* Force button label (and any inner span/div) to stay on one line */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button * {
+        white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
     }
     /* Date: directly under number, centered, one line */
     .plan-day-date {
