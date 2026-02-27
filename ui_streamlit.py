@@ -1754,11 +1754,23 @@ athlete_id = athlete_id.strip() or "athlete"
 
 # Admin: Plan Builder tab (only for admin users)
 try:
-    from admin_plan_builder import is_admin_user, generate_plan, generate_plan_with_workouts
+    from admin_plan_builder import (
+        is_admin_user,
+        generate_plan,
+        generate_plan_with_workouts,
+        PLAN_MODES,
+        MODE_DISPLAY_LABELS,
+        MODE_SESSION_LEN_DEFAULTS,
+        FREQUENCY_OPTIONS,
+    )
 except (ImportError, KeyError, Exception):
     is_admin_user = lambda _: False
     generate_plan = lambda *a, **k: []
     generate_plan_with_workouts = lambda p, cb, seed=42: p
+    PLAN_MODES = ["performance", "skating_mechanics", "skills_only", "energy_systems", "mobility"]
+    MODE_DISPLAY_LABELS = {m: m.replace("_", " ").title() for m in PLAN_MODES}
+    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 12, "skills_only": 25, "energy_systems": 15, "mobility": 12}
+    FREQUENCY_OPTIONS = ["As in plan", "1x/week", "2x/week", "3x/week", "4x/week", "5x/week", "6x/week", "7x/week"]
 
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
@@ -2174,12 +2186,6 @@ if _tab_admin is not None:
             _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
 
         # Mode frequency & session length (above Start date)
-        from admin_plan_builder import (
-            PLAN_MODES,
-            MODE_DISPLAY_LABELS,
-            MODE_SESSION_LEN_DEFAULTS,
-            FREQUENCY_OPTIONS,
-        )
         st.markdown("**Session length & frequency by mode**")
         _mode_config: dict = {}
         for _mode_key in PLAN_MODES:
