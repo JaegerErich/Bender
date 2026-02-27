@@ -1597,52 +1597,37 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Generate workout + Request Custom Plan — full visibility, no truncation (Chrome + mobile + App) */
-    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) {
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 1rem !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow: visible !important;
-        padding-left: 0 !important;
-        margin-left: 0 !important;
-    }
+    /* Generate workout + Request Custom Plan — stack vertically to prevent clipping (Chrome + mobile) */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"],
     .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] {
         display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 1rem !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem !important;
         width: 100% !important;
         max-width: 100% !important;
         overflow: visible !important;
-        padding-left: 0 !important;
-        margin-left: 0 !important;
     }
-    /* Button columns: equal width, no clipping */
+    /* Each button takes full width when stacked */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
-    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) [data-testid="column"] {
-        flex: 1 1 10rem !important;
-        min-width: 10rem !important;
-        max-width: none !important;
-        overflow: visible !important;
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
+        flex: 0 0 auto !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
     }
     /* Buttons: full text visible, no truncation */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton,
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
-    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton {
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton {
         width: 100% !important;
         min-width: 0 !important;
         overflow: visible !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button,
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
-    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton button {
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button {
         width: 100% !important;
         min-width: 10rem !important;
         max-width: none !important;
@@ -1658,8 +1643,7 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton button[kind="primary"] {
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #ffffff !important;
         color: #000000 !important;
         font-weight: 600 !important;

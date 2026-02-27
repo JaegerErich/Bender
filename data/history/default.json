@@ -514,6 +514,27 @@
         "SMR_006"
       ],
       "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "shooting",
+      "len_min": 25,
+      "drill_ids": [],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "shooting",
+      "len_min": 45,
+      "drill_ids": [],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "shooting",
+      "len_min": 45,
+      "drill_ids": [],
+      "circuit_ids": []
     }
   ]
 }

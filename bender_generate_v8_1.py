@@ -1315,17 +1315,257 @@ def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int
 # ------------------------------
 def infer_shot_type(d: Dict[str, Any]) -> str:
     st = norm(get(d, "shot_type", "")).lower()
-    if st in ("forehand", "backhand", "slapshot"):
+    if st in ("forehand", "backhand", "slapshot", "wrist", "snap", "slap"):
+        if st in ("wrist", "snap"):
+            bucket = norm(get(d, "shooting_bucket", "")).lower()
+            name = norm(get(d, "name", "")).lower()
+            if "backhand" in bucket or "backhand" in name:
+                return "backhand"
+            return "forehand"
+        if st == "slap":
+            return "slapshot"
         return st
 
     bucket = norm(get(d, "shooting_bucket", "")).lower()
     name = norm(get(d, "name", "")).lower()
-
     if "backhand" in bucket or "backhand" in name:
         return "backhand"
     if "slap" in bucket or "slap" in name:
         return "slapshot"
     return "forehand"
+
+
+SKILL_LEVEL_ORDER = ("beginner", "intermediate", "advanced")
+
+
+def skill_level_ok(d: Dict[str, Any], athlete_skill: str) -> bool:
+    """True if drill skill_level <= athlete skill (beginner <= intermediate <= advanced)."""
+    drill_sk = norm(get(d, "skill_level", "")).lower() or "beginner"
+    try:
+        di = SKILL_LEVEL_ORDER.index(drill_sk) if drill_sk in SKILL_LEVEL_ORDER else 0
+    except ValueError:
+        di = 0
+    try:
+        ai = SKILL_LEVEL_ORDER.index(athlete_skill.lower()) if athlete_skill else 2
+    except ValueError:
+        ai = 2
+    return di <= ai
+
+
+def classify_shooting_block(d: Dict[str, Any]) -> str:
+    """Return 'warmup' | 'main' | 'finisher' based on shooting_bucket, tags, release_point, feeds_from."""
+    bucket = norm(get(d, "shooting_bucket", "")).lower()
+    tags = norm(get(d, "tags", "")).lower()
+    feeds = norm(get(d, "feeds_from", "")).lower()
+
+    # Finisher: puck retrieval/transition
+    if bucket == "transition_shooting":
+        return "finisher"
+    if "puck_retrieval" in tags or feeds == "puck_retrieval":
+        return "finisher"
+    if "transition" in tags and ("lateral" in tags or "backward" in tags):
+        return "finisher"
+
+    # Warm-up: mechanics (wrist/slap with mechanics focus)
+    if bucket in ("wrist_shot", "slap_shot"):
+        if "mechanics" in tags or "weight_transfer" in tags:
+            return "warmup"
+        if "quick_release" not in tags and "angle_change" not in tags and "deception" not in tags:
+            return "warmup"
+
+    return "main"
+
+
+def _parse_default_reps(d: Dict[str, Any]) -> int:
+    raw = norm(get(d, "default_reps", ""))
+    if not raw:
+        return 25
+    m = re.match(r"^(\d+)", raw)
+    return to_int(m.group(1), 25) if m else 25
+
+
+def athlete_skill_from_age(age: int) -> str:
+    """Map age to skill_level for shooting: beginner <=12, intermediate 13-15, advanced 16+."""
+    a = max(0, int(age))
+    if a <= 12:
+        return "beginner"
+    if a <= 15:
+        return "intermediate"
+    return "advanced"
+
+
+def filter_shooting_pool(
+    drills: List[Dict[str, Any]],
+    age: int,
+    athlete_skill: str,
+    user_equipment: Optional[List[str]],
+) -> List[Dict[str, Any]]:
+    """Filter by status=active, session_type=shooting, skill_level <= athlete, age, equipment."""
+    out = []
+    for d in drills:
+        if not is_active(d):
+            continue
+        if norm(get(d, "session_type", "")).lower() != "shooting":
+            continue
+        if not age_ok(d, age):
+            continue
+        if not skill_level_ok(d, athlete_skill):
+            continue
+        if user_equipment is not None and not equipment_ok_for_user(d, user_equipment):
+            continue
+        out.append(d)
+    return out
+
+
+def build_shooting_blocks_session(
+    drills: List[Dict[str, Any]],
+    minutes: int,
+    age: int,
+    rnd: random.Random,
+    athlete_skill: str = "advanced",
+    user_equipment: Optional[List[str]] = None,
+    focus: Optional[str] = None,
+) -> List[str]:
+    """
+    Block-based shooting: Warm-up (mechanics), Main (quick release + skill), Finisher (puck retrieval/transition).
+    Uses default_reps as shot count, scaled by sets. Target shots from effective_minutes * 8, ±10%.
+    Output: "sets x default_reps" plus 1 coaching cue per drill.
+    """
+    pool = filter_shooting_pool(drills, age, athlete_skill, user_equipment)
+    if not pool:
+        return ["- [No matching drills found]"]
+
+    effective_minutes = minutes - max(2, round(minutes * 0.1))
+    target_shots = int(effective_minutes * 8)
+    low = int(target_shots * 0.9)
+    high = int(target_shots * 1.1)
+
+    warmup_pool = [d for d in pool if classify_shooting_block(d) == "warmup"]
+    main_pool = [d for d in pool if classify_shooting_block(d) == "main"]
+    finisher_pool = [d for d in pool if classify_shooting_block(d) == "finisher"]
+
+    if not warmup_pool:
+        warmup_pool = [d for d in pool if norm(get(d, "shooting_bucket", "")).lower() in ("wrist_shot", "slap_shot")]
+    if not main_pool:
+        main_pool = [d for d in pool if d not in warmup_pool and d not in finisher_pool]
+    if not finisher_pool:
+        finisher_pool = main_pool
+
+    explicit_shot_type = focus in ("forehand", "backhand", "slapshot")
+    def in_tight_or_quick(d: Dict) -> bool:
+        rp = norm(get(d, "release_point", "")).lower()
+        tags = norm(get(d, "tags", "")).lower()
+        bucket = norm(get(d, "shooting_bucket", "")).lower()
+        return "in_tight" in rp or "quick_release" in tags or bucket == "quick_release"
+
+    def pick_with_variety(p: List[Dict], n: int, allow_quick_twice: bool = False) -> List[Dict]:
+        candidates = list(p)
+        if explicit_shot_type:
+            candidates = [d for d in candidates if infer_shot_type(d) == focus]
+        if not candidates:
+            return []
+        chosen: List[Dict] = []
+        seen_buckets: set = set()
+        for _ in range(n):
+            ok = [d for d in candidates if d not in chosen]
+            if not ok:
+                break
+            rnd.shuffle(ok)
+            picked = None
+            for d in ok:
+                b = norm(get(d, "shooting_bucket", "")).lower()
+                if b in seen_buckets and not (allow_quick_twice and b == "quick_release"):
+                    continue
+                picked = d
+                break
+            if picked is None:
+                picked = rnd.choice(ok)
+            chosen.append(picked)
+            b = norm(get(picked, "shooting_bucket", "")).lower()
+            if b != "quick_release" or not allow_quick_twice:
+                seen_buckets.add(b)
+        return chosen
+
+    warmup_drills = pick_n(warmup_pool, min(1, len(warmup_pool)), rnd) if warmup_pool else []
+    main_drills = pick_with_variety(main_pool, min(2, len(main_pool)), allow_quick_twice=True) if main_pool else []
+    finisher_drills = pick_with_variety(finisher_pool, min(1, len(finisher_pool))) if finisher_pool else []
+
+    all_drills: List[Tuple[str, Dict[str, Any]]] = []
+    for d in warmup_drills:
+        all_drills.append(("warmup", d))
+    for d in main_drills:
+        all_drills.append(("main", d))
+    for d in finisher_drills:
+        all_drills.append(("finisher", d))
+
+    if not all_drills:
+        all_drills = [("main", d) for d in pick_n(pool, min(3, len(pool)), rnd)]
+
+    shot_types = {infer_shot_type(d) for _, d in all_drills}
+    if not explicit_shot_type and len(shot_types) < 2 and len(pool) >= 2:
+        fh = [d for d in pool if infer_shot_type(d) == "forehand"]
+        bh = [d for d in pool if infer_shot_type(d) == "backhand"]
+        if shot_types == {"forehand"} and bh and any(d not in [x[1] for x in all_drills] for d in bh):
+            swap = next(d for d in all_drills if infer_shot_type(d[1]) == "forehand")
+            all_drills[all_drills.index(swap)] = (swap[0], rnd.choice(bh))
+        elif shot_types == {"backhand"} and fh and any(d not in [x[1] for x in all_drills] for d in fh):
+            swap = next(d for d in all_drills if infer_shot_type(d[1]) == "backhand")
+            all_drills[all_drills.index(swap)] = (swap[0], rnd.choice(fh))
+
+    has_in_tight = any(in_tight_or_quick(d) for _, d in all_drills)
+    if not has_in_tight:
+        it_pool = [d for d in pool if in_tight_or_quick(d) and d not in [x[1] for x in all_drills]]
+        if it_pool and len(all_drills) >= 2:
+            idx = rnd.randint(1, len(all_drills) - 1)
+            all_drills[idx] = (all_drills[idx][0], rnd.choice(it_pool))
+
+    reps_per_drill = [_parse_default_reps(d) for _, d in all_drills]
+    n_drills = len(all_drills)
+    total_reps_per_round = sum(reps_per_drill)
+    if total_reps_per_round <= 0:
+        total_reps_per_round = n_drills * 25
+        reps_per_drill = [25] * n_drills
+
+    base_sets = max(1, target_shots // total_reps_per_round)
+    sets_per: List[Tuple[str, Dict[str, Any], int]] = []
+    for i, (block, d) in enumerate(all_drills):
+        reps = reps_per_drill[i] if reps_per_drill[i] > 0 else 25
+        sets_per.append((block, d, base_sets))
+
+    total = sum(s * _parse_default_reps(d) for _, d, s in sets_per)
+    quick_release_idx = [i for i, (_, d, _) in enumerate(sets_per) if norm(get(d, "shooting_bucket", "")).lower() == "quick_release"]
+    finisher_idx = [i for i, (b, _, _) in enumerate(sets_per) if b == "finisher"]
+
+    while total < low and quick_release_idx:
+        i = rnd.choice(quick_release_idx)
+        block, d, s = sets_per[i]
+        sets_per[i] = (block, d, s + 1)
+        total += _parse_default_reps(d)
+    while total > high and finisher_idx:
+        i = finisher_idx[0]
+        block, d, s = sets_per[i]
+        if s > 1:
+            sets_per[i] = (block, d, s - 1)
+            total -= _parse_default_reps(d)
+        else:
+            break
+
+    lines: List[str] = []
+    lines.append(f"Target: {target_shots} shots (+/- 10%) | {minutes} min session")
+    lines.append("")
+
+    block_labels = {"warmup": "WARM-UP (mechanics)", "main": "MAIN (quick release + skill)", "finisher": "FINISHER (puck retrieval/transition)"}
+    current_block = None
+    for block, d, sets in sets_per:
+        if block != current_block:
+            current_block = block
+            lines.append(f"\n{block_labels.get(block, block.upper())}")
+        reps = _parse_default_reps(d)
+        cue = norm(get(d, "coaching_cues", ""))
+        name = _display_name(d)
+        lines.append(f"- {name} | {sets} x {reps} — {cue}" if cue else f"- {name} | {sets} x {reps}")
+
+    return lines
 
 
 def choose_shooting_drills(
@@ -1336,97 +1576,22 @@ def choose_shooting_drills(
     focus: Optional[str],
     focus_rule: Optional[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
+    """Legacy: used when build_shooting_blocks_session is not called."""
     pool = [d for d in drills if is_active(d) and age_ok(d, age)]
     if not pool:
         return []
-
-    min_shots_per_drill = 20
-    max_drills = 5
-    min_drills = 3
-
-    n = clamp(total_shots // min_shots_per_drill, min_drills, max_drills)
-
-    explicit_type_focus = focus in ("forehand", "backhand", "slapshot")
-
-    forehand_pool = [d for d in pool if infer_shot_type(d) == "forehand"]
-    backhand_pool = [d for d in pool if infer_shot_type(d) == "backhand"]
-
-    chosen: List[Dict[str, Any]] = []
-    if not explicit_type_focus:
-        if forehand_pool:
-            chosen.extend(pick_n(forehand_pool, 1, rnd, focus_rule=focus_rule))
-        if backhand_pool:
-            chosen.extend(pick_n(backhand_pool, 1, rnd, focus_rule=focus_rule))
-
-    chosen_ids = {norm(get(d, "id", "")) for d in chosen}
-    remaining = [d for d in pool if norm(get(d, "id", "")) not in chosen_ids]
-
-    if len(chosen) < n and remaining:
-        chosen.extend(pick_n(remaining, n - len(chosen), rnd, focus_rule=focus_rule))
-
-    if not explicit_type_focus:
-        have_fh = any(infer_shot_type(d) == "forehand" for d in chosen)
-        have_bh = any(infer_shot_type(d) == "backhand" for d in chosen)
-        if not have_fh and forehand_pool:
-            chosen[-1:] = pick_n(forehand_pool, 1, rnd, focus_rule=focus_rule)
-        if not have_bh and backhand_pool:
-            chosen[-1:] = pick_n(backhand_pool, 1, rnd, focus_rule=focus_rule)
-
-    rnd.shuffle(chosen)
-    return chosen[:n]
+    n = clamp(total_shots // 20, 3, 5)
+    chosen = pick_n(pool, min(n, len(pool)), rnd, focus_rule=focus_rule)
+    return chosen
 
 
 def build_shooting_by_shots(drills: List[Dict[str, Any]], target_shots: int) -> List[str]:
-    if not drills:
-        return ["- [No matching drills found]"]
-
-    min_shots_per_drill = 20
-    n = len(drills)
-
-    required_min_total = n * min_shots_per_drill
-    if target_shots < required_min_total:
-        target_shots = required_min_total
-
-    base = target_shots // n
-    rem = target_shots % n
-    per_drill = [base + (1 if i < rem else 0) for i in range(n)]
-    for i in range(n):
-        if per_drill[i] < min_shots_per_drill:
-            per_drill[i] = min_shots_per_drill
-    target_shots = sum(per_drill)
-
-    def split_sets(shots: int) -> str:
-        # Simple set x rep format; choose sets so reps are round (10–25). Total ≈ shots for time.
-        sets = max(1, min(6, round(shots / 12)))
-        reps = max(10, round(shots / sets))
-        total = sets * reps
-        if total < shots and sets < 6:
-            sets += 1
-            reps = max(10, round(shots / sets))
-            total = sets * reps
-        if sets == 1:
-            return f"{reps} shots"
-        return f"{sets} x {reps} shots"
-
-    lines: List[str] = []
-    lines.append(f"Target volume: {target_shots} total shots | Min {min_shots_per_drill}/drill")
-    lines.append("Guidelines: stay on one drill long enough to feel it. Full intent, clean mechanics.")
-
-    for d, shots in zip(drills, per_drill):
-        name = _display_name(d)
-        cues = norm(get(d, "coaching_cues", default=""))
-        steps = norm(get(d, "step_by_step", default=""))
-        stype = infer_shot_type(d)
-        lines.append(f"- {name} ({stype}) | {split_sets(shots)}")
-        if cues:
-            lines.append(f"  Cues: {cues}")
-        if steps:
-            lines.append(f"  Steps: {steps}")
-
-    return lines
+    """Legacy: replaced by build_shooting_blocks_session."""
+    return build_shooting_from_defaults(drills)
 
 
 def build_shooting_from_defaults(drills: List[Dict[str, Any]]) -> List[str]:
+    """Legacy fallback: simple list with default_reps."""
     if not drills:
         return ["- [No matching drills found]"]
     lines: List[str] = []
@@ -1435,13 +1600,8 @@ def build_shooting_from_defaults(drills: List[Dict[str, Any]]) -> List[str]:
         reps = norm(get(d, "default_reps", default=""))
         if not reps:
             reps = "20"
-        cues = norm(get(d, "coaching_cues", default=""))
-        steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} — {reps} shots")
-        if cues:
-            lines.append(f"  Cues: {cues}")
-        if steps:
-            lines.append(f"  Steps: {steps}")
+        cue = norm(get(d, "coaching_cues", ""))
+        lines.append(f"- {name} | {reps} shots — {cue}" if cue else f"- {name} | {reps} shots")
     return lines
 
 
@@ -4059,28 +4219,24 @@ def generate_session(
             )
             return _finalize_and_return("\n".join(lines + strength_lines))
 
-        # Shooting
+        # Shooting — block-based: Warm-up (mechanics), Main (quick release + skill), Finisher (puck retrieval/transition)
         if category == "shooting":
-            if (session_mode == "skills_only") or (shooting_shots is not None and shooting_shots > 0):
-                minutes = max(1, seconds // 60)
-                if session_mode == "skills_only" and shooting_min is not None:
-                    minutes = max(1, int(shooting_min))
-                chosen = choose_shooting_drills(data["shooting"], age, rnd, int(shooting_shots or 0), focus, focus_rule)
-                lines.append("\nSHOOTING (shot volume)")
-                if not chosen:
-                    lines.append("- [No matching drills found]")
-                else:
-                    lines.extend(build_shooting_by_shots(chosen, int(shooting_shots)))
-                continue
-
-            # legacy default volumes
-            est_total = 60 if session_len_min <= 30 else (80 if session_len_min <= 45 else 100)
-            chosen = choose_shooting_drills(data["shooting"], age, rnd, est_total, focus, focus_rule)
-            lines.append("\nSHOOTING (default volumes)")
-            if not chosen:
-                lines.append("- [No matching drills found]")
-            else:
-                lines.extend(build_shooting_from_defaults(chosen))
+            minutes = max(1, seconds // 60)
+            if session_mode == "skills_only" and shooting_min is not None:
+                minutes = max(1, int(shooting_min))
+            athlete_skill = athlete_skill_from_age(age)
+            shot_focus = focus if focus in ("forehand", "backhand", "slapshot") else None
+            shooting_lines = build_shooting_blocks_session(
+                drills=data["shooting"],
+                minutes=minutes,
+                age=age,
+                rnd=rnd,
+                athlete_skill=athlete_skill,
+                user_equipment=user_equipment,
+                focus=shot_focus,
+            )
+            lines.append("\nSHOOTING")
+            lines.extend(shooting_lines)
             continue
 
         # Energy Systems
