@@ -1908,7 +1908,9 @@ with st.sidebar:
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
     st.divider()
-    with st.expander("Equipment", expanded=False):
+    _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
+    _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
+    with st.expander(_equip_label, expanded=False):
         st.caption("Check what you have. Workouts only include exercises that use this equipment.")
         try:
             equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
@@ -1936,6 +1938,7 @@ with st.sidebar:
             st.session_state.current_profile = prof
             save_profile(prof)
             st.session_state.collapse_sidebar_after_save = True
+            st.session_state.equipment_expander_collapse_after_save = True
             st.session_state.page = "main"
             st.success("Saved")
             st.rerun()
