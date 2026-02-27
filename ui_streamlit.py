@@ -1056,7 +1056,7 @@ st.markdown("""
 
     .stApp { background: #000000 !important; }
     .main { max-width: 100% !important; width: 100% !important; }
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: min(1800px, 98vw) !important; width: 100% !important; min-width: 0 !important; background: transparent; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; padding-left: 1rem; padding-right: 1rem; max-width: min(1800px, 98vw) !important; width: 100% !important; min-width: 0 !important; background: transparent; overflow-x: visible !important; }
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.15rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
     .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
@@ -1597,13 +1597,16 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Generate workout + Request Custom Plan — full visibility, no truncation (browser + desktop + mobile) */
-    .block-container [data-testid="stHorizontalBlock"]:has(button:first-child):has(button:last-child) {
+    /* Generate workout + Request Custom Plan — full visibility, no truncation (Chrome + mobile + App) */
+    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) {
         display: flex !important;
         flex-wrap: wrap !important;
         gap: 1rem !important;
         width: 100% !important;
         max-width: 100% !important;
+        overflow: visible !important;
+        padding-left: 0 !important;
+        margin-left: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"],
@@ -1613,19 +1616,35 @@ st.markdown("""
         gap: 1rem !important;
         width: 100% !important;
         max-width: 100% !important;
+        overflow: visible !important;
+        padding-left: 0 !important;
+        margin-left: 0 !important;
     }
+    /* Button columns: equal width, no clipping */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
-        flex: 1 1 12rem !important;
-        min-width: 12rem !important;
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
+    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) [data-testid="column"] {
+        flex: 1 1 10rem !important;
+        min-width: 10rem !important;
         max-width: none !important;
+        overflow: visible !important;
+    }
+    /* Buttons: full text visible, no truncation */
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton,
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
+    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton {
+        width: 100% !important;
+        min-width: 0 !important;
+        overflow: visible !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button,
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button {
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
+    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton button {
         width: 100% !important;
-        min-width: 11rem !important;
+        min-width: 10rem !important;
         max-width: none !important;
         white-space: nowrap !important;
         overflow: visible !important;
@@ -1639,11 +1658,13 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    .block-container [data-testid="stHorizontalBlock"]:has(.stButton) .stButton button[kind="primary"] {
         background: #ffffff !important;
         color: #000000 !important;
         font-weight: 600 !important;
     }
+
     /* Custom plan intake: Submit & Cancel — side-by-side, enough space for buttons */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1.5rem !important;
