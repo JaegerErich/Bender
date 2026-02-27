@@ -1907,7 +1907,6 @@ with st.sidebar:
             _h = st.text_input("Height", value=_prof.get("height") or "", placeholder="e.g. 5'10\"", key="sidebar_height")
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
-    st.divider()
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
@@ -1923,13 +1922,30 @@ with st.sidebar:
         _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
         for mode_name, opts in equipment_by_mode.items():
             st.markdown(f"**{mode_name}**")
-            for opt in opts:
-                all_canonical.append((mode_name, opt))
-                if opt in _equip_tooltips:
-                    st.caption(_equip_tooltips[opt])
-                st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
+            opts_real = [o for o in opts if o != "None"]
+            select_all_val = len(opts_real) > 0 and all(opt in current_equip for opt in opts_real)
+            _sel_key = f"sidebar_{mode_name}_Select All"
+            if opts_real:
+                select_all = st.checkbox("Select All", value=select_all_val, key=_sel_key)
+                if select_all:
+                    st.caption("All equipment selected")
+                else:
+                    for opt in opts_real:
+                        all_canonical.append((mode_name, opt))
+                        if opt in _equip_tooltips:
+                            st.caption(_equip_tooltips[opt])
+                        st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
         if st.button("Save equipment", key="sidebar_save"):
-            new_equip = [opt for _mode, opt in all_canonical if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)]
+            new_equip = []
+            for mode_name, opts in equipment_by_mode.items():
+                opts_real = [o for o in opts if o != "None"]
+                if not opts_real:
+                    continue
+                sel_all = st.session_state.get(f"sidebar_{mode_name}_Select All", False)
+                if sel_all:
+                    new_equip.extend(opts_real)
+                else:
+                    new_equip.extend(opt for opt in opts_real if st.session_state.get(f"sidebar_{mode_name}_{opt}", False))
             prof["equipment"] = new_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
@@ -1942,6 +1958,7 @@ with st.sidebar:
             st.session_state.page = "main"
             st.success("Saved")
             st.rerun()
+    st.divider()
     if st.button("Sign out", key="sidebar_logout"):
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
@@ -1983,7 +2000,8 @@ except (ImportError, KeyError, Exception):
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
-    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Custom Plan Requested"])
+    _custom_req_count = len(load_custom_plan_requests())
+    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", f"Admin: Custom Plan Requested ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
@@ -2184,6 +2202,7 @@ with _bender_ctx:
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
         # Generate action + Request Custom Plan (separate individual buttons)
+        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
         _col_gen, _col_gap, _col_request = st.columns([1, 0.15, 1])
         with _col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
@@ -2232,6 +2251,7 @@ with _bender_ctx:
                         "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
                     )
                     st.warning("Generated but no exercises were returned — see message below.")
+                    st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
             except Exception as e:
                 st.error(str(e))
 
