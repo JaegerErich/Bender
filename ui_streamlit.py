@@ -2191,16 +2191,19 @@ if _tab_admin is not None:
         for _mode_key in PLAN_MODES:
             _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
             _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
-            st.caption(_label)
+            st.markdown(f"**{_label}**")
             _col_freq, _col_len = st.columns(2)
             with _col_freq:
+                st.caption("Frequency")
                 _freq = st.selectbox(
                     "Frequency",
                     options=FREQUENCY_OPTIONS,
                     index=0,
                     key=f"admin_mode_freq_{_mode_key}",
+                    label_visibility="collapsed",
                 )
             with _col_len:
+                st.caption("Length (min)")
                 _len_min = st.slider(
                     "Length (min)",
                     min_value=10,
@@ -2208,6 +2211,7 @@ if _tab_admin is not None:
                     value=_default_len,
                     step=5,
                     key=f"admin_mode_len_{_mode_key}",
+                    label_visibility="collapsed",
                 )
             _mode_config[_mode_key] = {
                 "frequency": _freq,
