@@ -221,7 +221,7 @@ def _deserialize_plan_for_display(plan: list | dict) -> tuple[list, str]:
 
 
 def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_complete: callable) -> None:
-    """Render Bible App–style plan view. completed = {day_idx: [mode_key, ...]}. on_complete(day_idx, mode_key)."""
+    """Render Bible App–style plan view. completed = {day_idx: [mode_key, ...]}. on_complete(day_idx, mode_key, params_dict|None)."""
     plan, _ = _deserialize_plan_for_display(plan)
     total_days = sum(len(w["days"]) for w in plan)
     flat_days: list[tuple[int, dict]] = []
@@ -290,7 +290,13 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                     all_done = len(_focus) > 0 and all(x["mode_key"] in _comp_set for x in _focus)
                     if all_done and wv_day < total_days - 1:
                         st.session_state.plan_selected_day = wv_day + 1
-                    on_complete(wv_day, wv_mode)
+                    _params = fi.get("params") or {}
+                    _meta = {"mode": fi.get("mode_key") or _params.get("mode"), "minutes": _params.get("session_len_min", 25)}
+                    if _params.get("shooting_min") is not None:
+                        _meta["shooting_min"] = _params["shooting_min"]
+                    if _params.get("stickhandling_min") is not None:
+                        _meta["stickhandling_min"] = _params["stickhandling_min"]
+                    on_complete(wv_day, wv_mode, _meta)
                 return
         st.session_state.plan_workout_view = None
 
@@ -497,6 +503,85 @@ def build_prefilled_feedback_url(
 def clear_last_output():
     st.session_state.last_output_text = None
     st.session_state.last_session_id = None
+    if "last_output_metadata" in st.session_state:
+        st.session_state.last_output_metadata = None
+
+
+def _parse_workout_header_for_metadata(text: str) -> dict:
+    """Parse BENDER SINGLE WORKOUT header for mode and len. Returns metadata dict or {}."""
+    import re as _re
+    if not text or not isinstance(text, str):
+        return {}
+    m = _re.search(r"mode=(\w+)\s*\|\s*len=(\d+)\s*min", text, _re.IGNORECASE)
+    if m:
+        return {"mode": m.group(1).strip(), "minutes": int(m.group(2) or 0)}
+    return {}
+
+
+def _compute_volume_from_metadata(metadata: dict) -> dict:
+    """Compute volume deltas from workout metadata for Private Victory stats.
+    Returns {stickhandling_hours, shots, gym_hours, skating_hours, conditioning_hours, mobility_hours}."""
+    mode = (metadata.get("mode") or "").lower()
+    minutes = max(0, int(metadata.get("minutes") or 0))
+    hours = minutes / 60.0
+    loc = (metadata.get("location") or "").lower()
+    conditioning = bool(metadata.get("conditioning"))
+    out = {
+        "stickhandling_hours": 0.0,
+        "shots": 0,
+        "gym_hours": 0.0,
+        "skating_hours": 0.0,
+        "conditioning_hours": 0.0,
+        "mobility_hours": 0.0,
+    }
+    if mode == "performance":
+        out["gym_hours"] = hours
+        if conditioning:
+            # ~6–8 min typical post-lift conditioning
+            out["conditioning_hours"] += 0.1  # ~6 min
+    elif mode == "stickhandling":
+        out["stickhandling_hours"] = hours
+    elif mode == "shooting":
+        out["shots"] = max(0, int(minutes * 8))  # ~8 shots/min
+    elif mode in ("skills_only", "puck_mastery"):
+        shoot_min = int(metadata.get("shooting_min") or minutes // 2)
+        stick_min = int(metadata.get("stickhandling_min") or minutes - shoot_min)
+        out["stickhandling_hours"] = stick_min / 60.0
+        out["shots"] = max(0, int(shoot_min * 8))
+    elif mode == "skating_mechanics":
+        out["skating_hours"] = hours
+    elif mode == "energy_systems":
+        out["conditioning_hours"] = hours
+    elif mode == "mobility":
+        out["mobility_hours"] = hours
+    return out
+
+
+def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
+    """Add workout completion volumes to profile's private_victory_stats."""
+    prof = dict(profile)
+    stats = dict(prof.get("private_victory_stats") or {})
+    for k, default in [
+        ("stickhandling_hours", 0.0),
+        ("gym_hours", 0.0),
+        ("skating_hours", 0.0),
+        ("conditioning_hours", 0.0),
+        ("mobility_hours", 0.0),
+        ("shots", 0),
+        ("completions_count", 0),
+    ]:
+        if k not in stats:
+            stats[k] = default
+    deltas = _compute_volume_from_metadata(metadata)
+    stats["stickhandling_hours"] = stats["stickhandling_hours"] + deltas["stickhandling_hours"]
+    stats["shots"] = stats["shots"] + deltas["shots"]
+    stats["gym_hours"] = stats["gym_hours"] + deltas["gym_hours"]
+    stats["skating_hours"] = stats["skating_hours"] + deltas["skating_hours"]
+    stats["conditioning_hours"] = stats["conditioning_hours"] + deltas["conditioning_hours"]
+    stats["mobility_hours"] = stats["mobility_hours"] + deltas["mobility_hours"]
+    stats["completions_count"] = stats["completions_count"] + 1
+    prof["private_victory_stats"] = stats
+    return prof
 
 # -----------------------------
 # Pretty workout renderer (UI only)
@@ -1637,17 +1722,29 @@ st.markdown("""
     }
 
     /* Generate workout + Request Custom Plan — side by side */
-    /* Buttons: full text visible, no truncation */
+    /* Buttons: full text visible, no truncation. Marker ensures Chrome targets correctly. */
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"] {
+        flex: 1 1 0 !important;
+        min-width: 140px !important;
+        max-width: 50% !important;
+    }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton,
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton {
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton {
         width: 100% !important;
         min-width: 0 !important;
         overflow: visible !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button,
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button {
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         width: 100% !important;
         min-width: 10rem !important;
         max-width: none !important;
@@ -1662,8 +1759,7 @@ st.markdown("""
         border: 1px solid #666666 !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #ffffff !important;
         color: #000000 !important;
         font-weight: 600 !important;
@@ -1766,20 +1862,33 @@ st.markdown("""
         }
     }
 
-    /* Admin edit: Save plan / Delete plan buttons — normal size, bordered box, mobile-friendly */
-    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+    /* Admin edit: Save plan / Delete plan buttons — normal size, bordered box, Chrome-friendly */
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type,
+    div:has(#admin-edit-plan-actions) ~ div [data-testid="stHorizontalBlock"]:first-of-type {
+        display: flex !important;
+        flex-wrap: nowrap !important;
         gap: 1rem !important;
         align-items: stretch !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
-    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] [data-testid="column"] {
+    div:has(#admin-edit-plan-actions) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] [data-testid="column"],
+    div:has(#admin-edit-plan-actions) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] [data-testid="column"] {
         border: 1px solid #555555 !important;
         border-radius: 10px !important;
         padding: 1rem !important;
-        min-width: 200px !important;
-        flex: 1 1 200px !important;
+        min-width: 140px !important;
+        flex: 1 1 0 !important;
+        max-width: 50% !important;
     }
-    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton,
+    div:has(#admin-edit-plan-actions) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton {
+        width: 100% !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
+    div:has(#admin-edit-plan-actions) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
         min-height: 48px !important;
         padding: 0.75rem 2rem !important;
         font-size: 1.05rem !important;
@@ -1831,6 +1940,8 @@ if "last_session_id" not in st.session_state:
     st.session_state.last_session_id = None
 if "last_output_text" not in st.session_state:
     st.session_state.last_output_text = None
+if "last_output_metadata" not in st.session_state:
+    st.session_state.last_output_metadata = None
 if "last_inputs_fingerprint" not in st.session_state:
     st.session_state.last_inputs_fingerprint = None
 if "scroll_to_workout" not in st.session_state:
@@ -2080,6 +2191,7 @@ try:
         is_admin_user,
         generate_plan,
         generate_plan_with_workouts,
+        compute_plan_highlights,
         PLAN_MODES,
         MODE_DISPLAY_LABELS,
         MODE_SESSION_LEN_DEFAULTS,
@@ -2107,19 +2219,21 @@ _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", f"Admin: Custom Plan Request ({_custom_req_count})"])
+    _tab_bender, _tab_admin, _tab_highscores, _tab_private_victory, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Highscores", "The Private Victory", f"Admin: Custom Plan Request ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
-    _tab_plan, _tab_generate = st.tabs(["My Plan", "Generate Workout"])
+    _tab_plan, _tab_generate, _tab_private_victory = st.tabs(["My Plan", "Generate Workout", "The Private Victory"])
     _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
 else:
-    _bender_ctx = nullcontext()
+    _tab_generate, _tab_private_victory = st.tabs(["Generate Workout", "The Private Victory"])
+    _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
     _tab_plan = None
+    _tab_highscores = None
 
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
@@ -2133,12 +2247,14 @@ if _tab_plan is not None and _assigned_plan:
         if isinstance(_plan_completed, dict):
             _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
 
-        def _plan_on_complete(day_idx: int, mode_key: str) -> None:
+        def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
             prof = dict(st.session_state.current_profile or {})
             c = dict(prof.get("assigned_plan_completed") or {})
             key = str(day_idx)
             c[key] = list(set(c.get(key, [])) | {mode_key})
             prof["assigned_plan_completed"] = c
+            if params_or_meta:
+                prof = _add_completion_to_profile(prof, params_or_meta)
             st.session_state.current_profile = prof
             save_profile(prof)
             st.rerun()
@@ -2320,6 +2436,7 @@ with _bender_ctx:
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
         # Generate action + Request Custom Plan — side by side
+        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
         col_gen, col_req = st.columns(2)
         with col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
@@ -2360,6 +2477,13 @@ with _bender_ctx:
                 out_text = resp.get("output_text")
                 if out_text and out_text.strip():
                     st.session_state.last_output_text = out_text
+                    st.session_state.last_output_metadata = {
+                        "mode": effective_mode,
+                        "minutes": int(minutes),
+                        "location": location,
+                        "conditioning": conditioning,
+                        "conditioning_type": conditioning_type,
+                    }
                     st.session_state.scroll_to_workout = True
                     st.success("Generated")
                 else:
@@ -2398,6 +2522,16 @@ with _bender_ctx:
             else:
                 render_workout_readable(st.session_state.last_output_text)
             st.write("")
+            _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
+            if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
+                prof = st.session_state.get("current_profile") or {}
+                if prof and _meta:
+                    prof = _add_completion_to_profile(prof, _meta)
+                    st.session_state.current_profile = prof
+                    save_profile(prof)
+                clear_last_output()
+                st.success("Workout logged to The Private Victory!")
+                st.rerun()
             if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                 clear_last_output()
                 st.rerun()
@@ -2655,6 +2789,18 @@ if _tab_admin is not None:
             }
             _mode_days[_mode_key] = _selected_days
 
+        # Plan Highlights (admin only): weekly totals when plan exists
+        if st.session_state.get("admin_plan"):
+            try:
+                _highlights = compute_plan_highlights(st.session_state.admin_plan)
+                if _highlights:
+                    with st.expander("Plan Highlights (weekly totals)", expanded=True):
+                        for h in _highlights:
+                            wk = h.get("week", 0)
+                            st.markdown(f"**Week {wk}** — Stickhandling: {h.get('stickhandling_hours', 0):.1f}h | Shots: {h.get('shots', 0):,} | Gym: {h.get('gym_hours', 0):.1f}h | Skating: {h.get('skating_hours', 0):.1f}h | Conditioning: {h.get('conditioning_hours', 0):.1f}h | Mobility: {h.get('mobility_hours', 0):.1f}h")
+            except Exception:
+                pass
+
         _col_gen, _col_clear = st.columns(2)
         with _col_gen:
             if st.button("Generate plan", type="primary", key="admin_gen_full"):
@@ -2900,3 +3046,52 @@ if _tab_custom_requests is not None:
                         _apply_custom_request_to_plan_builder(req)
                         st.success("Custom plan request integrated. Switch to **Admin: Plan Builder** to review and generate.")
                         st.rerun()
+
+# The Private Victory tab (players only)
+if _tab_private_victory is not None:
+    with _tab_private_victory:
+        st.subheader("The Private Victory")
+        st.caption("Your lifetime workout completions. Every workout you mark complete (from Generate Workout or My Plan) adds to these totals.")
+        prof = st.session_state.get("current_profile") or {}
+        stats = prof.get("private_victory_stats") or {}
+        completions = int(stats.get("completions_count", 0))
+        if completions == 0:
+            st.info("No completions yet. Generate a workout, do it, and click **Workout Complete** to start tracking.")
+        else:
+            st.metric("Workouts completed", completions)
+            cols = st.columns(3)
+            with cols[0]:
+                st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+                st.metric("Shots taken", f"{stats.get('shots', 0):,}")
+            with cols[1]:
+                st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
+                st.metric("Skating mechanics (hrs)", f"{stats.get('skating_hours', 0):.1f}")
+            with cols[2]:
+                st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+                st.metric("Mobility/recovery (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+
+# Admin: Highscores tab (admin only)
+if _tab_highscores is not None:
+    with _tab_highscores:
+        st.subheader("Admin: Highscores")
+        st.caption("Lifetime completions across all players. Data from **Workout Complete** (daily Bender) and plan completions (My Plan).")
+        all_profs = list_profiles()
+        players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
+        players_with_stats.sort(key=lambda x: x[1].get("completions_count", 0), reverse=True)
+        if not players_with_stats:
+            st.info("No player completions yet.")
+        else:
+            for i, (p, stats) in enumerate(players_with_stats):
+                name = p.get("display_name") or p.get("user_id") or "Unknown"
+                comp = int(stats.get("completions_count", 0))
+                with st.expander(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed", expanded=(i == 0)):
+                    c1, c2, c3 = st.columns(3)
+                    with c1:
+                        st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+                        st.metric("Shots", f"{stats.get('shots', 0):,}")
+                    with c2:
+                        st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
+                        st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
+                    with c3:
+                        st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+                        st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")

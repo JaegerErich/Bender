@@ -450,6 +450,8 @@ def generate_plan_with_workouts(
                 if merged_workout:
                     merged_workout += "\n\n"
                 merged_workout += (stick_fi.get("workout") or "").strip()
+                shoot_min = shooting_fi.get("params", {}).get("session_len_min", 25)
+                stick_min = stick_fi.get("params", {}).get("session_len_min", 25)
                 focus_items = [
                     f for f in focus_items
                     if f["mode_key"] not in ("shooting", "stickhandling")
@@ -458,13 +460,62 @@ def generate_plan_with_workouts(
                     "mode_key": "puck_mastery",
                     "original": f"{shooting_fi.get('original', '')} + {stick_fi.get('original', '')}",
                     "workout": merged_workout.strip() or "(No workout)",
-                    "params": shooting_fi.get("params", {}),
+                    "params": {
+                        "mode": "puck_mastery",
+                        "session_len_min": shoot_min + stick_min,
+                        "shooting_min": shoot_min,
+                        "stickhandling_min": stick_min,
+                    },
                 }]
 
             d["focus_items"] = focus_items
             d["focus"] = [fi["label"] for fi in focus_items]  # keep for backward compat
             flat_day_idx += 1
     return plan
+
+
+def compute_plan_highlights(plan: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Compute weekly totals for Plan Highlights. Returns list of week dicts:
+    [{"week": 1, "stickhandling_hours": ..., "shots": ..., "gym_hours": ..., "skating_hours": ..., "conditioning_hours": ..., "mobility_hours": ...}, ...]
+    """
+    out: list[dict[str, Any]] = []
+    for w in plan:
+        totals = {
+            "week": w["week"],
+            "stickhandling_hours": 0.0,
+            "shots": 0,
+            "gym_hours": 0.0,
+            "skating_hours": 0.0,
+            "conditioning_hours": 0.0,
+            "mobility_hours": 0.0,
+        }
+        for d in w.get("days", []):
+            for fi in d.get("focus_items", []):
+                params = fi.get("params", {})
+                mode = fi.get("mode_key") or params.get("mode", "")
+                session_min = params.get("session_len_min", 0) or 0
+                hours = session_min / 60.0
+                if mode == "stickhandling":
+                    totals["stickhandling_hours"] += hours
+                elif mode == "shooting":
+                    totals["stickhandling_hours"] += 0  # shooting is separate
+                    totals["shots"] += int(session_min * 8)  # ~8 shots/min estimate
+                elif mode == "puck_mastery":
+                    shoot_min = params.get("shooting_min", session_min // 2)
+                    stick_min = params.get("stickhandling_min", session_min - shoot_min)
+                    totals["stickhandling_hours"] += stick_min / 60.0
+                    totals["shots"] += int(shoot_min * 8)
+                elif mode == "performance":
+                    totals["gym_hours"] += hours
+                elif mode == "skating_mechanics":
+                    totals["skating_hours"] += hours
+                elif mode == "energy_systems":
+                    totals["conditioning_hours"] += hours
+                elif mode == "mobility":
+                    totals["mobility_hours"] += hours
+        out.append(totals)
+    return out
 
 
 def format_plan_as_text(plan: list[dict[str, Any]]) -> str:
