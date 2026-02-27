@@ -1549,6 +1549,46 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
+    /* Generate workout + Request Custom Plan — consistent layout (desktop app, browser, mobile) */
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 1rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child,
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
+        flex: 1 1 0 !important;
+        min-width: 9rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2),
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) {
+        flex: 0 0 auto !important;
+        min-width: 1rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton,
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton button,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton button {
+        width: 100% !important;
+        max-width: 100% !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        padding: 0.6rem 1.25rem !important;
+        box-sizing: border-box !important;
+    }
     /* Custom plan intake: Submit & Cancel — side-by-side, enough space for buttons */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1.5rem !important;
