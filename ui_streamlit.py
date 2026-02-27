@@ -15,8 +15,31 @@ import urllib.parse
 # Profile storage (data/profiles/*.json)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROFILE_DIR = Path(BASE_DIR) / "data" / "profiles"
+CUSTOM_PLAN_REQUESTS_PATH = Path(BASE_DIR) / "data" / "custom_plan_requests.json"
 
 PBKDF2_ITERATIONS = 100_000
+
+
+def load_custom_plan_requests() -> list[dict]:
+    """Load custom plan requests (list of questionnaire responses)."""
+    if not CUSTOM_PLAN_REQUESTS_PATH.exists():
+        return []
+    try:
+        with open(CUSTOM_PLAN_REQUESTS_PATH, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_custom_plan_request(request: dict) -> None:
+    """Append a new custom plan request."""
+    requests = load_custom_plan_requests()
+    request["id"] = str(len(requests) + 1)
+    request["created_at"] = datetime.now().isoformat()
+    requests.append(request)
+    CUSTOM_PLAN_REQUESTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CUSTOM_PLAN_REQUESTS_PATH, "w", encoding="utf-8") as f:
+        json.dump(requests, f, indent=2)
 
 
 def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
@@ -1843,16 +1866,18 @@ except (ImportError, KeyError, Exception):
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
-    _tab_bender, _tab_admin = st.tabs(["Bender", "Admin: Plan Builder"])
+    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Custom Plan Requester"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
     _tab_plan, _tab_generate = st.tabs(["My Plan", "Generate Workout"])
     _bender_ctx = _tab_generate
     _tab_admin = None
+    _tab_custom_requests = None
 else:
     _bender_ctx = nullcontext()
     _tab_admin = None
+    _tab_custom_requests = None
     _tab_plan = None
 
 # Age from profile (set at account creation)
@@ -1882,6 +1907,72 @@ if _tab_plan is not None and _assigned_plan:
         _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 with _bender_ctx:
+    # Custom Plan Intake questionnaire (shown when Request Custom Plan clicked)
+    if st.session_state.get("custom_plan_intake_open"):
+        st.markdown("### BENDER PLAN INTAKE")
+        profile = st.session_state.get("current_profile") or {}
+        with st.form("custom_plan_intake_form"):
+            q1 = st.radio(
+                "1. How many weeks do you want your plan to run?",
+                ["4", "6", "8", "12", "Custom"],
+                key="intake_weeks",
+            )
+            q2 = st.radio(
+                "2. How many days per week can you train?",
+                ["3", "4", "5", "6", "7"],
+                key="intake_days",
+            )
+            q3 = st.radio(
+                "3. What is your primary goal for this phase?",
+                [
+                    "Get stronger",
+                    "Increase speed / acceleration",
+                    "Improve conditioning",
+                    "Add lean muscle",
+                    "Reduce injury risk",
+                    "In-season maintenance",
+                ],
+                key="intake_goal",
+            )
+            q4 = st.radio(
+                "4. How long have you been lifting seriously?",
+                ["New (0–6 months)", "1–2 years", "3+ years"],
+                key="intake_experience",
+            )
+            q5 = st.radio(
+                "5. How long can each session realistically be?",
+                ["30", "45", "60", "75+ minutes"],
+                key="intake_session_len",
+            )
+            q6 = st.slider(
+                "6. On a scale of 1–10, how locked in are you for this phase?",
+                1, 10, 7,
+                key="intake_commitment",
+            )
+            col_submit, col_cancel = st.columns(2)
+            with col_submit:
+                submitted = st.form_submit_button("Submit")
+            with col_cancel:
+                cancelled = st.form_submit_button("Cancel")
+        if cancelled:
+            st.session_state.custom_plan_intake_open = False
+            st.rerun()
+        if submitted:
+            save_custom_plan_request({
+                "user_id": profile.get("user_id"),
+                "display_name": profile.get("display_name") or profile.get("user_id") or "Unknown",
+                "weeks": q1,
+                "days_per_week": q2,
+                "primary_goal": q3,
+                "lifting_experience": q4,
+                "session_length": q5,
+                "commitment_1_10": int(q6),
+            })
+            st.session_state.custom_plan_intake_open = False
+            st.success("Your custom plan request has been submitted. An admin will review it.")
+            st.rerun()
+        st.stop()
+
     form_container = st.container()
     with form_container:
         st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
@@ -1969,9 +2060,14 @@ with _bender_ctx:
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
         # Generate action (prominent in main area)
-        col_btn, _ = st.columns([1, 3])
-        with col_btn:
+        col_gen, col_request, _ = st.columns([1, 1, 2])
+        with col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        with col_request:
+            request_plan_clicked = st.button("Request Custom Plan", use_container_width=True)
+        if request_plan_clicked:
+            st.session_state.custom_plan_intake_open = True
+            st.rerun()
         if generate_clicked:
             profile = st.session_state.get("current_profile") or {}
             user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
@@ -2471,3 +2567,24 @@ if _tab_admin is not None:
                     st.rerun()
             else:
                 st.caption("No other profiles found. Create accounts for players first.")
+
+# Custom Plan Requester tab (admin only)
+if _tab_custom_requests is not None:
+    with _tab_custom_requests:
+        st.subheader("Custom Plan Requester")
+        st.caption("Submitted custom plan intake requests from athletes.")
+        requests_list = load_custom_plan_requests()
+        if not requests_list:
+            st.info("No custom plan requests yet. Athletes can submit requests via **Request Custom Plan** on the Bender tab.")
+        else:
+            for i, req in enumerate(reversed(requests_list)):
+                with st.expander(f"**{req.get('display_name', 'Unknown')}** — {req.get('created_at', '')[:10]}", expanded=(i == 0)):
+                    st.markdown(f"**User:** {req.get('display_name', '—')} ({req.get('user_id', '—')})")
+                    st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
+                    st.markdown("---")
+                    st.markdown(f"**1. Weeks:** {req.get('weeks', '—')}")
+                    st.markdown(f"**2. Days/week:** {req.get('days_per_week', '—')}")
+                    st.markdown(f"**3. Primary goal:** {req.get('primary_goal', '—')}")
+                    st.markdown(f"**4. Lifting experience:** {req.get('lifting_experience', '—')}")
+                    st.markdown(f"**5. Session length:** {req.get('session_length', '—')}")
+                    st.markdown(f"**6. Commitment (1–10):** {req.get('commitment_1_10', '—')}")
