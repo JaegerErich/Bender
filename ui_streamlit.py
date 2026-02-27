@@ -1022,7 +1022,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
     .stApp { background: #000000 !important; }
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 1100px; width: 100%; background: transparent; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: min(1800px, 95vw); width: 100%; background: transparent; }
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.15rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
     .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
@@ -1493,7 +1493,7 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Workout headers and content: bold headers, full width */
+    /* Workout headers and content: bold headers, full width, wide layout */
     *:has(#workout-result-section) .stSubheader,
     *:has(#workout-result-section) .workout-result-header,
     *:has(#workout-result-section) h3 {
@@ -1502,7 +1502,9 @@ st.markdown("""
         max-width: 100% !important;
     }
     *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"],
-    *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlock"] {
+    *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlock"],
+    *:has(#workout-result-section) .stTabs,
+    *:has(#workout-result-section) [data-testid="stVerticalBlock"] {
         width: 100% !important;
         max-width: 100% !important;
     }
@@ -1919,9 +1921,6 @@ with st.sidebar:
         st.session_state.page = "main"
         st.success("Saved")
         st.rerun()
-    if st.button("Request Custom Plan", key="sidebar_request_plan"):
-        st.session_state.custom_plan_intake_open = True
-        st.rerun()
     if st.button("Sign out", key="sidebar_logout"):
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
@@ -2163,8 +2162,15 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action (prominent in main area)
-        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        # Generate action + Request Custom Plan (visible in main area)
+        _col_gen, _col_request = st.columns([2, 1])
+        with _col_gen:
+            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        with _col_request:
+            request_plan_clicked = st.button("Request Custom Plan", use_container_width=True)
+        if request_plan_clicked:
+            st.session_state.custom_plan_intake_open = True
+            st.rerun()
         if generate_clicked:
             profile = st.session_state.get("current_profile") or {}
             user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
