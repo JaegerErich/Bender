@@ -13,6 +13,7 @@ MODE_DISPLAY_LABELS: dict[str, str] = {
     "skating_mechanics": "Skating Mechanics",
     "shooting": "Shooting",
     "stickhandling": "Stickhandling",
+    "puck_mastery": "Puck Mastery",
     "energy_systems": "Conditioning",
     "mobility": "Mobility/Recovery",
 }
@@ -441,6 +442,25 @@ def generate_plan_with_workouts(
                     "workout": workout,
                     "params": {k: v for k, v in params.items() if k != "seed"},
                 })
+            # If day has both shooting and stickhandling, merge into single "Puck Mastery"
+            shooting_fi = next((f for f in focus_items if f["mode_key"] == "shooting"), None)
+            stick_fi = next((f for f in focus_items if f["mode_key"] == "stickhandling"), None)
+            if shooting_fi and stick_fi:
+                merged_workout = (shooting_fi.get("workout") or "").strip()
+                if merged_workout:
+                    merged_workout += "\n\n"
+                merged_workout += (stick_fi.get("workout") or "").strip()
+                focus_items = [
+                    f for f in focus_items
+                    if f["mode_key"] not in ("shooting", "stickhandling")
+                ] + [{
+                    "label": "Puck Mastery",
+                    "mode_key": "puck_mastery",
+                    "original": f"{shooting_fi.get('original', '')} + {stick_fi.get('original', '')}",
+                    "workout": merged_workout.strip() or "(No workout)",
+                    "params": shooting_fi.get("params", {}),
+                }]
+
             d["focus_items"] = focus_items
             d["focus"] = [fi["label"] for fi in focus_items]  # keep for backward compat
             flat_day_idx += 1

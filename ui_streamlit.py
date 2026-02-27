@@ -39,13 +39,22 @@ def _render_equipment_dropdowns(equipment_by_mode: dict, current_equip: set, key
         if not opts_real:
             continue
         with st.expander(mode_name, expanded=False):
-            select_all_val = all(opt in current_equip for opt in opts_real)
-            sel_all = st.checkbox("Select All", value=select_all_val, key=f"{key_prefix}_{mode_name}_Select All")
+            sel_all_key = f"{key_prefix}_{mode_name}_Select All"
+            select_all_default = all(opt in current_equip for opt in opts_real)
+            sel_all = st.checkbox("Select All", value=select_all_default, key=sel_all_key)
+            # When Select All is checked, sync all individual checkboxes to checked
+            if sel_all:
+                for opt in opts_real:
+                    st.session_state[f"{key_prefix}_{mode_name}_{opt}"] = True
             for opt in opts_real:
                 if opt in _equip_tooltips and not sel_all:
                     st.caption(_equip_tooltips[opt])
-                opt_val = True if sel_all else (opt in current_equip)
-                st.checkbox(opt, value=opt_val, key=f"{key_prefix}_{mode_name}_{opt}", disabled=sel_all)
+                opt_val = st.session_state.get(f"{key_prefix}_{mode_name}_{opt}", opt in current_equip)
+                st.checkbox(opt, value=opt_val, key=f"{key_prefix}_{mode_name}_{opt}")
+            # If Select All is on but user unchecked one, sync Select All off
+            if sel_all and not all(st.session_state.get(f"{key_prefix}_{mode_name}_{opt}", False) for opt in opts_real):
+                st.session_state[sel_all_key] = False
+                st.rerun()
 
 
 def _collect_equipment_from_session(equipment_by_mode: dict, key_prefix: str) -> list:
@@ -1112,6 +1121,15 @@ st.markdown("""
         background: #555555 !important; color: #ffffff !important; border-color: #888888 !important;
     }
 
+    /* Account Settings + Equipment: subtle shading so dropdowns/expanders are visible */
+    [data-testid="stSidebar"] [data-testid="stExpander"] {
+        background-color: #1a1a1a !important;
+        border-radius: 8px !important;
+        padding: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+        border: 1px solid #333333 !important;
+    }
+
     /* Plan day selector: exactly 5 cards visible, scroll right for more (desktop + iPhone) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"],
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1514,9 +1532,9 @@ st.markdown("""
     .stTabs [data-baseweb="tab"]:first-child { margin-left: 0; }
     .stTabs [aria-selected="true"] {
         color: #000000 !important;
-        background: #ffffff !important;
-        border-color: #333333;
-        border-bottom: 1px solid #000000 !important;
+        background: #e8e8e8 !important;
+        border-color: #555555 !important;
+        border-bottom: 1px solid transparent !important;
         margin-bottom: -1px;
     }
     .stTabs [data-baseweb="tab"]:hover { background: #333333 !important; color: #ffffff !important; }
@@ -1577,22 +1595,37 @@ st.markdown("""
         max-width: 100% !important;
         min-width: 0 !important;
     }
-    /* Workout display: use entire section below tabs+Clear, spread out text */
+    /* Workout display: use entire section below tabs+Clear, spread out text, fill main area */
     *:has(#workout-result-section) .stTabs [role="tabpanel"] {
         min-height: calc(100vh - 300px) !important;
         width: 100% !important;
+        overflow: visible !important;
+        display: block !important;
     }
     *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"] {
         padding: 1.25rem 1.5rem !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* Ensure workout tabs column fills available width (fixes empty black area in browser) */
+    *:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
     }
     *:has(#workout-result-section) .stTabs .stMarkdown p,
     *:has(#workout-result-section) .stTabs .stMarkdown li {
         line-height: 1.85 !important;
     }
 
-    /* Workout tabs + Clear workout: Clear is just a compact button */
+    /* Workout tabs + Clear workout: tabs column fills width, Clear is compact */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 0.5rem !important;
+        width: 100% !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
         flex: 0 0 auto !important;
@@ -1603,26 +1636,7 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Generate workout + Request Custom Plan — stack vertically to prevent clipping (Chrome + mobile) */
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        gap: 0.75rem !important;
-        width: 100% !important;
-        max-width: 100% !important;
-        overflow: visible !important;
-    }
-    /* Each button takes full width when stacked */
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"],
-    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
-        flex: 0 0 auto !important;
-        min-width: 100% !important;
-        max-width: 100% !important;
-    }
+    /* Generate workout + Request Custom Plan — side by side */
     /* Buttons: full text visible, no truncation */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
     div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton,
@@ -1702,9 +1716,9 @@ st.markdown("""
         min-width: 2rem;
         padding: 0.2rem 0.35rem;
         position: relative !important;
-        background: #f8d7da !important;
-        color: #721c24 !important;
-        border: 1px solid #f5c6cb;
+        background: #e2b8bd !important;
+        color: #5a1720 !important;
+        border: 1px solid #d9a5ab;
         border-radius: 5px;
         cursor: pointer;
         margin: 0 !important;
@@ -1714,8 +1728,8 @@ st.markdown("""
     /* Sat/Sun (columns 6–7 in content row): darker red when unchecked */
     .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(6) [data-testid="stCheckbox"] label:not(:has(input:checked)),
     .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(7) [data-testid="stCheckbox"] label:not(:has(input:checked)) {
-        background: #e8b4b8 !important;
-        border-color: #e0a0a5 !important;
+        background: #d08e95 !important;
+        border-color: #c87d85 !important;
     }
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label:has(input:checked),
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label:has(input:checked) {
@@ -2269,14 +2283,7 @@ with _bender_ctx:
         elif effective_mode == "mobility":
             focus = "mobility"
 
-        available_space = None
-        if effective_mode in ("stickhandling", "skills_only"):
-            space_label = st.selectbox(
-                "Stickhandling space",
-                ["Any", "4x4 ft", "6x6 ft", "6 ft lane", "8x8 ft", "10 ft lane", "10 ft grid"],
-                help="Drills require compatible space. Use 'Any' if flexible.",
-            )
-            available_space = None if space_label == "Any" else space_label
+        available_space = None  # Assume user has necessary space
 
         conditioning = False
         conditioning_type = None
@@ -2312,9 +2319,12 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action + Request Custom Plan — stacked to match app (Chrome + mobile)
-        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
-        request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
+        # Generate action + Request Custom Plan — side by side
+        col_gen, col_req = st.columns(2)
+        with col_gen:
+            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        with col_req:
+            request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
         if request_plan_clicked:
             st.session_state.custom_plan_intake_open = True
             st.rerun()
@@ -2377,13 +2387,7 @@ with _bender_ctx:
                 height=0,
             )
         st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-        _col_tabs, _col_clear = st.columns([6, 1])
-        with _col_tabs:
-            tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
-        with _col_clear:
-            if st.button("Clear workout", type="secondary", use_container_width=True):
-                clear_last_output()
-                st.rerun()
+        tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
 
         with tab_workout:
             st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
@@ -2393,6 +2397,10 @@ with _bender_ctx:
                 render_no_gym_strength_circuits_only(st.session_state.last_output_text)
             else:
                 render_workout_readable(st.session_state.last_output_text)
+            st.write("")
+            if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
+                clear_last_output()
+                st.rerun()
 
         with tab_download:
             safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"

@@ -520,46 +520,49 @@ def get_stage_weights(age: int) -> Dict[str, float]:
 
 
 # Canonical equipment list by Bender mode (clean UI). Each canonical name maps to data
-# values that satisfy it (for filtering).
+# values that satisfy it (for filtering). Must cover all equipment in JSONs.
 EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "None": ["None"],
-    "Barbell": ["Barbell", "Barbell & bench"],
-    "Bench": ["Bench", "Barbell & bench", "Dumbbells & bench", "Dumbbell & bench", "Bench or box", "Bench or chair", "Bench or wall", "Dumbbells & incline bench", "Box/Bench"],
-    "Squat Rack": ["Squat Rack", "Barbell & rack"],
-    "Bands": ["Bands", "Band or cable", "Cable or band"],
-    "Resistance band": ["Resistance band"],
-    "Kettlebells": ["Kettlebells", "Dumbbell or kettlebell"],
-    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or trap bar", "Light dumbbell", "Light dumbbells"],
-    "Trap bar": ["Trap bar"],
+    "Barbell": ["Barbell", "Barbell & bench", "Barbell + Box", "Barbell + rack"],
+    "Bench": ["Bench", "Barbell & bench", "Dumbbells & bench", "Dumbbell & bench", "Bench or box", "Bench or chair", "Bench or wall", "Dumbbells & incline bench", "Box/Bench", "Bench or box", "Plate or DB on hip + bench"],
+    "Squat Rack": ["Squat Rack", "Barbell & rack", "Barbell + rack"],
+    "Bands": ["Bands", "Band", "Band or cable", "Cable or band", "BOSU + band", "BOSU + Band", "Resistance band + stick"],
+    "Resistance band": ["Resistance band", "resistance band"],
+    "Kettlebells": ["Kettlebells", "Kettlebell", "Dumbbell or kettlebell", "Kettlebell or dumbbell"],
+    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or trap bar", "Dumbbells + Bench", "Dumbbells + box", "Dumbbells + incline bench", "Dumbbells or barbell + bench", "Light dumbbell", "Light dumbbells", "BOSU + Dumbbells"],
+    "Trap bar": ["Trap bar", "Hex Bar"],
     "Bar or rings": ["Bar or rings"],
     "Cable machine": ["Cable machine"],
     "Pull-up bar": ["Pull-up bar"],
-    "Medicine ball": ["Medicine ball"],
+    "Medicine ball": ["Medicine ball", "Med Ball"],
     "Exercise ball": ["Exercise ball"],
-    "Box": ["Box", "Box/Bench"],
-    "Slider or TRX": ["Slider or TRX"],
+    "Box": ["Box", "Box/Bench", "Box (low)", "Box (low optional)", "Box + Hurdles"],
+    "Slider or TRX": ["Slider or TRX", "TRX or straps"],
     "Landmine setup": ["Landmine setup"],
-    "Shooting pad & net": ["Shooting pad & net", "Shooting pad & pucks"],
+    "Sled": ["Sled", "Sled + harness", "None or sled"],
+    "Battle Ropes": ["Battle Ropes"],
+    "Shooting pad & net": ["Shooting pad & net", "Shooting pad & pucks", "Shooting pad & pucks & cone", "Shooting pad", "Shooting pad, pucks, stick obstacle", "Shooting pad, pucks, chair", "2 pucks + flat marker"],
     "Stickhandling ball": ["Stickhandling ball", "Stick & ball"],
     "BOSU ball": ["BOSU ball", "BOSU Ball", "BOSU"],
     "resistance band": ["resistance band", "Resistance band"],
-    "metal plate": ["metal plate", "Metal plate", "metal plate (2.5–5 lb)", "small plate", "5 lb plate"],
-    "2 extra sticks": ["2 extra sticks", "extra sticks", "2 sticks"],
-    "Cones": ["Cones", "Colored cones"],
+    "metal plate": ["metal plate", "Metal plate", "metal plate (2.5–5 lb)", "metal plate (2.5-5 lb)", "small plate", "5 lb plate"],
+    "2 extra sticks": ["2 extra sticks", "extra sticks", "2 sticks", "extra stick (optional as gates)", "extra stick + 3 pucks (as risers)"],
+    "Cones": ["Cones", "Colored cones", "Hurdles or cones"],
     "Agility Ladder": ["Agility Ladder", "Ladder"],
-    "Hurdles": ["Hurdles"],
+    "Hurdles": ["Hurdles", "Hurdle"],
     "Mini hurdles": ["Mini hurdles"],
     "Line/Tape": ["Line/Tape"],
     "Reaction ball": ["Reaction ball"],
-    "Partner": ["Partner"],
+    "Partner": ["Partner", "partner"],
     "Stationary bike": ["Stationary bike"],
     "Treadmill": ["Treadmill", "Curved treadmill"],
     "Hill": ["Hill"],
     "Stairs": ["Stairs"],
     "Foam roller": ["Foam roller"],
+    "Wall": ["Wall"],
 }
 # Everyone is assumed to have these (hockey stick, puck, chair, stick obstacle, stick & puck).
-EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Chair", "Stick obstacle"]
+EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Pucks", "Chair", "Stick obstacle", "Wood stick", "Wood stick (optional)"]
 
 CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
     "Performance": [
@@ -580,6 +583,8 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "Box",
         "Slider or TRX",
         "Landmine setup",
+        "Sled",
+        "Battle Ropes",
     ],
     "Puck Mastery": [
         "Stickhandling ball",
@@ -612,6 +617,7 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "None",
         "Foam roller",
         "Bench",
+        "Wall",
     ],
 }
 
@@ -1191,30 +1197,35 @@ def build_skating_mechanics_sequential(
     chosen: List[Dict[str, Any]], block_seconds: int
 ) -> List[str]:
     """
-    Skating mechanics as single events: do one drill for its time, then move to the next.
-    Allocates block_seconds across drills (20–90s each). Total time matches block.
+    Skating mechanics with sets and reps (duration), like stickhandling.
+    Uses default_duration_sec per drill; allocates block_seconds across drills with sensible caps.
+    Total time estimate matches block; no single drill gets excessive time.
     """
     lines: List[str] = []
     if not chosen:
         return lines
     n = len(chosen)
-    base = block_seconds // n
-    per_drill_sec = clamp(base, 15, 90)  # 15–90s per drill so total fits block
-    remainder = block_seconds - (per_drill_sec * n)
-    times_sec = [per_drill_sec] * n
-    times_sec[-1] += remainder  # remainder is 0 or positive (integer division); total = block_seconds
-    total_actual = sum(times_sec)
-    lines.append("Do each in order. Rest as needed between; then move to the next.")
-    for d, t in zip(chosen, times_sec):
+    work_sec = max(60, int(block_seconds * 0.85))  # ~15% for rest between sets
+    base_per_drill = work_sec // n
+
+    result: List[Tuple[Dict[str, Any], int, int]] = []  # drill, sets, duration_sec
+    for d in chosen:
+        dur = max(30, min(60, to_int(get(d, "default_duration_sec", 45), 45)))
+        sets = max(2, min(6, round(base_per_drill / dur)))
+        result.append((d, sets, dur))
+
+    total_work = sum(s * d for _, s, d in result)
+    lines.append("Do each in order. Rest 15–30s between sets; then move to the next drill.")
+    for d, sets, dur in result:
         name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} — {t}s")
+        lines.append(f"- {name} | {sets} x {dur}s")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
             lines.append(f"  Steps: {steps}")
-    total_min = max(1, total_actual // 60)
+    total_min = max(1, (total_work + int(total_work * 0.2)) // 60)  # work + ~20% rest
     lines.append(f"Total: ~{total_min} min")
     return lines
 
@@ -1398,6 +1409,11 @@ def _stickhandling_difficulty_points(d: Dict[str, Any], assigned_time: float) ->
     return pts * assigned_time
 
 
+STICKHANDLING_WORK_SEC = 45
+STICKHANDLING_REST_SEC = 30
+STICKHANDLING_INTERVAL_SEC = STICKHANDLING_WORK_SEC + STICKHANDLING_REST_SEC  # 75s per rep
+
+
 def build_stickhandling_blocks_session(
     drills: List[Dict[str, Any]],
     stickhandling_minutes: int,
@@ -1409,18 +1425,18 @@ def build_stickhandling_blocks_session(
 ) -> List[str]:
     """
     Block-based stickhandling session: 4 blocks (Control, Quick Hands, Game Transfer, Decision),
-    time-based allocation, variety guardrails, difficulty rating. Only uses existing stickhandling fields.
+    time-based allocation with 45s work / 30s rest per rep, variety guardrails, difficulty rating.
     """
     pool = _filter_stickhandling_pool(drills, age, available_equipment, available_space)
     if not pool:
-        return [f"Stickhandling ({stickhandling_minutes} min)", "Work time ~0 min (includes short resets)", "- [No matching drills found]"]
+        return [f"Stickhandling ({stickhandling_minutes} min)", "Format: 45s work / 30s rest per rep", "- [No matching drills found]"]
 
     total_sec = stickhandling_minutes * 60
     overhead_sec = max(60, round(total_sec * 0.10))
-    work_sec = max(0, total_sec - overhead_sec)
+    usable_sec = max(0, total_sec - overhead_sec)
 
     block_pcts = {"control": 0.20, "quick_hands": 0.25, "game_transfer": 0.35, "decision": 0.20}
-    block_sec = {b: round(work_sec * pct) for b, pct in block_pcts.items()}
+    block_sec = {b: round(usable_sec * pct) for b, pct in block_pcts.items()}
 
     # Variety guardrails (relax in order if impossible)
     need_in_tight = True
@@ -1490,38 +1506,34 @@ def build_stickhandling_blocks_session(
             bucket_counts[b] = bucket_counts.get(b, 0) + 1
             if norm(get(d, "intensity", "")).lower() == "med-high":
                 med_high_count += 1
-        base_dur = max(30, to_int(get(drills_for_block[0], "default_duration_sec", 45), 45))
-        reps = max(2, round(sec / (len(drills_for_block) * base_dur)))
+        # Each rep = 45s work + 30s rest; allocate block time across drills
+        reps = max(2, round(sec / (len(drills_for_block) * STICKHANDLING_INTERVAL_SEC)))
         for d in drills_for_block:
-            dur = max(30, to_int(get(d, "default_duration_sec", 45), 45))
-            per_drill_sec = reps * dur
-            result.append((block, d, reps, per_drill_sec))
+            per_drill_total = reps * STICKHANDLING_INTERVAL_SEC  # work + rest
+            result.append((block, d, reps, per_drill_total))
 
-    # Nudge to fit work_sec
+    # Nudge to fit usable_sec
     total_assigned = sum(per for _, _, _, per in result)
-    if total_assigned < work_sec:
+    if total_assigned < usable_sec:
         # Add +1 rep to Block A (stationary_control/pull_push) first
         for i, (block, d, reps, per) in enumerate(result):
             if block == "control" and norm(get(d, "stickhandling_bucket", "")).lower() in ("stationary_control", "pull_push"):
-                dur = get(d, "default_duration_sec", 45)
-                dur = max(30, to_int(dur, 45))
-                result[i] = (block, d, reps + 1, (reps + 1) * dur)
+                result[i] = (block, d, reps + 1, (reps + 1) * STICKHANDLING_INTERVAL_SEC)
                 break
-    elif total_assigned > work_sec:
+    elif total_assigned > usable_sec:
         # Remove -1 rep from Block C (movement_based) first
         for i in reversed(range(len(result))):
             block, d, reps, per = result[i]
             if block == "game_transfer" and reps > 2:
-                dur = get(d, "default_duration_sec", 45)
-                dur = max(30, to_int(dur, 45))
-                result[i] = (block, d, reps - 1, (reps - 1) * dur)
+                result[i] = (block, d, reps - 1, (reps - 1) * STICKHANDLING_INTERVAL_SEC)
                 break
 
     # Build output
-    work_min = round(sum(per for _, _, _, per in result) / 60)
+    total_time_sec = sum(per for _, _, _, per in result)
+    total_min = max(1, round(total_time_sec / 60))
     lines: List[str] = []
     lines.append(f"Stickhandling ({stickhandling_minutes} min)")
-    lines.append(f"Work time ~{work_min} min (includes short resets)")
+    lines.append(f"Format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
     block_labels = {
         "control": "A) Control/Touch",
         "quick_hands": "B) Quick Hands",
@@ -1535,17 +1547,12 @@ def build_stickhandling_blocks_session(
             lines.append("")
             lines.append(block_labels.get(block, block))
         name = _display_name(d)
-        dur = get(d, "default_duration_sec", 45)
-        dur = max(30, to_int(dur, 45))
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
-        intensity = norm(get(d, "intensity", "")).lower()
-        rest_guidance = "Rest 15–30s" if intensity in ("low", "low-med") else "Rest 30–45s"
-        lines.append(f"- {name} | {reps} x {dur}s")
+        lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
         if cue:
             lines.append(f"  Cue: {cue}")
-        lines.append(f"  {rest_guidance}")
 
     # Difficulty rating
     total_time = sum(per for _, _, _, per in result)
@@ -1565,7 +1572,7 @@ def build_stickhandling_blocks_session(
 
 
 def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
-    work, rest = 45, 15
+    work, rest = STICKHANDLING_WORK_SEC, STICKHANDLING_REST_SEC
     per_drill = work + rest
     if not drills:
         return ["- [No matching drills found]"]
@@ -2466,7 +2473,11 @@ def build_mobility_recovery_session(
 
     total_sec = minutes * 60
     overhead = max(60, round(total_sec * 0.10))
-    work_sec = max(0, total_sec - overhead)
+    usable_sec = max(0, total_sec - overhead)
+    # Reserve ~20–25% for rest between drills (active stretch → rest → next)
+    rest_pct = 0.22
+    work_sec = max(60, int(usable_sec * (1 - rest_pct)))
+    rest_between_sec = 20  # 15–30s typical; use 20 for time estimate
 
     def time_for_drills() -> int:
         t = 0
@@ -2503,8 +2514,16 @@ def build_mobility_recovery_session(
         if not added:
             break
 
+    num_drills = len(selected)
+    rounds_typical = 1
+    for _, d in selected:
+        rid = norm(get(d, "id", ""))
+        rounds_typical = max(rounds_typical, min(drill_rounds.get(rid, 1), 2 if _mobility_is_foam_roller(d) else 3))
+
     lines: List[str] = []
     lines.append("Mobility / Recovery (%d min)" % minutes)
+    lines.append("Format: Circuit — work each drill, rest 15–30s between drills, then repeat. Complete %d round(s)." % rounds_typical)
+    lines.append("")
     for _, d in selected:
         name = _display_name(d)
         dur = max(30, to_int(get(d, "default_duration_sec", 60), 60))
