@@ -1014,7 +1014,7 @@ if st.session_state.get("collapse_sidebar_after_save"):
 _page_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "b_logo.png")
 if not os.path.isfile(_page_icon):
     _page_icon = None
-st.set_page_config(page_title="Bender", layout="centered", initial_sidebar_state=_sidebar_state, page_icon=_page_icon if _page_icon else "🏒")
+st.set_page_config(page_title="Bender", layout="wide", initial_sidebar_state=_sidebar_state, page_icon=_page_icon if _page_icon else "🏒")
 
 # Custom CSS: single-column main; sidebar for equipment
 st.markdown("""
@@ -1022,7 +1022,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
     .stApp { background: #000000 !important; }
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; background: transparent; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 1100px; width: 100%; background: transparent; }
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.15rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
     .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
@@ -1493,20 +1493,38 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Generate workout + Request Custom Plan: more space, contained boxes */
+    /* Generate workout + Request Custom Plan: Generate left, Request right-aligned */
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        gap: 1rem !important;
+        gap: 1.25rem !important;
+        justify-content: space-between !important;
     }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
-        min-width: 140px !important;
-        padding: 0.25rem !important;
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child {
+        flex: 0 1 auto !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
+        flex: 0 0 auto !important;
+        margin-left: auto !important;
+        min-width: 200px !important;
     }
     [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
-        min-width: 120px !important;
+        min-width: 200px !important;
+        width: 100% !important;
         white-space: nowrap !important;
-        padding: 0.6rem 1.25rem !important;
+        padding: 0.7rem 2rem !important;
         border: 1px solid #ccc !important;
     }
+    /* Workout display: fill space below Clear button, spread out text */
+    *:has(#workout-result-section) .stTabs [role="tabpanel"] {
+        min-height: calc(100vh - 360px) !important;
+    }
+    *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 1.25rem 1.5rem !important;
+    }
+    *:has(#workout-result-section) .stTabs .stMarkdown p,
+    *:has(#workout-result-section) .stTabs .stMarkdown li {
+        line-height: 1.85 !important;
+    }
+
     /* Workout tabs + Clear workout: more space for Clear button */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1rem !important;
@@ -1519,17 +1537,19 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Custom plan intake: Submit & Cancel — more space, contained boxes */
+    /* Custom plan intake: Submit & Cancel — larger horizontal boxes, text side by side */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        gap: 1rem !important;
+        gap: 1.25rem !important;
     }
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
-        min-width: 100px !important;
+        min-width: 140px !important;
+        padding: 0.35rem !important;
     }
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
-        min-width: 90px !important;
+        min-width: 120px !important;
+        width: 100% !important;
         white-space: nowrap !important;
-        padding: 0.6rem 1.25rem !important;
+        padding: 0.7rem 2rem !important;
     }
 
     /* Admin mode days: selectable rectangles, no checkmark, clear checked vs unchecked */
@@ -1558,9 +1578,9 @@ st.markdown("""
         min-width: 2rem;
         padding: 0.2rem 0.35rem;
         position: relative !important;
-        background: #f5f5f5 !important;
-        color: #333333 !important;
-        border: 1px solid #999;
+        background: #f8d7da !important;
+        color: #721c24 !important;
+        border: 1px solid #f5c6cb;
         border-radius: 5px;
         cursor: pointer;
         margin: 0 !important;
@@ -1569,13 +1589,34 @@ st.markdown("""
     }
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label:has(input:checked),
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label:has(input:checked) {
-        background: #4a4a4a !important;
+        background: #28a745 !important;
         color: #ffffff !important;
-        border-color: #333 !important;
+        border-color: #1e7e34 !important;
     }
-    [id="admin-mode-days-section"] ~ * [data-testid="column"] [data-testid="stHorizontalBlock"],
-    .block-container:has(#admin-mode-days-section) [data-testid="column"] [data-testid="stHorizontalBlock"] {
-        gap: 0.15rem !important;
+    [id="admin-mode-days-section"] ~ * [data-testid="stHorizontalBlock"],
+    .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] {
+        gap: 0.25rem !important;
+    }
+
+    /* Admin mode days: mobile — days side-by-side in one row, length below */
+    @media (max-width: 768px) {
+        .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap !important;
+        }
+        .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:not(:last-child) {
+            flex: 0 0 auto !important;
+            min-width: 0 !important;
+            flex-shrink: 0 !important;
+        }
+        .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+        .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label {
+            min-width: 1.5rem !important;
+            padding: 0.15rem 0.2rem !important;
+            font-size: 0.7rem !important;
+        }
     }
 
     /* Admin edit: Save plan / Delete plan buttons — normal size, bordered box, mobile-friendly */
@@ -2008,7 +2049,7 @@ with _bender_ctx:
                 key="intake_commitment",
             )
             st.markdown('<div id="intake-submit-cancel-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-            col_submit, _intake_gap, col_cancel = st.columns([2, 0.5, 2])
+            col_submit, _intake_gap, col_cancel = st.columns([3, 0.5, 3])
             with col_submit:
                 submitted = st.form_submit_button("Submit")
             with col_cancel:
@@ -2118,9 +2159,9 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action (prominent in main area)
+        # Generate action (prominent in main area) + Request Custom Plan aligned right
         st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-        col_gen, _gap1, col_request, _gap2 = st.columns([2, 0.5, 2, 1])
+        col_gen, col_request = st.columns([2, 1])
         with col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         with col_request:
@@ -2174,6 +2215,7 @@ with _bender_ctx:
     # Display last generated workout (Tabbed)
     if st.session_state.last_output_text:
         st.divider()
+        st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
         st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
         if st.session_state.get("scroll_to_workout"):
             st.session_state.scroll_to_workout = False
@@ -2425,17 +2467,15 @@ if _tab_admin is not None:
         for _mode_key in PLAN_MODES:
             _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
             _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
-            st.markdown(f"**{_label}**")
-            _row_days, _row_len = st.columns([4, 1])
-            with _row_days:
-                _day_cols = st.columns(7)
-                _selected_days: set[int] = set()
-                for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
-                    with _day_cols[_wd]:
-                        if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
-                            _selected_days.add(_wd)
-            with _row_len:
-                st.caption("Length (min)")
+            _row_cols = st.columns([1.2, 1, 1, 1, 1, 1, 1, 1, 2])
+            with _row_cols[0]:
+                st.markdown(f"**{_label}**")
+            _selected_days: set[int] = set()
+            for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
+                with _row_cols[1 + _wd]:
+                    if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
+                        _selected_days.add(_wd)
+            with _row_cols[8]:
                 _len_min = st.slider(
                     "Length (min)",
                     min_value=10,
