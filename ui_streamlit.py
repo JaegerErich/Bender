@@ -519,7 +519,7 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
 
 
 def _compute_volume_from_metadata(metadata: dict) -> dict:
-    """Compute volume deltas from workout metadata for Private Victory stats.
+    """Compute volume deltas from workout metadata for The Silent Work stats.
     Returns {stickhandling_hours, shots, gym_hours, skating_hours, conditioning_hours, mobility_hours}."""
     mode = (metadata.get("mode") or "").lower()
     minutes = max(0, int(metadata.get("minutes") or 0))
@@ -558,7 +558,7 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
 
 
 def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
-    """Add workout completion volumes to profile's private_victory_stats."""
+    """Add workout completion volumes to profile's private_victory_stats (The Silent Work)."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -2219,16 +2219,16 @@ _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_highscores, _tab_private_victory, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Highscores", "The Private Victory", f"Admin: Custom Plan Request ({_custom_req_count})"])
+    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Highscores", "The Silent Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
-    _tab_plan, _tab_generate, _tab_private_victory = st.tabs(["My Plan", "Generate Workout", "The Private Victory"])
+    _tab_generate, _tab_plan, _tab_silent_work = st.tabs(["Training Session", "My Plan", "The Silent Work"])
     _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
 else:
-    _tab_generate, _tab_private_victory = st.tabs(["Generate Workout", "The Private Victory"])
+    _tab_generate, _tab_silent_work = st.tabs(["Training Session", "The Silent Work"])
     _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
@@ -2439,7 +2439,7 @@ with _bender_ctx:
         st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
         col_gen, col_req = st.columns(2)
         with col_gen:
-            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+            generate_clicked = st.button("Generate session", type="primary", use_container_width=True)
         with col_req:
             request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
         if request_plan_clicked:
@@ -2521,7 +2521,8 @@ with _bender_ctx:
                 render_no_gym_strength_circuits_only(st.session_state.last_output_text)
             else:
                 render_workout_readable(st.session_state.last_output_text)
-            st.write("")
+            st.divider()
+            st.caption("Finished? Log your completion to The Silent Work.")
             _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
             if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
                 prof = st.session_state.get("current_profile") or {}
@@ -2530,7 +2531,7 @@ with _bender_ctx:
                     st.session_state.current_profile = prof
                     save_profile(prof)
                 clear_last_output()
-                st.success("Workout logged to The Private Victory!")
+                st.success("Workout logged to The Silent Work!")
                 st.rerun()
             if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                 clear_last_output()
@@ -3047,34 +3048,34 @@ if _tab_custom_requests is not None:
                         st.success("Custom plan request integrated. Switch to **Admin: Plan Builder** to review and generate.")
                         st.rerun()
 
-# The Private Victory tab (players only)
-if _tab_private_victory is not None:
-    with _tab_private_victory:
-        st.subheader("The Private Victory")
-        st.caption("Your lifetime workout completions. Every workout you mark complete (from Generate Workout or My Plan) adds to these totals.")
+# The Silent Work tab (players only)
+if _tab_silent_work is not None:
+    with _tab_silent_work:
+        st.subheader("The Silent Work")
+        st.caption("Your lifetime highscores. Data adds only when you complete a workout from **Training Session** or **My Plan**.")
         prof = st.session_state.get("current_profile") or {}
         stats = prof.get("private_victory_stats") or {}
         completions = int(stats.get("completions_count", 0))
         if completions == 0:
-            st.info("No completions yet. Generate a workout, do it, and click **Workout Complete** to start tracking.")
+            st.info("No completions yet. Generate a session, do it, and click **Workout Complete** at the end to start tracking.")
         else:
             st.metric("Workouts completed", completions)
             cols = st.columns(3)
             with cols[0]:
-                st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-                st.metric("Shots taken", f"{stats.get('shots', 0):,}")
-            with cols[1]:
-                st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
+                st.metric("Hours in gym", f"{stats.get('gym_hours', 0):.1f}")
                 st.metric("Skating mechanics (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-            with cols[2]:
+            with cols[1]:
                 st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+                st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+            with cols[2]:
                 st.metric("Mobility/recovery (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+                st.metric("Shots taken", f"{stats.get('shots', 0):,}")
 
 # Admin: Highscores tab (admin only)
 if _tab_highscores is not None:
     with _tab_highscores:
         st.subheader("Admin: Highscores")
-        st.caption("Lifetime completions across all players. Data from **Workout Complete** (daily Bender) and plan completions (My Plan).")
+        st.caption("Lifetime completions across all players. Data from **Workout Complete** (Training Session) and plan completions (My Plan).")
         all_profs = list_profiles()
         players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
         players_with_stats.sort(key=lambda x: x[1].get("completions_count", 0), reverse=True)
