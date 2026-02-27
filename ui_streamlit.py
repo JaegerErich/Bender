@@ -1466,7 +1466,7 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Admin edit: Save plan / Delete plan buttons — each in its own bordered box, mobile-friendly */
+    /* Admin edit: Save plan / Delete plan buttons — normal size, bordered box, mobile-friendly */
     [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1rem !important;
         align-items: stretch !important;
@@ -1476,8 +1476,13 @@ st.markdown("""
         border: 1px solid #555555 !important;
         border-radius: 10px !important;
         padding: 1rem !important;
-        min-width: 0 !important;
-        flex: 1 1 140px !important;
+        min-width: 200px !important;
+        flex: 1 1 200px !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        min-height: 48px !important;
+        padding: 0.75rem 2rem !important;
+        font-size: 1.05rem !important;
     }
     [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] {
         gap: 0.75rem !important;
@@ -2167,6 +2172,42 @@ if _tab_admin is not None:
             _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
         with _col_d:
             _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
+
+        # Mode frequency & session length (above Start date)
+        from admin_plan_builder import (
+            PLAN_MODES,
+            MODE_DISPLAY_LABELS,
+            MODE_SESSION_LEN_DEFAULTS,
+            FREQUENCY_OPTIONS,
+        )
+        st.markdown("**Session length & frequency by mode**")
+        _mode_config: dict = {}
+        for _mode_key in PLAN_MODES:
+            _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
+            _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
+            st.caption(_label)
+            _col_freq, _col_len = st.columns(2)
+            with _col_freq:
+                _freq = st.selectbox(
+                    "Frequency",
+                    options=FREQUENCY_OPTIONS,
+                    index=0,
+                    key=f"admin_mode_freq_{_mode_key}",
+                )
+            with _col_len:
+                _len_min = st.slider(
+                    "Length (min)",
+                    min_value=10,
+                    max_value=90,
+                    value=_default_len,
+                    step=5,
+                    key=f"admin_mode_len_{_mode_key}",
+                )
+            _mode_config[_mode_key] = {
+                "frequency": _freq,
+                "session_len_min": _len_min,
+            }
+
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
         _col_gen, _col_clear = st.columns(2)
         with _col_gen:
@@ -2214,7 +2255,7 @@ if _tab_admin is not None:
                     )
                     return resp or "(Empty)"
 
-                _plan = generate_plan_with_workouts(_plan, _gen_cb, base_seed=random.randint(1, 999999))
+                _plan = generate_plan_with_workouts(_plan, _gen_cb, base_seed=random.randint(1, 999999), mode_config=_mode_config)
                 _progress.empty()
                 st.session_state.admin_plan = _plan
                 st.session_state.admin_plan_name = st.session_state.get("admin_plan_name") or f"{_w}-Week Plan"

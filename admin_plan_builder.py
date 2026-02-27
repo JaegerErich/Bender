@@ -16,6 +16,35 @@ MODE_DISPLAY_LABELS: dict[str, str] = {
     "mobility": "Mobility/Recovery",
 }
 
+# Plan builder: mode keys for frequency/length config (order for UI)
+PLAN_MODES: list[str] = [
+    "performance",
+    "skating_mechanics",
+    "skills_only",
+    "energy_systems",
+    "mobility",
+]
+
+# Default session length (min) per mode for plan builder
+MODE_SESSION_LEN_DEFAULTS: dict[str, int] = {
+    "performance": 60,
+    "skating_mechanics": 12,
+    "skills_only": 25,
+    "energy_systems": 15,
+    "mobility": 12,
+}
+
+FREQUENCY_OPTIONS: list[str] = [
+    "As in plan",
+    "1x/week",
+    "2x/week",
+    "3x/week",
+    "4x/week",
+    "5x/week",
+    "6x/week",
+    "7x/week",
+]
+
 
 def _determine_stage(age: int) -> str:
     """Foundation <=12, development 13-15, performance 16-18, advanced 19+."""
@@ -173,10 +202,23 @@ def generate_plan(
     return plan
 
 
-def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
+def _apply_mode_config(out: dict[str, Any], mode_config: dict[str, dict[str, Any]] | None) -> dict[str, Any]:
+    """Override session_len_min from mode_config if provided."""
+    if mode_config and out.get("mode") and out["mode"] in mode_config:
+        cfg = mode_config[out["mode"]]
+        if "session_len_min" in cfg:
+            out["session_len_min"] = cfg["session_len_min"]
+    return out
+
+
+def parse_focus_to_engine_params(
+    focus_str: str,
+    mode_config: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any] | None:
     """
     Map plan focus string to engine params (mode, focus, strength_day_type, session_len_min, etc.).
     Returns None if focus should be skipped (e.g. optional Conditioning).
+    If mode_config is provided, overrides session_len_min per mode.
     """
     s = (focus_str or "").strip().lower()
     if not s:
@@ -194,7 +236,7 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
         out["strength_day_type"] = "leg"
         out["session_len_min"] = 60
         out["focus"] = None
-        return out
+        return _apply_mode_config(out, mode_config)
 
     # Performance (plan builder: lifts at least 60 min)
     if "performance" in s:
@@ -211,7 +253,7 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
             out["strength_day_type"] = "full"
         out["session_len_min"] = 60
         out["focus"] = None
-        return out
+        return _apply_mode_config(out, mode_config)
 
     # Skating Mechanics
     if "skating" in s or "mechanics" in s:
@@ -225,14 +267,14 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
             out["focus"] = "skating_bounds_starts"
         else:
             out["focus"] = None
-        return out
+        return _apply_mode_config(out, mode_config)
 
     # Puck Mastery
     if "puck" in s or "skills" in s:
         out["mode"] = "skills_only"
         out["session_len_min"] = 25 if "light" in s else 20
         out["focus"] = None
-        return out
+        return _apply_mode_config(out, mode_config)
 
     # Conditioning
     if "conditioning" in s:
@@ -246,14 +288,14 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
             out["focus"] = "conditioning_cones"
         else:
             out["focus"] = "conditioning"
-        return out
+        return _apply_mode_config(out, mode_config)
 
     # Mobility/Recovery
     if "mobility" in s or "recovery" in s:
         out["mode"] = "mobility"
         out["session_len_min"] = 25 if "only" in s else 12
         out["focus"] = "mobility"
-        return out
+        return _apply_mode_config(out, mode_config)
 
     return None
 
@@ -262,17 +304,19 @@ def generate_plan_with_workouts(
     plan: list[dict[str, Any]],
     generate_callback: Callable[[int, str, dict[str, Any]], str],
     base_seed: int = 42,
+    mode_config: dict[str, dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Hydrate plan with full workouts for each focus slot. Uses different seeds per slot
     to reduce duplicates. generate_callback(day_idx, focus_str, params) -> workout_text.
+    mode_config: per-mode overrides (session_len_min, frequency) from plan builder.
     """
     flat_day_idx = 0
     for w in plan:
         for d in w["days"]:
             focus_items: list[dict[str, Any]] = []
             for f_str in d.get("focus", []):
-                params = parse_focus_to_engine_params(f_str)
+                params = parse_focus_to_engine_params(f_str, mode_config=mode_config)
                 if params is None:
                     continue
                 seed = base_seed + flat_day_idx * 100 + len(focus_items)
