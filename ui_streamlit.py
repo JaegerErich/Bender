@@ -1493,29 +1493,23 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Generate workout + Request Custom Plan: Generate left, Request right-aligned */
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        gap: 1.25rem !important;
-        justify-content: space-between !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child {
-        flex: 0 1 auto !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
-        flex: 0 0 auto !important;
-        margin-left: auto !important;
-        min-width: 200px !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
-        min-width: 200px !important;
+    /* Workout headers and content: bold headers, full width */
+    *:has(#workout-result-section) .stSubheader,
+    *:has(#workout-result-section) .workout-result-header,
+    *:has(#workout-result-section) h3 {
+        font-weight: 700 !important;
         width: 100% !important;
-        white-space: nowrap !important;
-        padding: 0.7rem 2rem !important;
-        border: 1px solid #ccc !important;
+        max-width: 100% !important;
     }
-    /* Workout display: fill space below Clear button, spread out text */
+    *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"],
+    *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlock"] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    /* Workout display: use entire section below tabs+Clear, spread out text */
     *:has(#workout-result-section) .stTabs [role="tabpanel"] {
-        min-height: calc(100vh - 360px) !important;
+        min-height: calc(100vh - 300px) !important;
+        width: 100% !important;
     }
     *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"] {
         padding: 1.25rem 1.5rem !important;
@@ -1525,12 +1519,13 @@ st.markdown("""
         line-height: 1.85 !important;
     }
 
-    /* Workout tabs + Clear workout: more space for Clear button */
+    /* Workout tabs + Clear workout: Clear is just a compact button */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        gap: 1rem !important;
+        gap: 0.5rem !important;
     }
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
-        min-width: 140px !important;
+        flex: 0 0 auto !important;
+        min-width: auto !important;
     }
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
         white-space: nowrap !important;
@@ -1586,6 +1581,12 @@ st.markdown("""
         margin: 0 !important;
         white-space: nowrap !important;
         font-size: 0.85rem !important;
+    }
+    /* Sat/Sun (columns 6–7 in content row): darker red when unchecked */
+    .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(6) [data-testid="stCheckbox"] label:not(:has(input:checked)),
+    .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:nth-child(7) [data-testid="stCheckbox"] label:not(:has(input:checked)) {
+        background: #e8b4b8 !important;
+        border-color: #e0a0a5 !important;
     }
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label:has(input:checked),
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label:has(input:checked) {
@@ -1918,6 +1919,9 @@ with st.sidebar:
         st.session_state.page = "main"
         st.success("Saved")
         st.rerun()
+    if st.button("Request Custom Plan", key="sidebar_request_plan"):
+        st.session_state.custom_plan_intake_open = True
+        st.rerun()
     if st.button("Sign out", key="sidebar_logout"):
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
@@ -1959,7 +1963,7 @@ except (ImportError, KeyError, Exception):
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
-    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Custom Plan Requester"])
+    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Custom Plan Requested"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
@@ -2159,16 +2163,8 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action (prominent in main area) + Request Custom Plan aligned right
-        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-        col_gen, col_request = st.columns([2, 1])
-        with col_gen:
-            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
-        with col_request:
-            request_plan_clicked = st.button("Request Custom Plan", use_container_width=True)
-        if request_plan_clicked:
-            st.session_state.custom_plan_intake_open = True
-            st.rerun()
+        # Generate action (prominent in main area)
+        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         if generate_clicked:
             profile = st.session_state.get("current_profile") or {}
             user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
@@ -2224,7 +2220,7 @@ with _bender_ctx:
                 height=0,
             )
         st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-        _col_tabs, _col_clear = st.columns([3, 2])
+        _col_tabs, _col_clear = st.columns([6, 1])
         with _col_tabs:
             tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
         with _col_clear:
@@ -2450,13 +2446,11 @@ if _tab_admin is not None:
                     for k, v in _existing_completed.items()
                 }
                 st.rerun()
-        _start = st.date_input("Start date", value=date.today(), key="admin_start")
-        _col_w, _col_d = st.columns(2)
-        with _col_w:
+        _col_start, _col_weeks = st.columns(2)
+        with _col_start:
+            _start = st.date_input("Start date", value=date.today(), key="admin_start")
+        with _col_weeks:
             _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
-        with _col_d:
-            st.caption("Days per week")
-            st.markdown("**7** (Mon–Sun)")
 
         # Mode days-of-week & session length (above Start date)
         st.markdown("**Session length & days by mode**")
@@ -2467,15 +2461,18 @@ if _tab_admin is not None:
         for _mode_key in PLAN_MODES:
             _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
             _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
-            _row_cols = st.columns([1.2, 1, 1, 1, 1, 1, 1, 1, 2])
-            with _row_cols[0]:
+            _header_cols = st.columns([7, 2])
+            with _header_cols[0]:
                 st.markdown(f"**{_label}**")
+            with _header_cols[1]:
+                st.markdown('<p style="text-align: right; margin-bottom: 0;"><strong>Length (min)</strong></p>', unsafe_allow_html=True)
+            _content_cols = st.columns([1, 1, 1, 1, 1, 1, 1, 2])
             _selected_days: set[int] = set()
             for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
-                with _row_cols[1 + _wd]:
+                with _content_cols[_wd]:
                     if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
                         _selected_days.add(_wd)
-            with _row_cols[8]:
+            with _content_cols[7]:
                 _len_min = st.slider(
                     "Length (min)",
                     min_value=10,
@@ -2672,7 +2669,7 @@ if _tab_admin is not None:
 # Custom Plan Requester tab (admin only)
 if _tab_custom_requests is not None:
     with _tab_custom_requests:
-        st.subheader("Custom Plan Requester")
+        st.subheader("Admin: Custom Plan Requested")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
         if not requests_list:
