@@ -1762,6 +1762,7 @@ try:
         MODE_DISPLAY_LABELS,
         MODE_SESSION_LEN_DEFAULTS,
         FREQUENCY_OPTIONS,
+        WEEKDAY_NAMES,
     )
 except (ImportError, KeyError, Exception):
     is_admin_user = lambda _: False
@@ -1771,6 +1772,7 @@ except (ImportError, KeyError, Exception):
     MODE_DISPLAY_LABELS = {m: m.replace("_", " ").title() for m in PLAN_MODES}
     MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 12, "skills_only": 25, "energy_systems": 15, "mobility": 12}
     FREQUENCY_OPTIONS = ["As in plan", "1x/week", "2x/week", "3x/week", "4x/week", "5x/week", "6x/week", "7x/week"]
+    WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
@@ -2161,6 +2163,10 @@ if _tab_admin is not None:
             key="admin_plan_target",
             help="Workouts will be filtered by this player's equipment (e.g. no shooting if they don't have Shooting pad & net).",
         )
+        if "admin_plan_name" not in st.session_state:
+            st.session_state.admin_plan_name = ""
+        _plan_name = st.text_input("Plan name", value=st.session_state.admin_plan_name, key="admin_plan_name_input", placeholder="e.g. 4-Week Pre-Season")
+        st.session_state.admin_plan_name = _plan_name
         _target_profile_for_plan = _builder_options[_builder_idx][0]
         _target_has_plan = _target_profile_for_plan and (_target_profile_for_plan.get("assigned_plan") or [])
         if _target_has_plan:
@@ -2183,25 +2189,25 @@ if _tab_admin is not None:
         with _col_w:
             _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
         with _col_d:
-            _d = st.number_input("Days per week", 3, 7, value=5, key="admin_days")
+            st.caption("Days per week")
+            st.markdown("**7** (Mon–Sun)")
 
-        # Mode frequency & session length (above Start date)
-        st.markdown("**Session length & frequency by mode**")
+        # Mode days-of-week & session length (above Start date)
+        st.markdown("**Session length & days by mode**")
+        st.caption("Check which weekdays each mode appears (Mon=first day of plan week)")
         _mode_config: dict = {}
+        _mode_days: dict = {}
         for _mode_key in PLAN_MODES:
             _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
             _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
             st.markdown(f"**{_label}**")
-            _col_freq, _col_len = st.columns(2)
-            with _col_freq:
-                st.caption("Frequency")
-                _freq = st.selectbox(
-                    "Frequency",
-                    options=FREQUENCY_OPTIONS,
-                    index=0,
-                    key=f"admin_mode_freq_{_mode_key}",
-                    label_visibility="collapsed",
-                )
+            _day_cols = st.columns(7)
+            _selected_days: set[int] = set()
+            for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
+                with _day_cols[_wd]:
+                    if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
+                        _selected_days.add(_wd)
+            _col_len, _ = st.columns([1, 5])
             with _col_len:
                 st.caption("Length (min)")
                 _len_min = st.slider(
@@ -2214,9 +2220,10 @@ if _tab_admin is not None:
                     label_visibility="collapsed",
                 )
             _mode_config[_mode_key] = {
-                "frequency": _freq,
+                "days": _selected_days,
                 "session_len_min": _len_min,
             }
+            _mode_days[_mode_key] = _selected_days
 
         _start = st.date_input("Start date", value=date.today(), key="admin_start")
         _col_gen, _col_clear = st.columns(2)
@@ -2233,9 +2240,9 @@ if _tab_admin is not None:
                     _plan_age = 16
                 _plan_athlete = (profile.get("display_name") or profile.get("user_id") or "athlete").strip()
                 try:
-                    _plan = generate_plan(_w, _d, _start, age=_plan_age)
+                    _plan = generate_plan(_w, 7, _start, age=_plan_age, mode_days=_mode_days)
                 except TypeError:
-                    _plan = generate_plan(_w, _d, _start)
+                    _plan = generate_plan(_w, 7, _start, mode_days=_mode_days)
 
                 _progress = st.progress(0.0, text="Generating workouts…")
                 _total_slots = sum(
@@ -2285,10 +2292,6 @@ if _tab_admin is not None:
 
         if st.session_state.get("admin_plan"):
             _plan = st.session_state.admin_plan
-            if "admin_plan_name" not in st.session_state:
-                st.session_state.admin_plan_name = ""
-            _plan_name = st.text_input("Plan name", value=st.session_state.admin_plan_name, key="admin_plan_name_input", placeholder="e.g. 4-Week Pre-Season")
-            st.session_state.admin_plan_name = _plan_name
             total_days = sum(len(w["days"]) for w in _plan)
             flat_days: list[tuple[int, dict]] = []
             for w in _plan:

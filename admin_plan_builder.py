@@ -45,6 +45,29 @@ FREQUENCY_OPTIONS: list[str] = [
     "7x/week",
 ]
 
+# Weekday names for day-of-week checkboxes (Mon=0, Sun=6)
+WEEKDAY_NAMES: list[str] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+# Variants per mode for building focus strings (cycled by day index)
+PERFORMANCE_VARIANTS: list[str] = [
+    "Performance (Lower Strength)",
+    "Performance (Upper Strength)",
+    "Performance (Power Day)",
+]
+SKATING_VARIANTS: list[str] = [
+    "Skating Mechanics (accel/plyo)",
+    "Skating Mechanics (agility/footwork)",
+    "Skating Mechanics (bounds/starts)",
+]
+PUCK_PRIMARY: str = "Puck Mastery (technical)"
+PUCK_LIGHT: str = "light Puck Mastery"
+CONDITIONING_VARIANTS: list[str] = [
+    "Conditioning (intervals)",
+    "Conditioning (repeat sprints)",
+]
+MOBILITY: str = "Mobility/Recovery"
+MOBILITY_ONLY: str = "Mobility/Recovery ONLY"
+
 
 def _determine_stage(age: int) -> str:
     """Foundation <=12, development 13-15, performance 16-18, advanced 19+."""
@@ -154,6 +177,59 @@ def get_progression_note(week_index: int) -> str:
     return "Base volume (normal)"
 
 
+def get_template_from_mode_days(
+    mode_days: dict[str, set[int]],
+    age: Optional[int] = None,
+) -> list[list[str]]:
+    """
+    Build a 7-day week template from day-of-week mode selections.
+    mode_days: {mode_key: {0, 2, 4}} for Mon, Wed, Fri (weekday 0=Mon, 6=Sun).
+    Returns [focus_list_mon, focus_list_tue, ...] for each weekday 0-6.
+    """
+    use_foundation = age is not None and _determine_stage(int(age)) == "foundation"
+
+    perf_idx = 0
+    skate_idx = 0
+    cond_idx = 0
+    template: list[list[str]] = []
+
+    for wd in range(7):
+        focus_list: list[str] = []
+        has_perf = wd in mode_days.get("performance", set())
+        has_skate = wd in mode_days.get("skating_mechanics", set())
+        has_puck = wd in mode_days.get("skills_only", set())
+        has_cond = wd in mode_days.get("energy_systems", set())
+        has_mob = wd in mode_days.get("mobility", set())
+
+        if use_foundation:
+            if has_perf:
+                focus_list.append("Foundation (Skating + Puck + Strength)")
+            if has_skate:
+                focus_list.append(SKATING_VARIANTS[skate_idx % len(SKATING_VARIANTS)])
+                skate_idx += 1
+            if has_puck:
+                focus_list.append(PUCK_LIGHT if has_perf else "Puck Mastery")
+        else:
+            if has_perf:
+                focus_list.append(PERFORMANCE_VARIANTS[perf_idx % len(PERFORMANCE_VARIANTS)])
+                perf_idx += 1
+            if has_skate:
+                focus_list.append(SKATING_VARIANTS[skate_idx % len(SKATING_VARIANTS)])
+                skate_idx += 1
+            if has_puck:
+                focus_list.append(PUCK_LIGHT if has_perf else PUCK_PRIMARY)
+        if has_cond:
+            focus_list.append(CONDITIONING_VARIANTS[cond_idx % len(CONDITIONING_VARIANTS)])
+            cond_idx += 1
+        if has_mob:
+            focus_list.append(MOBILITY_ONLY if not focus_list else MOBILITY)
+        if not focus_list:
+            focus_list.append(MOBILITY_ONLY)
+        template.append(focus_list)
+
+    return template
+
+
 def get_template_for_days(days_per_week: int, age: Optional[int] = None) -> list[list[str]]:
     """Return day templates for given days/week. If age <= 12 use foundation templates (skating + puck every week)."""
     d = max(3, min(7, int(days_per_week)))
@@ -172,22 +248,34 @@ def generate_plan(
     days_per_week: int,
     start_date_opt: date | None = None,
     age: Optional[int] = None,
+    mode_days: dict[str, set[int]] | None = None,
 ) -> list[dict[str, Any]]:
     """
     Generate a multi-week plan. Returns list of week dicts:
     [{"week": 1, "days": [...], "progression_note": "..."}, ...]
-    If age <= 12, uses foundation templates (skating + puck mastery every week; no heavy leg/explosive).
+    If mode_days is provided, uses day-of-week selections (Mon=0..Sun=6) and aligns
+    each week to Monday. Otherwise uses get_template_for_days(days_per_week, age).
     """
     weeks = max(1, min(16, int(weeks)))
-    template = get_template_for_days(days_per_week, age)
-    plan: list[dict[str, Any]] = []
     start = start_date_opt or date.today()
 
+    if mode_days:
+        template = get_template_from_mode_days(mode_days, age)
+        # Align week_start to Monday
+        week_start_base = start - timedelta(days=start.weekday())
+        num_days = 7
+    else:
+        template = get_template_for_days(days_per_week, age)
+        week_start_base = start
+        num_days = len(template)
+
+    plan: list[dict[str, Any]] = []
     for w in range(weeks):
-        week_start = start + timedelta(days=7 * w)
+        week_start = week_start_base + timedelta(days=7 * w)
         days_out: list[dict[str, Any]] = []
-        for d_idx, focus_list in enumerate(template):
+        for d_idx in range(num_days):
             day_date = week_start + timedelta(days=d_idx)
+            focus_list = template[d_idx]
             days_out.append({
                 "day_num": d_idx + 1,
                 "date": day_date,
