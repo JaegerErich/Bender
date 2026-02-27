@@ -192,11 +192,11 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
         out["mode"] = "performance"
         out["location"] = "gym"
         out["strength_day_type"] = "leg"
-        out["session_len_min"] = 45
+        out["session_len_min"] = 60
         out["focus"] = None
         return out
 
-    # Performance
+    # Performance (plan builder: lifts at least 60 min)
     if "performance" in s:
         out["mode"] = "performance"
         out["location"] = "gym"
@@ -209,7 +209,7 @@ def parse_focus_to_engine_params(focus_str: str) -> dict[str, Any] | None:
             out["strength_emphasis"] = "power"
         else:
             out["strength_day_type"] = "full"
-        out["session_len_min"] = 35
+        out["session_len_min"] = 60
         out["focus"] = None
         return out
 

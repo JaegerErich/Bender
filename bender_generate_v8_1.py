@@ -1781,14 +1781,54 @@ def _rep_seconds_for_drill(d: Dict[str, Any]) -> int:
     return 5  # hypertrophy, strength_endurance, default
 
 
+def _reps_for_time_est(reps: Any) -> int:
+    """Parse reps (int or str like '3-6' or '6-10/side') to a single int for time estimation. Uses high end for conservative estimate."""
+    if isinstance(reps, int) and reps >= 0:
+        return reps
+    s = norm(str(reps)) if reps is not None else ""
+    if not s:
+        return 5  # fallback
+    parsed = _parse_rep_numbers(s)
+    if parsed:
+        lo, hi = parsed
+        _, suffix = _split_rep_suffix(s)
+        if "/side" in suffix.lower() or "per side" in suffix.lower() or "each side" in suffix.lower():
+            return hi * 2  # both sides
+        return hi
+    return 5
+
+
+def _parse_timed_sec(reps_str: Any) -> Optional[int]:
+    """Parse timed prescription like '20-40s' or '30s' to seconds. Returns None if not timed."""
+    s = norm(str(reps_str or ""))
+    if not s or "s" not in s.lower():
+        return None
+    m = re.match(r"^\s*(\d+)\s*[-–]\s*(\d+)\s*s", s, re.I)
+    if m:
+        return (int(m.group(1)) + int(m.group(2))) // 2
+    m = re.match(r"^\s*(\d+)\s*s", s, re.I)
+    if m:
+        return int(m.group(1))
+    return None
+
+
 def estimate_strength_time_sec(
-    sets: int, reps: int, rest_sec: int, rep_sec: int = 4,
+    sets: int, reps: Any, rest_sec: int, rep_sec: int = 4,
+    work_per_set_sec: Optional[int] = None,
+    work_per_set_cap: Optional[int] = None,
 ) -> int:
-    """Estimated time for one exercise: sets * (reps * rep_sec + rest_sec)."""
+    """Estimated time: work + rest between sets only. For heavy barbell (trap bar, deadlift):
+    work is ~20–30 sec per set (setup, brace, reps) regardless of rep count; rest dominates."""
     if sets <= 0:
         return 0
-    work_per_set = max(0, reps * rep_sec)
-    return sets * (work_per_set + rest_sec)
+    if work_per_set_sec is not None:
+        work_per_set = work_per_set_sec
+    else:
+        r = _reps_for_time_est(reps)
+        work_per_set = max(0, r * rep_sec)
+    if work_per_set_cap is not None:
+        work_per_set = min(work_per_set, work_per_set_cap)
+    return sets * work_per_set + max(0, sets - 1) * rest_sec
 
 
 def _fatigue_role_for_speed_drill(d: Dict[str, Any]) -> str:
@@ -2548,21 +2588,22 @@ def build_development_strength_session(
     return lines
 
 
-def _heavy_leg_time_profile(session_len_min: int) -> Dict[str, bool]:
-    """
-    Returns which sections B–F to include based on session length.
-    Sections are dropped from the bottom (F first) when time is short.
-    Approximate times: Warmup ~6 min, B ~13 min, C ~9 min, D ~8 min, E ~6 min, F ~3 min.
-    """
-    m = max(15, int(session_len_min))
-    include = {
-        "bilateral": True,   # B) Primary Bilateral — always when we have time for any strength
-        "unilateral": m >= 28,
-        "hinge": m >= 36,
-        "frontal": m >= 42,
-        "iso_decel": m >= 46,
-    }
-    return include
+HEAVY_LEG_WARMUP_SEC = 360  # ~6 min
+OVERBUILD_BUFFER_SEC = 300  # 5 min: when close to budget, include next block
+
+
+def _heavy_leg_est_sec(
+    d: Dict[str, Any], sets: int, reps: Any, rest_sec: int, is_timed: bool = False,
+) -> int:
+    """Estimated time for one heavy leg exercise. Uses work + rest between sets.
+    Heavy barbell (trap bar, deadlift): work ~20–30s per set, rest dominates."""
+    if is_timed:
+        dur = _parse_timed_sec(reps)
+        work = dur if dur else 30
+        return estimate_strength_time_sec(sets, 0, rest_sec, work_per_set_sec=work)
+    rs = _rep_seconds_for_drill(d)
+    cap = 30 if (rest_sec >= 120 and strength_focus(d) == "max_strength") else None
+    return estimate_strength_time_sec(sets, reps, rest_sec, rep_sec=rs, work_per_set_cap=cap)
 
 
 # ------------------------------
@@ -2579,7 +2620,8 @@ def build_heavy_leg_session(
 ) -> List[str]:
     """
     Heavy Leg Day: Warmup → Primary Bilateral → Heavy Unilateral → Posterior Chain →
-    Frontal/Adductor → Iso/Decel. Uses program_day_type heavy_leg/heavy_lower. Main lifts 3–6 reps.
+    Frontal/Adductor → Iso/Decel. Sections dropped from bottom to fit session length.
+    Prescriptions (sets/reps) are fixed; only exercises are removed to match time.
     """
     lines: List[str] = []
     perf = data.get("performance", [])
@@ -2592,6 +2634,7 @@ def build_heavy_leg_session(
     if not pool:
         pool = [d for d in perf if is_active(d) and age_ok(d, age) and primary_region(d) == "lower"]
     used_ids: set = set()
+    session_sec = max(0, session_len_min * 60)
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
         avoid = avoid or set()
@@ -2601,66 +2644,78 @@ def build_heavy_leg_session(
         picked = pick_n(cand, n=1, rnd=rnd, focus_rule=focus_rule)
         return picked[0] if picked else None
 
-    # A) Warmup (low fatigue / low intensity) — fewer drills when session is short
+    # A) Warmup
     wu = build_strength_warmup(warmups, age, rnd, day_type="leg")
     warmup_cap = 5 if session_len_min <= 30 else 8
-    lines.append("\nWARMUP (~5–8 min) — low intensity")
+    lines.append(f"\nWARMUP (~{format_seconds_short(HEAVY_LEG_WARMUP_SEC)}) — low intensity")
     for d in (wu or [])[:warmup_cap]:
         if get(d, "id") == "WARN":
             lines.append(format_drill(d))
         else:
             lines.append(format_warmup_drill_compact(d))
 
-    # Prefer loaded for main strength slots
-    loaded_only = [d for d in pool if norm(get(d, "load_type", "")).lower() == "loaded"]
-    time_profile = _heavy_leg_time_profile(session_len_min)
+    strength_budget_sec = session_sec - HEAVY_LEG_WARMUP_SEC
+    total_strength_sec = 0
 
-    # B) Primary Bilateral Strength (1): primary_region=lower, lift_role=primary, strength_focus=max_strength
-    if time_profile["bilateral"]:
-        bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
-        b_pick = _pick_one(bilateral, used_ids)
-        if b_pick:
+    loaded_only = [d for d in pool if norm(get(d, "load_type", "")).lower() == "loaded"]
+
+    # B) Primary Bilateral Strength
+    bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
+    b_pick = _pick_one(bilateral, used_ids)
+    if b_pick:
+        b_sec = _heavy_leg_est_sec(b_pick, 4, "3-6", 180)
+        if total_strength_sec + b_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(b_pick, "id", "")))
-            lines.append("\nPRIMARY BILATERAL STRENGTH")
+            total_strength_sec += b_sec
+            lines.append(f"\nPRIMARY BILATERAL STRENGTH (~{format_seconds_short(b_sec)})")
             lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
 
-    # C) Heavy Unilateral (1): unilateral=TRUE, lift_role primary or secondary, strength_focus=max_strength
-    if time_profile["unilateral"]:
-        unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
-        c_pick = _pick_one(unilateral_heavy, used_ids)
-        if c_pick:
+    # C) Heavy Unilateral
+    unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
+    c_pick = _pick_one(unilateral_heavy, used_ids)
+    if c_pick:
+        c_sec = _heavy_leg_est_sec(c_pick, 3, "3-6", 150)
+        if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(c_pick, "id", "")))
-            lines.append("\nHEAVY UNILATERAL STRENGTH")
+            total_strength_sec += c_sec
+            lines.append(f"\nHEAVY UNILATERAL STRENGTH (~{format_seconds_short(c_sec)})")
             lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
 
-    # D) Posterior Chain / Hinge (1): movement_pattern=hinge, primary_region=lower, strength_focus hypertrophy or strength
-    if time_profile["hinge"]:
-        hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
-        d_pick = _pick_one(hinge, used_ids)
-        if d_pick:
+    # D) Posterior Chain / Hinge
+    hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
+    d_pick = _pick_one(hinge, used_ids)
+    if d_pick:
+        reps_d = get(d_pick, "default_reps", "6-10")
+        d_sec = _heavy_leg_est_sec(d_pick, 3, reps_d, 120)
+        if total_strength_sec + d_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(d_pick, "id", "")))
-            lines.append("\nPOSTERIOR CHAIN / HINGE")
-            reps_d = get(d_pick, "default_reps", "6-10")
+            total_strength_sec += d_sec
+            lines.append(f"\nPOSTERIOR CHAIN / HINGE (~{format_seconds_short(d_sec)})")
             lines.append(format_strength_drill_with_prescription(d_pick, sets=3, reps=str(reps_d), rest_sec=120))
 
-    # E) Frontal-Plane / Adductor (1): tags adductors OR frontal_plane OR lateral_strength
-    if time_profile["frontal"]:
-        frontal = [d for d in pool if _tags_contain(d, "adductor", "adductors", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
-        e_pick = _pick_one(frontal, used_ids)
-        if e_pick:
+    # E) Frontal-Plane / Adductor
+    frontal = [d for d in pool if _tags_contain(d, "adductor", "adductors", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
+    e_pick = _pick_one(frontal, used_ids)
+    if e_pick:
+        reps_e = get(e_pick, "default_reps", "6-10/side")
+        e_sec = _heavy_leg_est_sec(e_pick, 3, reps_e, 90)
+        if total_strength_sec + e_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(e_pick, "id", "")))
-            lines.append("\nFRONTAL-PLANE / ADDUCTOR")
-            reps_e = get(e_pick, "default_reps", "6-10/side")
+            total_strength_sec += e_sec
+            lines.append(f"\nFRONTAL-PLANE / ADDUCTOR (~{format_seconds_short(e_sec)})")
             lines.append(format_strength_drill_with_prescription(e_pick, sets=3, reps=str(reps_e), rest_sec=90))
 
-    # F) Iso/Decel / Braking (1): tags isometric OR deceleration OR hard_stop
-    if time_profile["iso_decel"]:
-        iso_decel = [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop") and norm(get(d, "id", "")) not in used_ids]
-        f_pick = _pick_one(iso_decel, used_ids)
-        if f_pick:
+    # F) Iso/Decel / Braking
+    iso_decel = [d for d in pool if _tags_contain(d, "isometric", "deceleration", "hard_stop") and norm(get(d, "id", "")) not in used_ids]
+    f_pick = _pick_one(iso_decel, used_ids)
+    if f_pick:
+        dur = get(f_pick, "default_duration_sec") or get(f_pick, "default_reps", "20-40s")
+        reps_f_str = f"{dur}s" if isinstance(dur, int) else str(dur)
+        f_sec = _heavy_leg_est_sec(f_pick, 2, reps_f_str, 60, is_timed=True)
+        if total_strength_sec + f_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(f_pick, "id", "")))
-            lines.append("\nISO / DECEL / BRAKING — low volume")
-            dur = get(f_pick, "default_duration_sec") or get(f_pick, "default_reps", "20-40s")
+            total_strength_sec += f_sec
+            lines.append(f"\nISO / DECEL / BRAKING — low volume (~{format_seconds_short(f_sec)})")
             if isinstance(dur, int):
                 lines.append(format_strength_drill_with_prescription(f_pick, sets=2, reps=f"{dur}s", rest_sec=60))
             else:
@@ -2675,26 +2730,16 @@ def build_heavy_leg_session(
             reps_f = get(fallback_pick, "default_reps", "6-10")
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
-    # G) Optional calf/tibialis — skip for now (future)
+    total_est_sec = HEAVY_LEG_WARMUP_SEC + total_strength_sec
+    lines.append(f"\nTotal estimated time: ~{max(1, total_est_sec // 60)} min")
     return lines
 
 
-def _upper_core_stability_time_profile(session_len_min: int) -> Dict[str, Any]:
-    """
-    Returns which sections A–F to include based on session length.
-    Sections dropped from bottom (F first) when time is short.
-    Approx times: Warmup ~6 min, A ~6 min, B ~7 min, C ~7 min, D ~5–8 min, E ~4 min, F ~3 min.
-    """
-    m = max(15, int(session_len_min))
-    return {
-        "scap_prep": True,           # A) Scap/RC Prep — always for shoulder health
-        "primary_press": True,       # B) Primary Press — always when any strength
-        "primary_pull": m >= 26,
-        "core": m >= 32,
-        "core_n": 2 if m >= 40 else 1,  # D) pick 1 when short, 2 when time allows
-        "controlled_rotation": m >= 38,
-        "carry": m >= 44,
-    }
+UPPER_CORE_WARMUP_SEC = 360  # ~6 min
+SCAP_PREP_SEC = 300          # 2 drills, ~2.5 min each
+CORE_DRILL_SEC = 240         # 1 core drill ~4 min (2-3 sets of 30-45s)
+CONTROLLED_ROT_SEC = 240     # ~4 min
+CARRY_SEC = 240              # ~4 min
 
 
 # ------------------------------
@@ -2712,6 +2757,7 @@ def build_upper_core_stability_session(
     """
     Upper + Core Stability: Scap/RC Prep (2) → Primary Press (1) → Primary Pull (1) →
     Core Anti-Rotation (1–2) → Controlled Rotation (1) → Carry optional (1).
+    Sections dropped from bottom to fit session length. Prescriptions fixed; only exercises removed.
     """
     lines: List[str] = []
     perf = data.get("performance", [])
@@ -2724,6 +2770,9 @@ def build_upper_core_stability_session(
     if not pool:
         pool = [d for d in perf if is_active(d) and age_ok(d, age) and (primary_region(d) == "upper" or primary_region(d) == "core")]
     used_ids: set = set()
+    session_sec = max(0, session_len_min * 60)
+    strength_budget_sec = session_sec - UPPER_CORE_WARMUP_SEC
+    total_strength_sec = 0
 
     def _pick_one(candidates: List[Dict[str, Any]], avoid: Optional[set] = None) -> Optional[Dict[str, Any]]:
         avoid = avoid or set()
@@ -2740,79 +2789,87 @@ def build_upper_core_stability_session(
             return []
         return pick_n(cand, n=min(n, len(cand)), rnd=rnd, focus_rule=focus_rule)
 
-    # Warmup — fewer drills when session is short
+    def _est_upper(d: Dict[str, Any], sets: int, reps: Any, rest_sec: int) -> int:
+        rs = _rep_seconds_for_drill(d)
+        return estimate_strength_time_sec(sets, reps, rest_sec, rep_sec=rs)
+
+    # Warmup
     wu = build_strength_warmup(warmups, age, rnd, day_type="upper")
     warmup_cap = 5 if session_len_min <= 30 else 8
-    lines.append("\nWARMUP (~5–8 min)")
+    lines.append(f"\nWARMUP (~{format_seconds_short(UPPER_CORE_WARMUP_SEC)})")
     for d in (wu or [])[:warmup_cap]:
         if get(d, "id") == "WARN":
             lines.append(format_drill(d))
         else:
             lines.append(format_warmup_drill_compact(d))
 
-    time_profile = _upper_core_stability_time_profile(session_len_min)
+    # A) Scap/Rotator Cuff Prep (pick 2)
+    scap_pool = [d for d in pool if _tags_contain(d, "scap_control", "rotator_cuff", "serratus") and fatigue_cost_level(d) == "low"]
+    scap_picks = _pick_n(scap_pool, 2, used_ids)
+    if scap_picks and total_strength_sec + SCAP_PREP_SEC <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+        for d in scap_picks:
+            used_ids.add(norm(get(d, "id", "")))
+        total_strength_sec += SCAP_PREP_SEC
+        lines.append(f"\nSCAP / ROTATOR CUFF PREP (pick 2) (~{format_seconds_short(SCAP_PREP_SEC)})")
+        for d in scap_picks:
+            lines.append(format_drill(d))
 
-    # A) Scap/Rotator Cuff Prep (pick 2): tags scap_control OR rotator_cuff OR serratus, fatigue_cost=low
-    if time_profile["scap_prep"]:
-        scap_pool = [d for d in pool if _tags_contain(d, "scap_control", "rotator_cuff", "serratus") and fatigue_cost_level(d) == "low"]
-        scap_picks = _pick_n(scap_pool, 2, used_ids)
-        if scap_picks:
-            for d in scap_picks:
-                used_ids.add(norm(get(d, "id", "")))
-            lines.append("\nSCAP / ROTATOR CUFF PREP (pick 2)")
-            for d in scap_picks:
-                lines.append(format_drill(d))
-
-    # B) Primary Press (pick 1): movement_pattern=push, primary_region=upper, stability or hypertrophy, prefer unilateral
-    if time_profile["primary_press"]:
-        press_pool = [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy") and norm(get(d, "id", "")) not in used_ids]
-        uni_press = [d for d in press_pool if _unilateral(d)]
-        b_pick = _pick_one(uni_press or press_pool, used_ids)
-        if b_pick:
+    # B) Primary Press (pick 1)
+    press_pool = [d for d in pool if movement_pattern(d) == "push" and primary_region(d) == "upper" and strength_focus(d) in ("stability", "hypertrophy") and norm(get(d, "id", "")) not in used_ids]
+    uni_press = [d for d in press_pool if _unilateral(d)]
+    b_pick = _pick_one(uni_press or press_pool, used_ids)
+    if b_pick:
+        reps_b = get(b_pick, "default_reps", "8-10")
+        b_sec = _est_upper(b_pick, 3, reps_b, 90)
+        if total_strength_sec + b_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(b_pick, "id", "")))
-            lines.append("\nPRIMARY PRESS")
-            reps_b = get(b_pick, "default_reps", "8-10")
+            total_strength_sec += b_sec
+            lines.append(f"\nPRIMARY PRESS (~{format_seconds_short(b_sec)})")
             lines.append(format_strength_drill_with_prescription(b_pick, sets=3, reps=str(reps_b), rest_sec=90))
 
-    # C) Primary Pull (pick 1): movement_pattern=pull, tags posture OR scap_control; exclude SC_XXX
-    if time_profile["primary_pull"]:
-        pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids and not norm(get(d, "id", "")).upper().startswith("SC_")]
-        c_pick = _pick_one(pull_pool, used_ids)
-        if c_pick:
+    # C) Primary Pull (pick 1)
+    pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids and not norm(get(d, "id", "")).upper().startswith("SC_")]
+    c_pick = _pick_one(pull_pool, used_ids)
+    if c_pick:
+        reps_c = get(c_pick, "default_reps", "8-10")
+        c_sec = _est_upper(c_pick, 3, reps_c, 90)
+        if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(c_pick, "id", "")))
-            lines.append("\nPRIMARY PULL")
-            reps_c = get(c_pick, "default_reps", "8-10")
+            total_strength_sec += c_sec
+            lines.append(f"\nPRIMARY PULL (~{format_seconds_short(c_sec)})")
             lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps=str(reps_c), rest_sec=90))
 
-    # D) Core Anti-Rotation / Anti-Extension (pick 1–2)
-    if time_profile["core"]:
-        core_n = time_profile.get("core_n", 1)
-        core_pool = [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and norm(get(d, "id", "")) not in used_ids]
-        core_picks = _pick_n(core_pool, core_n, used_ids)
-        if core_picks:
+    # D) Core Anti-Rotation / Anti-Extension (pick 1–2) — 1 drill if short, 2 if time allows
+    core_n = 2 if strength_budget_sec - total_strength_sec >= CORE_DRILL_SEC * 2 else 1
+    core_pool = [d for d in pool if (movement_pattern(d) in ("anti_rotation", "anti_extension") or _tags_contain(d, "anti_rotation", "anti_extension")) and norm(get(d, "id", "")) not in used_ids]
+    core_picks = _pick_n(core_pool, core_n, used_ids)
+    if core_picks:
+        core_sec = len(core_picks) * CORE_DRILL_SEC
+        if total_strength_sec + core_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             for d in core_picks:
                 used_ids.add(norm(get(d, "id", "")))
-            lines.append("\nCORE ANTI-ROTATION / ANTI-EXTENSION")
+            total_strength_sec += core_sec
+            lines.append(f"\nCORE ANTI-ROTATION / ANTI-EXTENSION (~{format_seconds_short(core_sec)})")
             for d in core_picks:
                 lines.append(format_drill(d))
 
-    # E) Controlled Rotation / Tempo (pick 1): tags controlled_rotation OR core_control, avoid power throws
-    if time_profile["controlled_rotation"]:
-        rot_pool = [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power" and norm(get(d, "id", "")) not in used_ids]
-        e_pick = _pick_one(rot_pool, used_ids)
-        if e_pick:
-            used_ids.add(norm(get(e_pick, "id", "")))
-            lines.append("\nCONTROLLED ROTATION / TEMPO")
-            lines.append(format_drill(e_pick))
+    # E) Controlled Rotation / Tempo (pick 1)
+    rot_pool = [d for d in pool if _tags_contain(d, "controlled_rotation", "core_control") and strength_focus(d) != "power" and norm(get(d, "id", "")) not in used_ids]
+    e_pick = _pick_one(rot_pool, used_ids)
+    if e_pick and total_strength_sec + CONTROLLED_ROT_SEC <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+        used_ids.add(norm(get(e_pick, "id", "")))
+        total_strength_sec += CONTROLLED_ROT_SEC
+        lines.append(f"\nCONTROLLED ROTATION / TEMPO (~{format_seconds_short(CONTROLLED_ROT_SEC)})")
+        lines.append(format_drill(e_pick))
 
-    # F) Carry Finisher (optional pick 1): movement_pattern=carry OR tags carry, coach_preference
-    if time_profile["carry"]:
-        carry_pool = [d for d in pool if (movement_pattern(d) == "carry" or _tags_contain(d, "carry")) and norm(get(d, "id", "")) not in used_ids]
-        f_pick = _pick_one(carry_pool, used_ids)
-        if f_pick:
-            used_ids.add(norm(get(f_pick, "id", "")))
-            lines.append("\nCARRY FINISHER")
-            lines.append(format_drill(f_pick))
+    # F) Carry Finisher (optional pick 1)
+    carry_pool = [d for d in pool if (movement_pattern(d) == "carry" or _tags_contain(d, "carry")) and norm(get(d, "id", "")) not in used_ids]
+    f_pick = _pick_one(carry_pool, used_ids)
+    if f_pick and total_strength_sec + CARRY_SEC <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+        used_ids.add(norm(get(f_pick, "id", "")))
+        total_strength_sec += CARRY_SEC
+        lines.append(f"\nCARRY FINISHER (~{format_seconds_short(CARRY_SEC)})")
+        lines.append(format_drill(f_pick))
 
     # Fallback: if no strength sections were added, add a general upper/core block
     if pool and not used_ids:
@@ -2823,6 +2880,8 @@ def build_upper_core_stability_session(
             reps_f = get(fallback_pick, "default_reps", "8-10")
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
+    total_est_sec = UPPER_CORE_WARMUP_SEC + total_strength_sec
+    lines.append(f"\nTotal estimated time: ~{max(1, total_est_sec // 60)} min")
     return lines
 
 
@@ -3372,7 +3431,8 @@ def build_hockey_strength_session(
 
     def _est(d: Dict[str, Any], sets: int, reps: int, rest: int) -> int:
         rs = _rep_seconds_for_drill(d)
-        return estimate_strength_time_sec(sets, int(reps) if reps else 0, rest, rep_sec=rs)
+        cap = 30 if (rest >= 120 and strength_focus(d) == "max_strength") else None
+        return estimate_strength_time_sec(sets, int(reps) if reps else 0, rest, rep_sec=rs, work_per_set_cap=cap)
 
     # RX for speed/power superset (used for time estimate)
     _rx_a1 = _rx_for(emphasis, _fatigue_role_for_speed_drill(speed_a1)) if speed_a1 else None
@@ -3435,7 +3495,7 @@ def build_hockey_strength_session(
         total += scap_sec + (push_pull_sec if need_push_pull else 0)
     total += mobility_n_use * MOBILITY_SEC_PER_DRILL
 
-    while total > session_sec:
+    while total > session_sec + OVERBUILD_BUFFER_SEC:
         if include_block_b:
             include_block_b = False
             total -= block_b_sec

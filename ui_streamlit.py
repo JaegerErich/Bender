@@ -997,8 +997,8 @@ st.markdown("""
     .stApp { background: #000000 !important; }
     .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: 720px; background: transparent; }
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
-    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 0.95rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
-    .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 0.85rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
+    .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.15rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
+    .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
     label { font-family: 'DM Sans', sans-serif !important; color: #ffffff !important; }
 
     /* Sidebar: black to match Bender branding */
@@ -1465,6 +1465,44 @@ st.markdown("""
     }
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
+
+    /* Admin edit: Save plan / Delete plan buttons — each in its own bordered box, mobile-friendly */
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        gap: 1rem !important;
+        align-items: stretch !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] [data-testid="column"] {
+        border: 1px solid #555555 !important;
+        border-radius: 10px !important;
+        padding: 1rem !important;
+        min-width: 0 !important;
+        flex: 1 1 140px !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] {
+        gap: 0.75rem !important;
+        margin-top: 0.5rem !important;
+    }
+    @media (max-width: 640px) {
+        [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+        }
+        [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type > [data-testid="column"] {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+        }
+        [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] {
+            flex-direction: column !important;
+        }
+        [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stHorizontalBlock"] [data-testid="column"] {
+            flex: 1 1 100% !important;
+            width: 100% !important;
+        }
+        [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+            width: 100% !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1477,12 +1515,11 @@ if os.path.isfile(_full_logo_path):
 else:
     st.markdown(
         '<div style="text-align:center; margin-bottom:0.5rem;">'
-        '<p class="bender-tagline" style="font-size:1.75rem; font-weight:700; letter-spacing:0.08em; margin-bottom:0;">BENDER</p>'
-        '<p class="bender-brand-sub">• HOCKEY TRAINING •</p>'
+        '<p class="bender-tagline" style="font-size:2.25rem; font-weight:700; letter-spacing:0.08em; margin-bottom:0;">BENDER</p>'
+        '<p class="bender-brand-sub" style="font-size:1.15rem;">• HOCKEY TRAINING •</p>'
         '</div>',
         unsafe_allow_html=True,
     )
-st.caption("Hockey workout generator — build 2026-02")
 
 # Session state init
 if "last_session_id" not in st.session_state:
@@ -1691,6 +1728,7 @@ with st.sidebar:
         st.session_state.current_profile = prof
         save_profile(prof)
         st.session_state.collapse_sidebar_after_save = True
+        st.session_state.page = "main"
         st.success("Saved")
         st.rerun()
     if st.button("Sign out", key="sidebar_logout"):
@@ -1702,28 +1740,8 @@ with st.sidebar:
         st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
-# Signed-in line + three-dots menu (⋮) in upper right with Sign out inside
-_col_user, _col_menu = st.columns([4, 1])
-with _col_user:
-    st.caption(f"Signed in as **{display_name}**")
-with _col_menu:
-    if hasattr(st, "popover"):
-        with st.popover("\u22EE"):  # three dots (⋮) — click to open menu
-            if st.button("Sign out", key="main_signout"):
-                st.session_state.current_user_id = None
-                st.session_state.current_profile = None
-                st.session_state.page = "main"
-                if "uid" in st.query_params:
-                    del st.query_params["uid"]
-                st.rerun()
-    else:
-        if st.button("Sign out", key="main_signout"):
-            st.session_state.current_user_id = None
-            st.session_state.current_profile = None
-            st.session_state.page = "main"
-            if "uid" in st.query_params:
-                del st.query_params["uid"]
-            st.rerun()
+# Signed-in line (Sign out is only in the sidebar Equipment section)
+st.caption(f"Signed in as **{display_name}**")
 
 # Athlete = logged-in user (for history, download filename, feedback)
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
@@ -2074,9 +2092,10 @@ if _tab_admin is not None:
                     st.session_state.admin_plan_workout_view = (sel_idx, _fi["mode_key"])
                     st.rerun()
             st.divider()
+            st.markdown('<div id="admin-edit-plan-actions" aria-hidden="true"></div>', unsafe_allow_html=True)
             _col_save, _col_del = st.columns(2)
             with _col_save:
-                if st.button("Save plan", key="admin_edit_save_plan", type="primary"):
+                if st.button("Save plan", key="admin_edit_save_plan", type="primary", use_container_width=True):
                     _plan_to_save = _serialize_plan_for_storage(_plan, st.session_state.get("admin_plan_name", ""))
                     if _target_profile:
                         _target_profile["assigned_plan"] = _plan_to_save
@@ -2092,7 +2111,7 @@ if _tab_admin is not None:
                     st.warning("Are you sure you want to delete this player's plan? This cannot be undone.")
                     _cd1, _cd2 = st.columns(2)
                     with _cd1:
-                        if st.button("Yes, delete plan", key="admin_edit_delete_confirm"):
+                        if st.button("Yes, delete plan", key="admin_edit_delete_confirm", use_container_width=True):
                             if _target_profile:
                                 _target_profile["assigned_plan"] = None
                                 _target_profile["assigned_plan_completed"] = {}
@@ -2104,11 +2123,11 @@ if _tab_admin is not None:
                             st.success("Plan deleted.")
                             st.rerun()
                     with _cd2:
-                        if st.button("Cancel", key="admin_edit_delete_cancel"):
+                        if st.button("Cancel", key="admin_edit_delete_cancel", use_container_width=True):
                             del st.session_state.admin_plan_delete_confirm
                             st.rerun()
                 else:
-                    if st.button("Delete plan", key="admin_edit_delete"):
+                    if st.button("Delete plan", key="admin_edit_delete", use_container_width=True):
                         st.session_state.admin_plan_delete_confirm = True
                         st.rerun()
             st.stop()
