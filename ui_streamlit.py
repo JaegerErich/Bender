@@ -1493,33 +1493,85 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Admin mode days: white box with text inside, light grey when checked, close together */
+    /* Generate workout + Request Custom Plan: more space, contained boxes */
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        gap: 1rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        min-width: 140px !important;
+        padding: 0.25rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        min-width: 120px !important;
+        white-space: nowrap !important;
+        padding: 0.6rem 1.25rem !important;
+        border: 1px solid #ccc !important;
+    }
+    /* Workout tabs + Clear workout: more space for Clear button */
+    [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        gap: 1rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
+        min-width: 140px !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        white-space: nowrap !important;
+        padding: 0.5rem 1rem !important;
+    }
+
+    /* Custom plan intake: Submit & Cancel — more space, contained boxes */
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        gap: 1rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        min-width: 100px !important;
+    }
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        min-width: 90px !important;
+        white-space: nowrap !important;
+        padding: 0.6rem 1.25rem !important;
+    }
+
+    /* Admin mode days: selectable rectangles, no checkmark, clear checked vs unchecked */
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"],
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] {
         display: inline-block;
         margin: 0 0.08rem;
+        position: relative;
+    }
+    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] input,
+    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] input {
+        position: absolute !important;
+        opacity: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        top: 0 !important;
+        left: 0 !important;
+        margin: 0 !important;
+        cursor: pointer !important;
     }
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label,
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
-        min-width: 2.25rem;
-        padding: 0.35rem 0.45rem;
-        background: #ffffff !important;
-        color: #1e1e1e !important;
+        min-width: 2rem;
+        padding: 0.2rem 0.35rem;
+        position: relative !important;
+        background: #f5f5f5 !important;
+        color: #333333 !important;
         border: 1px solid #999;
-        border-radius: 6px;
+        border-radius: 5px;
         cursor: pointer;
         margin: 0 !important;
+        white-space: nowrap !important;
+        font-size: 0.85rem !important;
     }
     [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label:has(input:checked),
     .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label:has(input:checked) {
-        background: #c8c8c8 !important;
-    }
-    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] input,
-    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] input {
-        margin-right: 0.2rem;
+        background: #4a4a4a !important;
+        color: #ffffff !important;
+        border-color: #333 !important;
     }
     [id="admin-mode-days-section"] ~ * [data-testid="column"] [data-testid="stHorizontalBlock"],
     .block-container:has(#admin-mode-days-section) [data-testid="column"] [data-testid="stHorizontalBlock"] {
@@ -1912,14 +1964,14 @@ with _bender_ctx:
         st.markdown("### BENDER PLAN INTAKE")
         profile = st.session_state.get("current_profile") or {}
         with st.form("custom_plan_intake_form"):
-            q1 = st.radio(
+            q1 = st.slider(
                 "1. How many weeks do you want your plan to run?",
-                ["4", "6", "8", "12", "Custom"],
+                4, 12, 6,
                 key="intake_weeks",
             )
-            q2 = st.radio(
+            q2 = st.slider(
                 "2. How many days per week can you train?",
-                ["3", "4", "5", "6", "7"],
+                3, 7, 4,
                 key="intake_days",
             )
             q3 = st.radio(
@@ -1931,8 +1983,14 @@ with _bender_ctx:
                     "Add lean muscle",
                     "Reduce injury risk",
                     "In-season maintenance",
+                    "Other",
                 ],
                 key="intake_goal",
+            )
+            q3_other = st.text_input(
+                "If Other, describe your goal:",
+                placeholder="e.g. Peak for playoffs, rehab from injury...",
+                key="intake_goal_other",
             )
             q4 = st.radio(
                 "4. How long have you been lifting seriously?",
@@ -1949,7 +2007,8 @@ with _bender_ctx:
                 1, 10, 7,
                 key="intake_commitment",
             )
-            col_submit, col_cancel = st.columns(2)
+            st.markdown('<div id="intake-submit-cancel-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+            col_submit, _intake_gap, col_cancel = st.columns([2, 0.5, 2])
             with col_submit:
                 submitted = st.form_submit_button("Submit")
             with col_cancel:
@@ -1961,9 +2020,9 @@ with _bender_ctx:
             save_custom_plan_request({
                 "user_id": profile.get("user_id"),
                 "display_name": profile.get("display_name") or profile.get("user_id") or "Unknown",
-                "weeks": q1,
-                "days_per_week": q2,
-                "primary_goal": q3,
+                "weeks": int(q1),
+                "days_per_week": int(q2),
+                "primary_goal": (q3_other.strip() if (q3 == "Other" and q3_other) else q3),
                 "lifting_experience": q4,
                 "session_length": q5,
                 "commitment_1_10": int(q6),
@@ -2060,7 +2119,8 @@ with _bender_ctx:
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
         # Generate action (prominent in main area)
-        col_gen, col_request, _ = st.columns([1, 1, 2])
+        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
+        col_gen, _gap1, col_request, _gap2 = st.columns([2, 0.5, 2, 1])
         with col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         with col_request:
@@ -2121,7 +2181,8 @@ with _bender_ctx:
                 "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
                 height=0,
             )
-        _col_tabs, _col_clear = st.columns([5, 1])
+        st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+        _col_tabs, _col_clear = st.columns([3, 2])
         with _col_tabs:
             tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
         with _col_clear:
