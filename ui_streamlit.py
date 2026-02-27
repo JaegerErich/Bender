@@ -1001,6 +1001,7 @@ def _generate_via_engine(payload: dict) -> dict:
     profile = st.session_state.get("current_profile") or {}
     equipment = profile.get("equipment")
     user_equipment = ENGINE.expand_user_equipment(equipment) if equipment else None
+    available_space = payload.get("available_space")
     out_text = ENGINE.generate_session(
         data=data,
         age=age,
@@ -1022,6 +1023,7 @@ def _generate_via_engine(payload: dict) -> dict:
         post_lift_conditioning_type=post_lift_conditioning_type,
         skate_within_24h=skate_within_24h,
         user_equipment=user_equipment,
+        available_space=available_space,
     )
 
     # Lightweight "session_id" for display/share later (not persisted)
@@ -2255,6 +2257,15 @@ with _bender_ctx:
         elif effective_mode == "mobility":
             focus = "mobility"
 
+        available_space = None
+        if effective_mode in ("stickhandling", "skills_only"):
+            space_label = st.selectbox(
+                "Stickhandling space",
+                ["Any", "4x4 ft", "6x6 ft", "6 ft lane", "8x8 ft", "10 ft lane", "10 ft grid"],
+                help="Drills require compatible space. Use 'Any' if flexible.",
+            )
+            available_space = None if space_label == "Any" else space_label
+
         conditioning = False
         conditioning_type = None
         if effective_mode == "performance" and location == "gym":
@@ -2287,13 +2298,9 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action + Request Custom Plan (separate individual buttons)
-        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-        _col_gen, _col_request = st.columns(2)
-        with _col_gen:
-            generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
-        with _col_request:
-            request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
+        # Generate action + Request Custom Plan — stacked to match app (Chrome + mobile)
+        generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
+        request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
         if request_plan_clicked:
             st.session_state.custom_plan_intake_open = True
             st.rerun()
@@ -2313,6 +2320,7 @@ with _bender_ctx:
                 "conditioning": conditioning,
                 "conditioning_type": conditioning_type,
                 "user_equipment": user_equipment,
+                "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
             }
 
             try:

@@ -535,6 +535,13 @@
       "len_min": 45,
       "drill_ids": [],
       "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "stickhandling",
+      "len_min": 15,
+      "drill_ids": [],
+      "circuit_ids": []
     }
   ]
 }

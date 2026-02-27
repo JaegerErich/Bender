@@ -541,6 +541,10 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "Landmine setup": ["Landmine setup"],
     "Shooting pad & net": ["Shooting pad & net", "Shooting pad & pucks"],
     "Stickhandling ball": ["Stickhandling ball", "Stick & ball"],
+    "BOSU ball": ["BOSU ball", "BOSU Ball", "BOSU"],
+    "resistance band": ["resistance band", "Resistance band"],
+    "metal plate": ["metal plate", "Metal plate", "metal plate (2.5–5 lb)", "small plate", "5 lb plate"],
+    "2 extra sticks": ["2 extra sticks", "extra sticks", "2 sticks"],
     "Cones": ["Cones", "Colored cones"],
     "Agility Ladder": ["Agility Ladder", "Ladder"],
     "Hurdles": ["Hurdles"],
@@ -580,6 +584,10 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
     "Puck Mastery": [
         "Stickhandling ball",
         "Shooting pad & net",
+        "BOSU ball",
+        "resistance band",
+        "metal plate",
+        "2 extra sticks",
     ],
     "Conditioning": [
         "None",
@@ -1292,6 +1300,270 @@ def pick_stickhandling_mixed(
     return chosen
 
 
+def _stickhandling_equipment_ok(d: Dict[str, Any], available_equipment: Optional[List[str]]) -> bool:
+    """True if drill equipment is satisfied by available_equipment. Uses equipment_ok_for_user with expanded list."""
+    if not available_equipment:
+        return True
+    expanded = expand_user_equipment(available_equipment, add_assumed=True)
+    return equipment_ok_for_user(d, expanded)
+
+
+def _stickhandling_space_ok(d: Dict[str, Any], available_space: Optional[str]) -> bool:
+    """True if drill space is compatible with available_space. Simple contains rules; Any/None = no filter."""
+    if not available_space or norm(available_space).lower() in ("any", ""):
+        return True
+    drill_space = norm(get(d, "space", "")).lower()
+    if not drill_space:
+        return True
+    user_space = norm(available_space).lower()
+    return user_space in drill_space or drill_space in user_space
+
+
+def _filter_stickhandling_pool(
+    drills: List[Dict[str, Any]],
+    age: int,
+    available_equipment: Optional[List[str]] = None,
+    available_space: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Filter stickhandling drills by status, session_type, age, equipment, space. No skill_level filter."""
+    pool = [
+        d
+        for d in drills
+        if is_active(d)
+        and age_ok(d, age)
+        and (norm(get(d, "session_type", "")).lower() in ("movement", "stickhandling") or not norm(get(d, "session_type", "")))
+    ]
+    if available_equipment is not None:
+        pool = [d for d in pool if _stickhandling_equipment_ok(d, available_equipment)]
+    if available_space is not None:
+        pool = [d for d in pool if _stickhandling_space_ok(d, available_space)]
+    return pool
+
+
+def _classify_stickhandling_block(d: Dict[str, Any]) -> Optional[str]:
+    """Return 'control' | 'quick_hands' | 'game_transfer' | 'decision' or None if no match."""
+    bucket = norm(get(d, "stickhandling_bucket", "")).lower()
+    tags = norm(get(d, "tags", "")).lower()
+    feeds = norm(get(d, "feeds_into", "")).lower()
+
+    # Block A: Control/Touch
+    if bucket in ("stationary_control", "pull_push", "wide_reach", "resistance_control", "balance_control", "edge_control_handling"):
+        return "control"
+    # Block B: Quick Hands
+    if bucket == "quick_hands" or "quick_hands" in tags:
+        return "quick_hands"
+    # Block C: Game Transfer
+    if bucket == "movement_based" or any(t in tags for t in ("skating_transfer", "in_stride", "lateral", "crossover")) or feeds == "skating":
+        return "game_transfer"
+    # Block D: Decision/Pressure (or puck_protection fallback)
+    if bucket in ("reaction", "partner_constraint", "obstacle_footwork", "obstacle_control", "weighted_handling", "position_handling"):
+        return "decision"
+    if any(t in tags for t in ("decision_making", "scanning", "deception", "reaction")):
+        return "decision"
+    if feeds == "puck_protection" or "puck_protection" in tags:
+        return "decision"
+    return None
+
+
+def _stickhandling_difficulty_points(d: Dict[str, Any], assigned_time: float) -> float:
+    """Per-drill difficulty points (weighted by assigned_time). Used for session difficulty rating."""
+    intensity = norm(get(d, "intensity", "")).lower()
+    int_pts = {"low": 1, "low-med": 2, "med": 3, "med-high": 4}.get(intensity, 2)
+    hand_speed = norm(get(d, "hand_speed", "")).lower()
+    speed_pts = {"controlled": 1, "moderate": 2, "fast": 3}.get(hand_speed, 2)
+    puck_loc = norm(get(d, "puck_location", "")).lower()
+    loc_pts = 2
+    if puck_loc == "in_tight":
+        loc_pts = 1
+    elif puck_loc in ("extended", "wide"):
+        loc_pts = 3
+    bucket = norm(get(d, "stickhandling_bucket", "")).lower()
+    bucket_pts_map = {
+        "stationary_control": 1, "pull_push": 1, "wide_reach": 1,
+        "quick_hands": 2, "toe_drags": 2,
+        "movement_based": 3, "balance_control": 3, "edge_control_handling": 3,
+        "resistance_control": 3, "reaction": 3, "obstacle_control": 3,
+        "obstacle_footwork": 4, "partner_constraint": 4, "weighted_handling": 4, "position_handling": 4,
+    }
+    bucket_pts = bucket_pts_map.get(bucket, 2)
+    eq_str = norm(get(d, "equipment", "")).lower()
+    equip_bonus = 0
+    for k in ("bosu", "band", "metal plate", "partner", "2 extra sticks", "extra sticks"):
+        if k in eq_str:
+            equip_bonus += 1
+            break
+    if any(x in eq_str for x in ("plate", "metal")):
+        equip_bonus = min(2, equip_bonus + 1)
+    pts = int_pts + speed_pts + loc_pts + bucket_pts + min(equip_bonus, 2)
+    return pts * assigned_time
+
+
+def build_stickhandling_blocks_session(
+    drills: List[Dict[str, Any]],
+    stickhandling_minutes: int,
+    age: int,
+    rnd: random.Random,
+    available_equipment: Optional[List[str]] = None,
+    available_space: Optional[str] = None,
+    focus_rule: Optional[Dict[str, Any]] = None,
+) -> List[str]:
+    """
+    Block-based stickhandling session: 4 blocks (Control, Quick Hands, Game Transfer, Decision),
+    time-based allocation, variety guardrails, difficulty rating. Only uses existing stickhandling fields.
+    """
+    pool = _filter_stickhandling_pool(drills, age, available_equipment, available_space)
+    if not pool:
+        return [f"Stickhandling ({stickhandling_minutes} min)", "Work time ~0 min (includes short resets)", "- [No matching drills found]"]
+
+    total_sec = stickhandling_minutes * 60
+    overhead_sec = max(60, round(total_sec * 0.10))
+    work_sec = max(0, total_sec - overhead_sec)
+
+    block_pcts = {"control": 0.20, "quick_hands": 0.25, "game_transfer": 0.35, "decision": 0.20}
+    block_sec = {b: round(work_sec * pct) for b, pct in block_pcts.items()}
+
+    # Variety guardrails (relax in order if impossible)
+    need_in_tight = True
+    need_extended_wide = True
+    need_controlled = True
+    need_fast_moderate = True
+    max_per_bucket = 2
+    max_med_high = 1
+
+    def meets_variety(chosen: List[Tuple[str, Dict[str, Any], int, int]]) -> bool:
+        if need_in_tight and not any(norm(get(d, "puck_location", "")).lower() == "in_tight" for _, d, _, _ in chosen):
+            return False
+        if need_extended_wide and not any(norm(get(d, "puck_location", "")).lower() in ("extended", "wide") for _, d, _, _ in chosen):
+            return False
+        if need_controlled and not any(norm(get(d, "hand_speed", "")).lower() == "controlled" for _, d, _, _ in chosen):
+            return False
+        if need_fast_moderate and not any(norm(get(d, "hand_speed", "")).lower() in ("fast", "moderate") for _, d, _, _ in chosen):
+            return False
+        bucket_counts: Dict[str, int] = {}
+        for _, d, _, _ in chosen:
+            b = norm(get(d, "stickhandling_bucket", "")).lower()
+            bucket_counts[b] = bucket_counts.get(b, 0) + 1
+        if any(c > max_per_bucket for c in bucket_counts.values()):
+            return False
+        med_high_count = sum(1 for _, d, _, _ in chosen if norm(get(d, "intensity", "")).lower() == "med-high")
+        if med_high_count > max_med_high:
+            return False
+        return True
+
+    result: List[Tuple[str, Dict[str, Any], int, int]] = []  # block, drill, reps, duration_sec
+    used_ids: set = set()
+    bucket_counts: Dict[str, int] = {}
+    med_high_count = 0
+
+    def pick_for_block(block: str, n: int, exclude_ids: set, bcounts: Dict[str, int], mh_count: int) -> List[Dict[str, Any]]:
+        candidates = [
+            d for d in pool
+            if norm(get(d, "id", "")) not in exclude_ids
+            and _classify_stickhandling_block(d) == block
+            and bcounts.get(norm(get(d, "stickhandling_bucket", "")).lower(), 0) < max_per_bucket
+            and (norm(get(d, "intensity", "")).lower() != "med-high" or mh_count < max_med_high)
+        ]
+        if not candidates:
+            return []
+        if block == "control":
+            candidates.sort(key=lambda d: (preference_score(d), 0 if norm(get(d, "hand_speed", "")).lower() == "controlled" else 1, 0 if norm(get(d, "intensity", "")).lower() in ("low", "low-med") else 1))
+        elif block == "quick_hands":
+            candidates.sort(key=lambda d: (preference_score(d), 0 if norm(get(d, "hand_speed", "")).lower() in ("fast", "moderate") else 1))
+        else:
+            candidates.sort(key=lambda d: preference_score(d))
+        if focus_rule:
+            candidates = sorted(candidates, key=lambda d: focus_multiplier_for_drill(d, focus_rule), reverse=True)
+        return pick_n(candidates, n=min(n, len(candidates)), rnd=rnd, focus_rule=focus_rule)
+
+    for block in ("control", "quick_hands", "game_transfer", "decision"):
+        sec = block_sec[block]
+        block_pool = [d for d in pool if _classify_stickhandling_block(d) == block]
+        if not block_pool:
+            continue
+        n_drills = min(2, len(block_pool))
+        drills_for_block = pick_for_block(block, n_drills, used_ids, bucket_counts, med_high_count)
+        if not drills_for_block:
+            continue
+        for d in drills_for_block:
+            used_ids.add(norm(get(d, "id", "")))
+            b = norm(get(d, "stickhandling_bucket", "")).lower()
+            bucket_counts[b] = bucket_counts.get(b, 0) + 1
+            if norm(get(d, "intensity", "")).lower() == "med-high":
+                med_high_count += 1
+        base_dur = max(30, to_int(get(drills_for_block[0], "default_duration_sec", 45), 45))
+        reps = max(2, round(sec / (len(drills_for_block) * base_dur)))
+        for d in drills_for_block:
+            dur = max(30, to_int(get(d, "default_duration_sec", 45), 45))
+            per_drill_sec = reps * dur
+            result.append((block, d, reps, per_drill_sec))
+
+    # Nudge to fit work_sec
+    total_assigned = sum(per for _, _, _, per in result)
+    if total_assigned < work_sec:
+        # Add +1 rep to Block A (stationary_control/pull_push) first
+        for i, (block, d, reps, per) in enumerate(result):
+            if block == "control" and norm(get(d, "stickhandling_bucket", "")).lower() in ("stationary_control", "pull_push"):
+                dur = get(d, "default_duration_sec", 45)
+                dur = max(30, to_int(dur, 45))
+                result[i] = (block, d, reps + 1, (reps + 1) * dur)
+                break
+    elif total_assigned > work_sec:
+        # Remove -1 rep from Block C (movement_based) first
+        for i in reversed(range(len(result))):
+            block, d, reps, per = result[i]
+            if block == "game_transfer" and reps > 2:
+                dur = get(d, "default_duration_sec", 45)
+                dur = max(30, to_int(dur, 45))
+                result[i] = (block, d, reps - 1, (reps - 1) * dur)
+                break
+
+    # Build output
+    work_min = round(sum(per for _, _, _, per in result) / 60)
+    lines: List[str] = []
+    lines.append(f"Stickhandling ({stickhandling_minutes} min)")
+    lines.append(f"Work time ~{work_min} min (includes short resets)")
+    block_labels = {
+        "control": "A) Control/Touch",
+        "quick_hands": "B) Quick Hands",
+        "game_transfer": "C) Game Transfer",
+        "decision": "D) Decision/Pressure",
+    }
+    current_block = None
+    for block, d, reps, assigned_time in result:
+        if block != current_block:
+            current_block = block
+            lines.append("")
+            lines.append(block_labels.get(block, block))
+        name = _display_name(d)
+        dur = get(d, "default_duration_sec", 45)
+        dur = max(30, to_int(dur, 45))
+        cue = norm(get(d, "coaching_cues", ""))
+        if cue and "," in cue:
+            cue = cue.split(",")[0].strip()
+        intensity = norm(get(d, "intensity", "")).lower()
+        rest_guidance = "Rest 15–30s" if intensity in ("low", "low-med") else "Rest 30–45s"
+        lines.append(f"- {name} | {reps} x {dur}s")
+        if cue:
+            lines.append(f"  Cue: {cue}")
+        lines.append(f"  {rest_guidance}")
+
+    # Difficulty rating
+    total_time = sum(per for _, _, _, per in result)
+    if total_time > 0:
+        weighted_pts = sum(_stickhandling_difficulty_points(d, per) for _, d, _, per in result)
+        avg_pts = weighted_pts / total_time
+        difficulty_10 = clamp(round((avg_pts - 3) * 1.5), 1, 10)
+        labels = {1: "Easy", 2: "Easy", 3: "Easy", 4: "Standard", 5: "Standard", 6: "Standard", 7: "Hard", 8: "Hard", 9: "Very Hard", 10: "Very Hard"}
+        label = labels.get(difficulty_10, "Standard")
+        diff_line = f"Difficulty: {difficulty_10}/10 ({label})"
+        if difficulty_10 >= 7:
+            diff_line += " — Harder than most"
+        lines.append("")
+        lines.append(diff_line)
+
+    return lines
+
+
 def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
     work, rest = 45, 15
     per_drill = work + rest
@@ -1496,7 +1768,7 @@ def build_shooting_blocks_session(
     for d in main_drills:
         all_drills.append(("main", d))
     for d in finisher_drills:
-        all_drills.append(("finisher", d))
+        all_drills.append(("finisher", d))  # Finisher renders under MAIN
 
     if not all_drills:
         all_drills = [("main", d) for d in pick_n(pool, min(3, len(pool)), rnd)]
@@ -1554,16 +1826,23 @@ def build_shooting_blocks_session(
     lines.append(f"Target: {target_shots} shots (+/- 10%) | {minutes} min session")
     lines.append("")
 
-    block_labels = {"warmup": "WARM-UP (mechanics)", "main": "MAIN (quick release + skill)", "finisher": "FINISHER (puck retrieval/transition)"}
-    current_block = None
+    block_labels = {"warmup": "WARM-UP", "main": "MAIN"}
+    current_section = None
     for block, d, sets in sets_per:
-        if block != current_block:
-            current_block = block
-            lines.append(f"\n{block_labels.get(block, block.upper())}")
+        section = "main" if block == "finisher" else block
+        if section != current_section:
+            current_section = section
+            lines.append(f"\n{block_labels.get(section, section.upper())}")
         reps = _parse_default_reps(d)
-        cue = norm(get(d, "coaching_cues", ""))
+        cues = norm(get(d, "coaching_cues", ""))
+        steps = norm(get(d, "step_by_step", ""))
         name = _display_name(d)
-        lines.append(f"- {name} | {sets} x {reps} — {cue}" if cue else f"- {name} | {sets} x {reps}")
+        line = f"- {name} | {sets} x {reps}"
+        if cues:
+            line += f"\n  Cues: {cues}"
+        if steps:
+            line += f"\n  Steps: {steps}"
+        lines.append(line)
 
     return lines
 
@@ -4271,18 +4550,22 @@ def generate_session(
                 lines.extend(build_mobility_cooldown_circuit(m, seconds))
             continue
 
-        # Stickhandling
+        # Stickhandling — block-based: Control, Quick Hands, Game Transfer, Decision
         if category == "stickhandling":
             minutes = max(1, seconds // 60)
             if session_mode == "skills_only" and stickhandling_min is not None:
                 minutes = max(1, int(stickhandling_min))
-            drills = [d for d in data["stickhandling"] if is_active(d) and age_ok(d, age)]
-            picked = pick_stickhandling_mixed(drills, age, rnd, block_minutes=minutes, focus_rule=focus_rule)
-            lines.append(f"\nSTICKHANDLING (~{minutes} min)")
-            if not picked:
-                lines.append("- [No matching drills found]")
-            else:
-                lines.extend(build_stickhandling_circuit(picked, minutes * 60))
+            stick_lines = build_stickhandling_blocks_session(
+                drills=data["stickhandling"],
+                stickhandling_minutes=minutes,
+                age=age,
+                rnd=rnd,
+                available_equipment=user_equipment,
+                available_space=kwargs.get("available_space"),
+                focus_rule=focus_rule,
+            )
+            lines.append("")
+            lines.extend(stick_lines)
             continue
 
         # Generic category (movement, speed_agility, skating_mechanics, etc.)
