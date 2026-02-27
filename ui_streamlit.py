@@ -271,9 +271,9 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
             missed = past and not day_complete
             if day_complete:
                 st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+            elif missed:
+                st.markdown('<div class="plan-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
             label = f"{'✓ ' if day_complete else ''}{i + 1}"
-            if missed:
-                label = f"{i + 1} ⚠"
             btn_type = "primary" if i == sel_idx else "secondary"
             if st.button(label, key=f"plan_day_{i}", type=btn_type):
                 st.session_state.plan_selected_day = i
@@ -297,7 +297,7 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
         x["mode_key"] in _completed_set for x in day_data.get("focus_items", [])
     ))
     if missed_sel:
-        st.caption("⚠ This day was missed.")
+        st.caption("Missed day")
     day_done_sel = len(day_data.get("focus_items", [])) > 0 and all(x["mode_key"] in _completed_set for x in day_data.get("focus_items", []))
     if day_done_sel:
         st.caption("✓ Day complete")
@@ -1368,14 +1368,21 @@ st.markdown("""
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
     .plan-day-date-block .plan-day-missed { margin-top: 0.2rem !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0.05rem !important; }
-    /* Day complete: small text under date (white on green card) */
-    .plan-day-complete-label {
+    /* Day missed: whole day card turns red (like green for complete) */
+    .plan-day-missed-marker { display: none; }
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) {
+        background: #dc2626 !important;
+    }
+    /* Missed day: small text under date (white on red card) */
+    .plan-day-missed {
         font-size: 0.5rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
         line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
-    /* Missed day: small text under date, within card */
-    .plan-day-missed {
-        font-size: 0.5rem !important; color: #f87171 !important; margin: 0 !important; padding: 0 !important;
+    /* Day complete: small text under date (white on green card) */
+    .plan-day-complete-label {
+        font-size: 0.5rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
         line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
     /* Player day complete: whole day card turns green */
@@ -1402,6 +1409,14 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete),
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) {
         background: #16a34a !important;
+    }
+    /* Admin day missed: card turns red */
+    .admin-day-missed-marker { display: none; }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker),
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker),
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker),
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) {
+        background: #dc2626 !important;
     }
     /* Admin mode buttons: white/gray theme (incomplete = outline, complete = filled white) */
     #admin-plan-modes ~ * .stButton button {
@@ -1534,19 +1549,25 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Custom plan intake: Submit & Cancel — larger horizontal boxes, text side by side */
+    /* Custom plan intake: Submit & Cancel — side-by-side, enough space for buttons */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        gap: 1.25rem !important;
+        gap: 1.5rem !important;
+        flex-wrap: nowrap !important;
     }
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
-        min-width: 140px !important;
-        padding: 0.35rem !important;
+        min-width: 160px !important;
+        flex: 1 1 auto !important;
+        flex-shrink: 0 !important;
+        padding: 0.4rem !important;
     }
-    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
-        min-width: 120px !important;
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="stFormSubmitButton"] button,
+    [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type button {
+        min-width: 140px !important;
         width: 100% !important;
         white-space: nowrap !important;
-        padding: 0.7rem 2rem !important;
+        padding: 0.75rem 2rem !important;
+        flex-shrink: 0 !important;
     }
 
     /* Admin mode days: selectable rectangles, no checkmark, clear checked vs unchecked */
@@ -1872,7 +1893,7 @@ with st.sidebar:
     else:
         st.markdown('<p style="font-weight:700; letter-spacing:0.1em; color:#ffffff; margin-bottom:0;">BENDER</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
-    with st.expander("Settings", expanded=False):
+    with st.expander("Account Settings", expanded=False):
         st.caption("Position, level, height & weight")
         _prof = st.session_state.current_profile or {}
         _pos_val = _prof.get("position") or "Forward"
@@ -1887,25 +1908,25 @@ with st.sidebar:
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
     st.divider()
-    st.subheader("Equipment")
-    st.caption("Check what you have. Workouts only include exercises that use this equipment.")
-    try:
-        equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
-    except Exception:
-        equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
-    prof = st.session_state.current_profile or {}
-    _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
-    current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
-    all_canonical = []
-    _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
-    for mode_name, opts in equipment_by_mode.items():
-        st.markdown(f"**{mode_name}**")
-        for opt in opts:
-            all_canonical.append((mode_name, opt))
-            if opt in _equip_tooltips:
-                st.caption(_equip_tooltips[opt])
-            st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
-    if st.button("Save equipment", key="sidebar_save"):
+    with st.expander("Equipment", expanded=False):
+        st.caption("Check what you have. Workouts only include exercises that use this equipment.")
+        try:
+            equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
+        except Exception:
+            equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
+        prof = st.session_state.current_profile or {}
+        _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
+        current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
+        all_canonical = []
+        _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
+        for mode_name, opts in equipment_by_mode.items():
+            st.markdown(f"**{mode_name}**")
+            for opt in opts:
+                all_canonical.append((mode_name, opt))
+                if opt in _equip_tooltips:
+                    st.caption(_equip_tooltips[opt])
+                st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
+        if st.button("Save equipment", key="sidebar_save"):
         new_equip = [
             opt for _mode, opt in all_canonical
             if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)
@@ -2052,7 +2073,7 @@ with _bender_ctx:
                 key="intake_commitment",
             )
             st.markdown('<div id="intake-submit-cancel-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-            col_submit, _intake_gap, col_cancel = st.columns([3, 0.5, 3])
+            col_submit, _intake_gap, col_cancel = st.columns([1, 0.2, 1])
             with col_submit:
                 submitted = st.form_submit_button("Submit")
             with col_cancel:
@@ -2162,12 +2183,12 @@ with _bender_ctx:
                     clear_last_output()
                 st.session_state.last_inputs_fingerprint = inputs_fingerprint
 
-        # Generate action + Request Custom Plan (visible in main area)
-        _col_gen, _col_request = st.columns([2, 1])
+        # Generate action + Request Custom Plan (separate individual buttons)
+        _col_gen, _col_gap, _col_request = st.columns([1, 0.15, 1])
         with _col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         with _col_request:
-            request_plan_clicked = st.button("Request Custom Plan", use_container_width=True)
+            request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
         if request_plan_clicked:
             st.session_state.custom_plan_intake_open = True
             st.rerun()
@@ -2354,9 +2375,9 @@ if _tab_admin is not None:
                     _missed_edit = _past_edit and not _day_done
                     if _day_done:
                         st.markdown('<div class="admin-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
+                    elif _missed_edit:
+                        st.markdown('<div class="admin-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
                     _edit_label = f"{'✓ ' if _day_done else ''}{i + 1}"
-                    if _missed_edit:
-                        _edit_label = f"{i + 1} ⚠"
                     if st.button(_edit_label, key=f"admin_edit_day_{i}", type="primary" if i == sel_idx else "secondary"):
                         st.session_state.admin_plan_selected_day = i
                         st.rerun()
