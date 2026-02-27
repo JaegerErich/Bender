@@ -1927,21 +1927,18 @@ with st.sidebar:
                     st.caption(_equip_tooltips[opt])
                 st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
         if st.button("Save equipment", key="sidebar_save"):
-        new_equip = [
-            opt for _mode, opt in all_canonical
-            if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)
-        ]
-        prof["equipment"] = new_equip
-        prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
-        prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
-        prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
-        prof["weight"] = (st.session_state.get("sidebar_weight") or "").strip()
-        st.session_state.current_profile = prof
-        save_profile(prof)
-        st.session_state.collapse_sidebar_after_save = True
-        st.session_state.page = "main"
-        st.success("Saved")
-        st.rerun()
+            new_equip = [opt for _mode, opt in all_canonical if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)]
+            prof["equipment"] = new_equip
+            prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
+            prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
+            prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
+            prof["weight"] = (st.session_state.get("sidebar_weight") or "").strip()
+            st.session_state.current_profile = prof
+            save_profile(prof)
+            st.session_state.collapse_sidebar_after_save = True
+            st.session_state.page = "main"
+            st.success("Saved")
+            st.rerun()
     if st.button("Sign out", key="sidebar_logout"):
         st.session_state.current_user_id = None
         st.session_state.current_profile = None
