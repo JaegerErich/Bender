@@ -542,6 +542,20 @@
       "len_min": 15,
       "drill_ids": [],
       "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "energy_systems",
+      "len_min": 60,
+      "drill_ids": [],
+      "circuit_ids": []
+    },
+    {
+      "ts": "2026-02-27",
+      "mode": "mobility",
+      "len_min": 20,
+      "drill_ids": [],
+      "circuit_ids": []
     }
   ]
 }

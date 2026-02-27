@@ -1002,6 +1002,8 @@ def _generate_via_engine(payload: dict) -> dict:
     equipment = profile.get("equipment")
     user_equipment = ENGINE.expand_user_equipment(equipment) if equipment else None
     available_space = payload.get("available_space")
+    conditioning_mode = payload.get("conditioning_mode")
+    conditioning_effort = payload.get("conditioning_effort")
     out_text = ENGINE.generate_session(
         data=data,
         age=age,
@@ -1024,6 +1026,8 @@ def _generate_via_engine(payload: dict) -> dict:
         skate_within_24h=skate_within_24h,
         user_equipment=user_equipment,
         available_space=available_space,
+        conditioning_mode=conditioning_mode,
+        conditioning_effort=conditioning_effort,
     )
 
     # Lightweight "session_id" for display/share later (not persisted)
@@ -2219,7 +2223,7 @@ with _bender_ctx:
         else:
             effective_mode = mode
 
-        if effective_mode in ("performance", "energy_systems"):
+        if effective_mode == "performance":
             location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
         else:
             location = "no_gym"
@@ -2229,8 +2233,25 @@ with _bender_ctx:
         strength_emphasis = "strength"
         skate_within_24h = False
         conditioning_focus = None
+        conditioning_mode = None
+        conditioning_effort = None
 
-        if effective_mode == "performance":
+        if effective_mode == "energy_systems":
+            prof_equip = (st.session_state.current_profile or {}).get("equipment") or []
+            _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
+            prof_equip_canonical = _canonicalize(prof_equip) if _canonicalize else prof_equip
+            cond_modes = getattr(ENGINE, "get_conditioning_modes_for_equipment", lambda x: [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill"), ("surprise", "Surprise me")])(prof_equip_canonical)
+            mode_options = [label for _, label in cond_modes]
+            mode_values = [v for v, _ in cond_modes]
+            mode_idx = st.selectbox("Conditioning Mode", range(len(mode_options)), format_func=lambda i: mode_options[i], key="cond_mode")
+            conditioning_mode = mode_values[mode_idx]
+            effort_options = ["Easy", "Hard", "Surprise me"]
+            effort_idx = st.selectbox("Effort", range(len(effort_options)), format_func=lambda i: effort_options[i], key="cond_effort")
+            conditioning_effort = ["easy", "hard", "surprise"][effort_idx]
+            if minutes > 25:
+                st.caption("Conditioning capped at 25 min for quality.")
+
+        elif effective_mode == "performance":
             if location == "gym":
                 # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
                 STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
@@ -2244,15 +2265,6 @@ with _bender_ctx:
                 strength_day_type = "heavy_explosive"
                 strength_emphasis = "strength"
                 skate_within_24h = False
-
-        elif effective_mode == "energy_systems":
-            if location == "gym":
-                mod = st.selectbox("Conditioning modality (gym)", ["bike", "treadmill", "surprise"])
-                conditioning_focus = {"bike": "conditioning_bike", "treadmill": "conditioning_treadmill"}.get(mod, "conditioning")
-            else:
-                st.caption("No-gym: cones / no equipment")
-                conditioning_focus = "conditioning_cones"
-            focus = conditioning_focus
 
         elif effective_mode == "mobility":
             focus = "mobility"
@@ -2288,6 +2300,8 @@ with _bender_ctx:
             skate_within_24h,
             conditioning,
             conditioning_type,
+            conditioning_mode,
+            conditioning_effort,
         )
 
         if st.session_state.last_inputs_fingerprint is None:
@@ -2321,6 +2335,8 @@ with _bender_ctx:
                 "conditioning_type": conditioning_type,
                 "user_equipment": user_equipment,
                 "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
+                "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
+                "conditioning_effort": conditioning_effort if effective_mode == "energy_systems" else None,
             }
 
             try:

@@ -2070,6 +2070,155 @@ def filter_conditioning_pool_by_modality(
     return pool
 
 
+def get_conditioning_modes_for_equipment(user_equipment: Optional[List[str]]) -> List[Tuple[str, str]]:
+    """
+    Return list of (value, label) for Conditioning Mode dropdown.
+    Only includes modes the athlete has equipment for. Plus Surprise me.
+    user_equipment: canonical names from profile (e.g. Cones, Stationary bike).
+    """
+    user_set = {norm(x).lower() for x in (user_equipment or []) if x}
+    out: List[Tuple[str, str]] = []
+    if not user_set:
+        out = [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill")]
+    else:
+        if any("none" in u for u in user_set):
+            out.append(("field", "Field/No equipment"))
+        if any("cone" in u for u in user_set):
+            out.append(("cones", "Cones"))
+        if any("hill" in u for u in user_set):
+            out.append(("hill", "Hill"))
+        if any("stair" in u for u in user_set) and ("hill", "Hill") not in out:
+            out.append(("hill", "Hill"))
+        if any("bike" in u or "stationary" in u for u in user_set):
+            out.append(("bike", "Stationary Bike"))
+        if any("treadmill" in u for u in user_set):
+            out.append(("treadmill", "Treadmill"))
+        if any("box" in u for u in user_set) and ("field", "Field/No equipment") not in [(v, _) for v, _ in out]:
+            out.append(("field", "Field/No equipment"))
+        if not out:
+            out = [("field", "Field/No equipment")]
+    out.append(("surprise", "Surprise me"))
+    return out
+
+
+def _conditioning_mode_match(d: Dict[str, Any], mode: str) -> bool:
+    """True if drill matches mode via equipment substring. mode: bike|treadmill|hill|cones|field."""
+    eq = norm(get(d, "equipment", "")).lower()
+    if mode == "bike":
+        return "bike" in eq
+    if mode == "treadmill":
+        return "treadmill" in eq
+    if mode == "hill":
+        return "hill" in eq or "stair" in eq
+    if mode == "cones":
+        return "cone" in eq
+    if mode == "field":
+        return not any(x in eq for x in ("bike", "treadmill", "hill", "stair")) or not eq or "none" in eq
+    return False
+
+
+def _conditioning_effort_score(d: Dict[str, Any], effort: str) -> float:
+    """Higher = better match for effort. effort: easy|hard."""
+    wrp = norm(get(d, "work_rest_profile", "")).lower()
+    es = norm(get(d, "energy_system", "")).lower()
+    cns = norm(get(d, "cns_load", "")).lower()
+    if effort == "easy":
+        s = 0.0
+        if wrp == "continuous":
+            s += 2.0
+        if es == "aerobic":
+            s += 1.5
+        if cns == "low":
+            s += 1.0
+        return s
+    if effort == "hard":
+        s = 0.0
+        if wrp in ("interval_short_rest", "interval_long_rest"):
+            s += 2.0
+        if es in ("anaerobic_lactic", "anaerobic_alactic"):
+            s += 1.5
+        if cns == "high":
+            s += 1.0
+        return s
+    return 0.0
+
+
+def build_conditioning_single_block(
+    drills: List[Dict[str, Any]],
+    minutes: int,
+    age: int,
+    rnd: random.Random,
+    conditioning_mode: str,  # bike|treadmill|hill|cones|field|surprise
+    conditioning_effort: str,  # easy|hard|surprise
+) -> List[str]:
+    """
+    Single-block, time-capped conditioning. Picks 1 drill by mode (equipment) and effort.
+    minutes is capped to 25 by caller.
+    """
+    minutes = min(minutes, 25)
+    total_sec = minutes * 60
+    overhead_sec = max(60, round(total_sec * 0.10))
+    block_sec = max(0, total_sec - overhead_sec)
+
+    pool = [d for d in (drills or []) if is_active(d) and age_ok(d, age)]
+    pool = [d for d in pool if norm(get(d, "session_type", "")).lower() == "conditioning"]
+
+    mode = (conditioning_mode or "surprise").strip().lower()
+    if mode == "surprise":
+        available = []
+        for m in ("bike", "treadmill", "hill", "cones", "field"):
+            if any(_conditioning_mode_match(d, m) for d in pool):
+                available.append(m)
+        mode = rnd.choice(available) if available else "field"
+
+    pool = [d for d in pool if _conditioning_mode_match(d, mode)]
+    if not pool:
+        mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
+        return [
+            f"Conditioning ({minutes} min) | {mode_label} | —",
+            "- [No matching drills found for selected mode]",
+        ]
+
+    effort = (conditioning_effort or "surprise").strip().lower()
+    if effort == "surprise":
+        effort = rnd.choice(["easy", "hard"])
+
+    scored = [(d, _conditioning_effort_score(d, effort)) for d in pool]
+    scored.sort(key=lambda x: (-x[1], preference_score(x[0])))
+    best = [d for d, s in scored if s == scored[0][1]]
+    drill = rnd.choice(best) if len(best) > 1 else best[0]
+
+    mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
+    effort_label = "Easy" if effort == "easy" else "Hard"
+
+    name = _display_name(drill)
+    cue = norm(get(drill, "coaching_cues", ""))
+    wrp = norm(get(drill, "work_rest_profile", "")).lower()
+
+    lines: List[str] = []
+    lines.append(f"Conditioning ({minutes} min) | {mode_label} | {effort_label}")
+    lines.append(f"- {name}")
+
+    if wrp == "continuous":
+        work_min = round(block_sec / 60)
+        work_min = max(1, work_min)
+        lines.append(f"  1 x {work_min} min steady")
+    else:
+        work = to_int(get(drill, "default_duration_sec", 60), 60)
+        work = clamp(work, 10, 600)
+        if "short" in wrp or "interval_short" in wrp:
+            rest = work
+        else:
+            rest = 3 * work
+        interval = work + rest
+        rounds = max(1, int(block_sec) // max(1, interval))
+        r_label = "round" if rounds == 1 else "rounds"
+        lines.append(f"  {rounds} {r_label} x {work}s work / {rest}s rest")
+    if cue:
+        lines.append(f"  Cues: {cue}")
+    return lines
+
+
 def filter_post_lift_conditioning_pool(
     conditioning_drills: List[Dict[str, Any]],
     *,
@@ -2147,6 +2296,226 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
             lines.append(f"  Cues: {cues}")
         if steps:
             lines.append(f"  Steps: {steps}")
+    return lines
+
+
+def _mobility_is_breathing(d: Dict[str, Any]) -> bool:
+    mt = norm(get(d, "mobility_type", "")).lower()
+    nse = norm(get(d, "nervous_system_effect", "")).lower()
+    return mt == "breathing" or nse == "downregulate"
+
+
+def _mobility_is_hips(d: Dict[str, Any]) -> bool:
+    mb = norm(get(d, "mobility_bucket", "")).lower()
+    return mb in ("hip_opening", "groin_adductor")
+
+
+def _mobility_is_ankles(d: Dict[str, Any]) -> bool:
+    return norm(get(d, "mobility_bucket", "")).lower() == "ankle_calf"
+
+
+def _mobility_is_tspine(d: Dict[str, Any]) -> bool:
+    pa = norm(get(d, "primary_area", "")).lower()
+    mb = norm(get(d, "mobility_bucket", "")).lower()
+    return pa == "t_spine" or mb == "rotation_spine"
+
+
+def _mobility_is_flow(d: Dict[str, Any]) -> bool:
+    mt = norm(get(d, "mobility_type", "")).lower()
+    mb = norm(get(d, "mobility_bucket", "")).lower()
+    return mt == "flow" or mb == "full_body_reset"
+
+
+def _mobility_is_foam_roller(d: Dict[str, Any]) -> bool:
+    eq = norm(get(d, "equipment", "")).lower()
+    return "foam" in eq or "roller" in eq
+
+
+def _user_has_foam_roller(user_equipment: Optional[List[str]]) -> bool:
+    if not user_equipment:
+        return False
+    low = {norm(x).lower() for x in user_equipment if x}
+    return any("foam" in u or "roller" in u for u in low)
+
+
+def build_mobility_recovery_session(
+    drills: List[Dict[str, Any]],
+    minutes: int,
+    age: int,
+    rnd: random.Random,
+    user_equipment: Optional[List[str]] = None,
+) -> List[str]:
+    """
+    Mobility/Recovery session. Filter: status=active, session_type=recovery.
+    Foam roller only if athlete has foam roller. Structure scales by minutes.
+    """
+    pool = [d for d in (drills or []) if is_active(d) and age_ok(d, age)]
+    pool = [d for d in pool if norm(get(d, "session_type", "")).lower() == "recovery"]
+
+    has_foam = _user_has_foam_roller(user_equipment)
+    if not has_foam:
+        pool = [d for d in pool if not _mobility_is_foam_roller(d)]
+
+    if not pool:
+        return [
+            "Mobility / Recovery (%d min)" % minutes,
+            "- [No matching drills found]",
+        ]
+
+    breathing_pool = [d for d in pool if _mobility_is_breathing(d)]
+    hips_pool = [d for d in pool if _mobility_is_hips(d)]
+    ankles_pool = [d for d in pool if _mobility_is_ankles(d)]
+    tspine_pool = [d for d in pool if _mobility_is_tspine(d)]
+    flow_pool = [d for d in pool if _mobility_is_flow(d)]
+    foam_pool = [d for d in pool if _mobility_is_foam_roller(d)] if has_foam else []
+
+    def pick_one(p: List[Dict[str, Any]], exclude_ids: set) -> Optional[Dict[str, Any]]:
+        cand = [d for d in p if norm(get(d, "id", "")) not in exclude_ids]
+        if not cand:
+            return None
+        cand.sort(key=lambda d: preference_score(d))
+        best = [d for d in cand if preference_score(d) == preference_score(cand[0])]
+        return rnd.choice(best)
+
+    # Structure by minutes
+    n_breathing = 1
+    n_hips = 1
+    n_ankles = 1
+    n_tspine = 1
+    n_flow = 0
+    include_foam = False
+    optional_final_breathing = False
+
+    if minutes < 8:
+        n_hips, n_ankles = 1, 1
+    elif minutes < 15:
+        n_hips, n_ankles, n_flow = 2, 1, 1
+    elif minutes < 25:
+        n_hips = rnd.randint(2, 3)
+        n_ankles = rnd.randint(1, 2)
+        n_flow = 1
+        include_foam = True
+    else:
+        n_hips, n_ankles = 3, 2
+        n_flow = 1
+        include_foam = True
+        optional_final_breathing = True
+
+    if include_foam and not foam_pool:
+        include_foam = False
+
+    selected: List[Tuple[str, Dict[str, Any]]] = []
+    used_ids: set = set()
+
+    # 1 breathing
+    if breathing_pool:
+        d = pick_one(breathing_pool, used_ids)
+        if d:
+            selected.append(("breathing", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    # hips
+    for _ in range(n_hips):
+        d = pick_one(hips_pool, used_ids)
+        if d:
+            selected.append(("hips", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    # ankles
+    for _ in range(n_ankles):
+        d = pick_one(ankles_pool, used_ids)
+        if d:
+            selected.append(("ankles", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    # t_spine
+    d = pick_one(tspine_pool, used_ids)
+    if d:
+        selected.append(("tspine", d))
+        used_ids.add(norm(get(d, "id", "")))
+
+    # flow
+    if n_flow and flow_pool:
+        d = pick_one(flow_pool, used_ids)
+        if d:
+            selected.append(("flow", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    # foam roller
+    if include_foam and foam_pool:
+        d = pick_one(foam_pool, used_ids)
+        if d:
+            selected.append(("foam", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    # optional final breathing
+    if optional_final_breathing and breathing_pool:
+        d = pick_one(breathing_pool, used_ids)
+        if d:
+            selected.append(("breathing", d))
+            used_ids.add(norm(get(d, "id", "")))
+
+    if not selected:
+        return ["Mobility / Recovery (%d min)" % minutes, "- [No matching drills found]"]
+
+    # Assign rounds: start 1 per drill; add in priority hips->ankles->flow->breathing; max 3 per drill, foam max 2
+    drill_rounds: Dict[str, int] = {}
+    for _, d in selected:
+        did = norm(get(d, "id", ""))
+        drill_rounds[did] = 1
+
+    total_sec = minutes * 60
+    overhead = max(60, round(total_sec * 0.10))
+    work_sec = max(0, total_sec - overhead)
+
+    def time_for_drills() -> int:
+        t = 0
+        for _, d in selected:
+            dur = max(30, to_int(get(d, "default_duration_sec", 60), 60))
+            rid = norm(get(d, "id", ""))
+            r = drill_rounds.get(rid, 1)
+            if _mobility_is_foam_roller(d):
+                r = min(r, 2)
+            t += r * dur
+        return t
+
+    # Add rounds in priority: hips -> ankles -> flow -> breathing
+    priority_order = ["hips", "ankles", "flow", "breathing"]
+    while time_for_drills() < work_sec:
+        added = False
+        for cat in priority_order:
+            for _, d in selected:
+                if _mobility_is_foam_roller(d):
+                    cap = 2
+                else:
+                    cap = 3
+                rid = norm(get(d, "id", ""))
+                if drill_rounds.get(rid, 1) >= cap:
+                    continue
+                cat_match = (cat == "hips" and _mobility_is_hips(d)) or (cat == "ankles" and _mobility_is_ankles(d)) or (cat == "flow" and _mobility_is_flow(d)) or (cat == "breathing" and _mobility_is_breathing(d))
+                if not cat_match:
+                    continue
+                drill_rounds[rid] = drill_rounds.get(rid, 1) + 1
+                added = True
+                break
+            if added:
+                break
+        if not added:
+            break
+
+    lines: List[str] = []
+    lines.append("Mobility / Recovery (%d min)" % minutes)
+    for _, d in selected:
+        name = _display_name(d)
+        dur = max(30, to_int(get(d, "default_duration_sec", 60), 60))
+        rid = norm(get(d, "id", ""))
+        r = min(drill_rounds.get(rid, 1), 2 if _mobility_is_foam_roller(d) else 3)
+        cue = norm(get(d, "coaching_cues", ""))
+        if cue and "," in cue:
+            cue = cue.split(",")[0].strip()
+        lines.append(f"- {name} — {r} x {dur}s")
+        if cue:
+            lines.append(f"  Cue: {cue}")
     return lines
 
 
@@ -4518,32 +4887,40 @@ def generate_session(
             lines.extend(shooting_lines)
             continue
 
-        # Energy Systems
+        # Energy Systems — single-block, time-capped (max 25 min)
         if category == "energy_systems":
-            minutes = max(1, seconds // 60)
-            cond_pool = data["energy_systems"]
-            # When in gym with a chosen modality, filter to bike / treadmill / or gym-only (surprise = no hill or stairs)
-            if focus in ("conditioning_bike", "conditioning_treadmill", "conditioning"):
-                full_gym_cond = True
-                mod_type = "bike" if focus == "conditioning_bike" else ("treadmill" if focus == "conditioning_treadmill" else "surprise")
-                cond_pool = filter_conditioning_pool_by_modality(
-                    cond_pool, modality_type=mod_type, full_gym=full_gym_cond
-                )
-            elif focus == "conditioning_cones":
-                cond_pool = filter_conditioning_pool_by_modality(cond_pool, modality_type=None, full_gym=False)
-            c_drills = pick_conditioning_drills(cond_pool, age, rnd, minutes, focus_rule)
-            lines.append(f"\nENERGY SYSTEMS (~{minutes} min)")
-            lines.extend(build_conditioning_block(c_drills, seconds))
+            minutes_raw = max(1, seconds // 60)
+            minutes = min(minutes_raw, 25)
+            cond_mode = kwargs.get("conditioning_mode", "surprise")
+            cond_effort = kwargs.get("conditioning_effort", "surprise")
+            cond_lines = build_conditioning_single_block(
+                drills=data.get("energy_systems", []),
+                minutes=minutes,
+                age=age,
+                rnd=rnd,
+                conditioning_mode=cond_mode,
+                conditioning_effort=cond_effort,
+            )
+            lines.append("")
+            lines.extend(cond_lines)
+            if minutes_raw > 25:
+                lines.append("")
+                lines.append("(Conditioning capped at 25 min for quality)")
             continue
 
-        # Mobility
+        # Mobility — recovery session when mode is mobility/recovery
         if category == "mobility":
             minutes = max(1, seconds // 60)
             if session_mode in ("mobility", "recovery"):
-                n = clamp(minutes // 6, 4, 6)
-                m = pick_mobility_drills(data["mobility"], age, rnd, n=n, focus_rule=focus_rule)
-                lines.append(f"\nMOBILITY RESET (~{minutes} min)")
-                lines.extend(build_mobility_timed_session(m, seconds))
+                mob_lines = build_mobility_recovery_session(
+                    drills=data.get("mobility", []),
+                    minutes=minutes,
+                    age=age,
+                    rnd=rnd,
+                    user_equipment=user_equipment,
+                )
+                lines.append("")
+                lines.extend(mob_lines)
             else:
                 m = pick_mobility_drills(data["mobility"], age, rnd, n=2, focus_rule=focus_rule)
                 lines.append(f"\nMOBILITY (Cooldown Circuit ~{minutes} min)")
