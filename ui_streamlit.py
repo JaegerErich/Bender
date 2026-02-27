@@ -94,6 +94,10 @@ def list_profiles() -> list[dict]:
     return sorted(out, key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
 
 
+POSITION_OPTIONS = ["Forward", "Defense", "Goalie"]
+CURRENT_LEVEL_OPTIONS = ["Youth", "HS", "AA", "AAA", "Junior", "College", "Beer League"]
+
+
 def _equipment_setup_done(profile: dict) -> bool:
     """True if profile has completed required equipment setup (can generate workouts)."""
     return bool(profile.get("equipment_setup_done"))
@@ -1466,6 +1470,39 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
+    /* Admin mode days: white box with text inside, light grey when checked, close together */
+    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"],
+    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] {
+        display: inline-block;
+        margin: 0 0.08rem;
+    }
+    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label,
+    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.25rem;
+        padding: 0.35rem 0.45rem;
+        background: #ffffff !important;
+        color: #1e1e1e !important;
+        border: 1px solid #999;
+        border-radius: 6px;
+        cursor: pointer;
+        margin: 0 !important;
+    }
+    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] label:has(input:checked),
+    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] label:has(input:checked) {
+        background: #c8c8c8 !important;
+    }
+    [id="admin-mode-days-section"] ~ * [data-testid="stCheckbox"] input,
+    .block-container:has(#admin-mode-days-section) [data-testid="stCheckbox"] input {
+        margin-right: 0.2rem;
+    }
+    [id="admin-mode-days-section"] ~ * [data-testid="column"] [data-testid="stHorizontalBlock"],
+    .block-container:has(#admin-mode-days-section) [data-testid="column"] [data-testid="stHorizontalBlock"] {
+        gap: 0.15rem !important;
+    }
+
     /* Admin edit: Save plan / Delete plan buttons — normal size, bordered box, mobile-friendly */
     [data-testid="stMarkdown"]:has(#admin-edit-plan-actions) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1rem !important;
@@ -1618,6 +1655,13 @@ if st.session_state.current_user_id is None:
         autocomplete="name",
     )
     create_age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1, key="create_age")
+    create_position = st.selectbox("Position", options=POSITION_OPTIONS, key="create_position")
+    create_level = st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, key="create_level")
+    _ch_h, _ch_w = st.columns(2)
+    with _ch_h:
+        create_height = st.text_input("Height", placeholder="e.g. 5'10\" or 180 cm", key="create_height")
+    with _ch_w:
+        create_weight = st.text_input("Weight", placeholder="e.g. 175 lbs or 79 kg", key="create_weight")
     create_password = st.text_input("Password", key="create_password", type="password")
     create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
     if st.button("Create account", key="btn_create"):
@@ -1640,6 +1684,10 @@ if st.session_state.current_user_id is None:
                     "user_id": uid,
                     "display_name": create_username,
                     "age": int(create_age),
+                    "position": create_position,
+                    "current_level": create_level,
+                    "height": (create_height or "").strip(),
+                    "weight": (create_weight or "").strip(),
                     "equipment": [],
                     "equipment_setup_done": False,
                     "password_salt": salt_hex,
@@ -1705,6 +1753,20 @@ with st.sidebar:
     else:
         st.markdown('<p style="font-weight:700; letter-spacing:0.1em; color:#ffffff; margin-bottom:0;">BENDER</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
+    with st.expander("Settings", expanded=False):
+        st.caption("Position, level, height & weight")
+        _prof = st.session_state.current_profile or {}
+        _pos_val = _prof.get("position") or "Forward"
+        _pos_idx = POSITION_OPTIONS.index(_pos_val) if _pos_val in POSITION_OPTIONS else 0
+        st.selectbox("Position", options=POSITION_OPTIONS, index=_pos_idx, key="sidebar_position")
+        _lvl_val = _prof.get("current_level") or "Youth"
+        _lvl_idx = CURRENT_LEVEL_OPTIONS.index(_lvl_val) if _lvl_val in CURRENT_LEVEL_OPTIONS else 0
+        st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, index=_lvl_idx, key="sidebar_level")
+        _row_hw = st.columns(2)
+        with _row_hw[0]:
+            _h = st.text_input("Height", value=_prof.get("height") or "", placeholder="e.g. 5'10\"", key="sidebar_height")
+        with _row_hw[1]:
+            _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
     st.divider()
     st.subheader("Equipment")
     st.caption("Check what you have. Workouts only include exercises that use this equipment.")
@@ -1730,6 +1792,10 @@ with st.sidebar:
             if st.session_state.get(f"sidebar_{_mode}_{opt}", opt in current_equip)
         ]
         prof["equipment"] = new_equip
+        prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
+        prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
+        prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
+        prof["weight"] = (st.session_state.get("sidebar_weight") or "").strip()
         st.session_state.current_profile = prof
         save_profile(prof)
         st.session_state.collapse_sidebar_after_save = True
@@ -2185,6 +2251,7 @@ if _tab_admin is not None:
                     for k, v in _existing_completed.items()
                 }
                 st.rerun()
+        _start = st.date_input("Start date", value=date.today(), key="admin_start")
         _col_w, _col_d = st.columns(2)
         with _col_w:
             _w = st.number_input("Weeks", 1, 16, value=4, key="admin_weeks")
@@ -2194,21 +2261,23 @@ if _tab_admin is not None:
 
         # Mode days-of-week & session length (above Start date)
         st.markdown("**Session length & days by mode**")
-        st.caption("Check which weekdays each mode appears (Mon=first day of plan week)")
+        st.markdown('<div id="admin-mode-days-section" aria-hidden="true" style="height:0;overflow:hidden"></div>', unsafe_allow_html=True)
+        st.caption("Click weekdays each mode appears. Length & days on same row.")
         _mode_config: dict = {}
         _mode_days: dict = {}
         for _mode_key in PLAN_MODES:
             _label = MODE_DISPLAY_LABELS.get(_mode_key, _mode_key.replace("_", " ").title())
             _default_len = MODE_SESSION_LEN_DEFAULTS.get(_mode_key, 30)
             st.markdown(f"**{_label}**")
-            _day_cols = st.columns(7)
-            _selected_days: set[int] = set()
-            for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
-                with _day_cols[_wd]:
-                    if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
-                        _selected_days.add(_wd)
-            _col_len, _ = st.columns([1, 5])
-            with _col_len:
+            _row_days, _row_len = st.columns([4, 1])
+            with _row_days:
+                _day_cols = st.columns(7)
+                _selected_days: set[int] = set()
+                for _wd, _wd_name in enumerate(WEEKDAY_NAMES):
+                    with _day_cols[_wd]:
+                        if st.checkbox(_wd_name, value=(_wd < 5), key=f"admin_mode_day_{_mode_key}_{_wd}"):
+                            _selected_days.add(_wd)
+            with _row_len:
                 st.caption("Length (min)")
                 _len_min = st.slider(
                     "Length (min)",
@@ -2225,7 +2294,6 @@ if _tab_admin is not None:
             }
             _mode_days[_mode_key] = _selected_days
 
-        _start = st.date_input("Start date", value=date.today(), key="admin_start")
         _col_gen, _col_clear = st.columns(2)
         with _col_gen:
             if st.button("Generate plan", type="primary", key="admin_gen_full"):
