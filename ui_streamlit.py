@@ -31,6 +31,39 @@ def load_custom_plan_requests() -> list[dict]:
         return []
 
 
+def _render_equipment_dropdowns(equipment_by_mode: dict, current_equip: set, key_prefix: str) -> None:
+    """Render equipment per mode as expanders (dropdowns) with Select All + individual checkboxes."""
+    _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility.", "Reaction ball": "Small rebound ball for reaction drills."}
+    for mode_name, opts in equipment_by_mode.items():
+        opts_real = [o for o in opts if o != "None"]
+        if not opts_real:
+            continue
+        with st.expander(mode_name, expanded=False):
+            select_all_val = all(opt in current_equip for opt in opts_real)
+            sel_all = st.checkbox("Select All", value=select_all_val, key=f"{key_prefix}_{mode_name}_Select All")
+            for opt in opts_real:
+                if opt in _equip_tooltips and not sel_all:
+                    st.caption(_equip_tooltips[opt])
+                opt_val = True if sel_all else (opt in current_equip)
+                st.checkbox(opt, value=opt_val, key=f"{key_prefix}_{mode_name}_{opt}", disabled=sel_all)
+
+
+def _collect_equipment_from_session(equipment_by_mode: dict, key_prefix: str) -> list:
+    """Collect selected equipment from session state based on key_prefix."""
+    out = []
+    for mode_name, opts in equipment_by_mode.items():
+        opts_real = [o for o in opts if o != "None"]
+        if not opts_real:
+            continue
+        if st.session_state.get(f"{key_prefix}_{mode_name}_Select All", False):
+            out.extend(opts_real)
+        else:
+            for opt in opts_real:
+                if st.session_state.get(f"{key_prefix}_{mode_name}_{opt}", False):
+                    out.append(opt)
+    return out
+
+
 def save_custom_plan_request(request: dict) -> None:
     """Append a new custom plan request."""
     requests = load_custom_plan_requests()
@@ -1022,7 +1055,8 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
     .stApp { background: #000000 !important; }
-    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: min(1800px, 95vw); width: 100%; background: transparent; }
+    .main { max-width: 100% !important; width: 100% !important; }
+    .main .block-container { padding-top: 1.5rem; padding-bottom: 2rem; max-width: min(1800px, 98vw) !important; width: 100% !important; min-width: 0 !important; background: transparent; }
     h1 { font-family: 'DM Sans', sans-serif !important; font-weight: 700 !important; color: #ffffff !important; letter-spacing: -0.02em; }
     .bender-tagline { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.15rem; margin-bottom: 1.25rem; letter-spacing: 0.05em; }
     .bender-brand-sub { font-family: 'DM Sans', sans-serif; color: #ffffff; font-size: 1.05rem; letter-spacing: 0.15em; opacity: 0.9; margin-top: 0.25rem; }
@@ -1048,7 +1082,7 @@ st.markdown("""
         -webkit-text-fill-color: #ffffff !important;
     }
 
-    /* Equipment checkboxes: white text for black theme; checked box keeps white bg, checkmark black for visibility */
+    /* Equipment checkboxes: white text for black theme; checked box checkmark BLACK for clear visibility */
     .stCheckbox label, [data-testid="stCheckbox"] label {
         color: #ffffff !important;
         -webkit-text-fill-color: #ffffff !important;
@@ -1057,12 +1091,13 @@ st.markdown("""
     .stCheckbox input:checked, [data-testid="stCheckbox"] input:checked,
     input[type="checkbox"]:checked {
         accent-color: #000000 !important;
+        background-color: #ffffff !important;
     }
-    /* Fallback for custom checkbox checkmark (BaseWeb/SVG) */
+    /* Checkmark color: black for clear visibility when checked */
     [data-testid="stCheckbox"]:has(input:checked) svg path,
-    [data-testid="stCheckbox"]:has(input:checked) svg {
-        stroke: #000000 !important; fill: #000000 !important;
-    }
+    [data-testid="stCheckbox"]:has(input:checked) svg,
+    .stCheckbox:has(input:checked) svg path,
+    .stCheckbox:has(input:checked) svg,
     /* Sidebar Save equipment + Sign out: dark background, white text for visibility */
     [data-testid="stSidebar"] .stButton button {
         background: #333333 !important; color: #ffffff !important; border: 1px solid #666666 !important;
@@ -1500,6 +1535,7 @@ st.markdown("""
     }
     .stButton button:hover { background: #e0e0e0 !important; color: #000000 !important; }
 
+    .workout-display-wrapper, #workout-result-section, #workout-result { width: 100% !important; max-width: 100% !important; }
     .workout-result-header { font-family: 'DM Sans', sans-serif; font-weight: 600; color: #ffffff; font-size: 1.05rem; margin-bottom: 0.35rem; }
     .workout-result-badge {
         display: inline-block; background: #333333; color: #ffffff;
@@ -1508,7 +1544,7 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Workout headers and content: bold headers, full width, wide layout */
+    /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
     *:has(#workout-result-section) .workout-result-header,
     *:has(#workout-result-section) h3 {
@@ -1516,12 +1552,24 @@ st.markdown("""
         width: 100% !important;
         max-width: 100% !important;
     }
+    /* Workout section: full width, no horizontal compression (fixes browser layout) */
+    .main .block-container:has(#workout-result-section),
+    .main:has(#workout-result-section) .block-container,
+    div:has(#workout-result-section) {
+        max-width: min(1800px, 98vw) !important;
+        width: 100% !important;
+    }
     *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlockBorderWrapper"],
     *:has(#workout-result-section) .stTabs [data-testid="stVerticalBlock"],
     *:has(#workout-result-section) .stTabs,
-    *:has(#workout-result-section) [data-testid="stVerticalBlock"] {
+    *:has(#workout-result-section) [data-testid="stVerticalBlock"],
+    *:has(#workout-result-section) .stMarkdown,
+    *:has(#workout-result-section) [data-testid="stMarkdown"],
+    *:has(#workout-result-section) .stMarkdown > div,
+    *:has(#workout-result-section) p, *:has(#workout-result-section) pre, *:has(#workout-result-section) code {
         width: 100% !important;
         max-width: 100% !important;
+        min-width: 0 !important;
     }
     /* Workout display: use entire section below tabs+Clear, spread out text */
     *:has(#workout-result-section) .stTabs [role="tabpanel"] {
@@ -1549,45 +1597,52 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Generate workout + Request Custom Plan — consistent layout (desktop app, browser, mobile) */
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type {
+    /* Generate workout + Request Custom Plan — full visibility, no truncation (browser + desktop + mobile) */
+    .block-container [data-testid="stHorizontalBlock"]:has(button:first-child):has(button:last-child) {
         display: flex !important;
-        flex-wrap: nowrap !important;
+        flex-wrap: wrap !important;
         gap: 1rem !important;
         width: 100% !important;
         max-width: 100% !important;
     }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child,
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child {
-        flex: 1 1 0 !important;
-        min-width: 9rem !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2),
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:nth-child(2) {
-        flex: 0 0 auto !important;
-        min-width: 1rem !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton,
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton {
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"],
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 1rem !important;
         width: 100% !important;
         max-width: 100% !important;
     }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton button,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] .stButton button {
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"],
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
+        flex: 1 1 12rem !important;
+        min-width: 12rem !important;
+        max-width: none !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button,
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button {
         width: 100% !important;
-        max-width: 100% !important;
+        min-width: 11rem !important;
+        max-width: none !important;
         white-space: nowrap !important;
-        overflow: hidden !important;
-        text-overflow: ellipsis !important;
-        padding: 0.6rem 1.25rem !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        padding: 0.75rem 1.5rem !important;
         box-sizing: border-box !important;
+        font-size: 1rem !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #666666 !important;
+    }
+    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    .block-container:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-weight: 600 !important;
     }
     /* Custom plan intake: Submit & Cancel — side-by-side, enough space for buttons */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
@@ -1666,12 +1721,15 @@ st.markdown("""
     @media (max-width: 768px) {
         .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] {
             flex-wrap: wrap !important;
+            flex-direction: row !important;
         }
+        /* Days (first 7 columns): horizontal row, spread across screen */
         .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:not(:last-child) {
-            flex: 0 0 auto !important;
-            min-width: 0 !important;
-            flex-shrink: 0 !important;
+            flex: 1 1 0 !important;
+            min-width: 2rem !important;
+            max-width: none !important;
         }
+        /* Length (last column): full width below days */
         .block-container:has(#admin-mode-days-section) [data-testid="stHorizontalBlock"] > [data-testid="column"]:last-child {
             flex: 1 1 100% !important;
             min-width: 100% !important;
@@ -1827,7 +1885,7 @@ if st.session_state.current_user_id is None:
 
     # ----- Create account page (separate) -----
     st.markdown("#### Create an account")
-    st.caption("You’ll set your equipment after you log in.")
+    st.caption("You’ll choose your equipment below.")
     create_username = st.text_input(
         "Username (your first and last name)",
         key="create_username",
@@ -1844,6 +1902,13 @@ if st.session_state.current_user_id is None:
         create_weight = st.text_input("Weight", placeholder="e.g. 175 lbs or 79 kg", key="create_weight")
     create_password = st.text_input("Password", key="create_password", type="password")
     create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
+    st.markdown("**Equipment**")
+    st.caption("Choose what you have. You can change this anytime in the sidebar.")
+    try:
+        _create_equip_by_mode = ENGINE.get_canonical_equipment_by_mode()
+    except Exception:
+        _create_equip_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
+    _render_equipment_dropdowns(_create_equip_by_mode, set(), "create_equip")
     if st.button("Create account", key="btn_create"):
         create_username = (create_username or "").strip()
         if not create_username:
@@ -1860,6 +1925,7 @@ if st.session_state.current_user_id is None:
                 st.error("That username is already taken. Please choose another or log in.")
             else:
                 salt_hex, hash_hex = _hash_password(create_password)
+                _create_equipment = _collect_equipment_from_session(_create_equip_by_mode, "create_equip")
                 profile = {
                     "user_id": uid,
                     "display_name": create_username,
@@ -1868,8 +1934,8 @@ if st.session_state.current_user_id is None:
                     "current_level": create_level,
                     "height": (create_height or "").strip(),
                     "weight": (create_weight or "").strip(),
-                    "equipment": [],
-                    "equipment_setup_done": False,
+                    "equipment": _create_equipment,
+                    "equipment_setup_done": True,
                     "password_salt": salt_hex,
                     "password_hash": hash_hex,
                     "created_at": datetime.now().isoformat(),
@@ -1897,17 +1963,11 @@ if st.session_state.page == "equipment_onboarding":
         equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
     _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
     current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
-    selected = []
-    for mode_name, opts in equipment_by_mode.items():
-        st.markdown(f"**{mode_name}**")
-        for opt in opts:
-            if st.checkbox(opt, value=opt in current_equip, key=f"onb_{mode_name}_{opt}"):
-                if opt not in selected:
-                    selected.append(opt)
-        st.caption("")
+    _render_equipment_dropdowns(equipment_by_mode, current_equip, "onb")
     if st.button("Save and continue", key="onb_save"):
+        selected = _collect_equipment_from_session(equipment_by_mode, "onb")
         if not selected:
-            st.warning("Select at least one option (e.g. \"None\" for no equipment) so we can build workouts.")
+            st.warning("Select at least one option so we can build workouts.")
         else:
             prof["equipment"] = selected
             prof["equipment_setup_done"] = True
@@ -1950,7 +2010,6 @@ with st.sidebar:
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
-        st.caption("Check what you have. Workouts only include exercises that use this equipment.")
         try:
             equipment_by_mode = ENGINE.get_canonical_equipment_by_mode()
         except Exception:
@@ -1958,34 +2017,9 @@ with st.sidebar:
         prof = st.session_state.current_profile or {}
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
         current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
-        all_canonical = []
-        _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility / change of direction.", "Reaction ball": "Small rebound ball for reaction drills."}
-        for mode_name, opts in equipment_by_mode.items():
-            st.markdown(f"**{mode_name}**")
-            opts_real = [o for o in opts if o != "None"]
-            select_all_val = len(opts_real) > 0 and all(opt in current_equip for opt in opts_real)
-            _sel_key = f"sidebar_{mode_name}_Select All"
-            if opts_real:
-                select_all = st.checkbox("Select All", value=select_all_val, key=_sel_key)
-                if select_all:
-                    st.caption("All equipment selected")
-                else:
-                    for opt in opts_real:
-                        all_canonical.append((mode_name, opt))
-                        if opt in _equip_tooltips:
-                            st.caption(_equip_tooltips[opt])
-                        st.checkbox(opt, value=opt in current_equip, key=f"sidebar_{mode_name}_{opt}")
+        _render_equipment_dropdowns(equipment_by_mode, current_equip, "sidebar")
         if st.button("Save equipment", key="sidebar_save"):
-            new_equip = []
-            for mode_name, opts in equipment_by_mode.items():
-                opts_real = [o for o in opts if o != "None"]
-                if not opts_real:
-                    continue
-                sel_all = st.session_state.get(f"sidebar_{mode_name}_Select All", False)
-                if sel_all:
-                    new_equip.extend(opts_real)
-                else:
-                    new_equip.extend(opt for opt in opts_real if st.session_state.get(f"sidebar_{mode_name}_{opt}", False))
+            new_equip = _collect_equipment_from_session(equipment_by_mode, "sidebar")
             prof["equipment"] = new_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
@@ -2031,9 +2065,16 @@ except (ImportError, KeyError, Exception):
     is_admin_user = lambda _: False
     generate_plan = lambda *a, **k: []
     generate_plan_with_workouts = lambda p, cb, seed=42: p
-    PLAN_MODES = ["performance", "skating_mechanics", "skills_only", "energy_systems", "mobility"]
-    MODE_DISPLAY_LABELS = {m: m.replace("_", " ").title() for m in PLAN_MODES}
-    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 12, "skills_only": 25, "energy_systems": 15, "mobility": 12}
+    PLAN_MODES = ["performance", "skating_mechanics", "shooting", "stickhandling", "energy_systems", "mobility"]
+    MODE_DISPLAY_LABELS = {
+        "performance": "Performance",
+        "skating_mechanics": "Skating Mechanics",
+        "shooting": "Shooting",
+        "stickhandling": "Stickhandling",
+        "energy_systems": "Conditioning",
+        "mobility": "Mobility/Recovery",
+    }
+    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 12, "shooting": 25, "stickhandling": 25, "energy_systems": 15, "mobility": 12}
     FREQUENCY_OPTIONS = ["As in plan", "1x/week", "2x/week", "3x/week", "4x/week", "5x/week", "6x/week", "7x/week"]
     WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -2041,7 +2082,7 @@ _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", f"Admin: Custom Plan Requested ({_custom_req_count})"])
+    _tab_bender, _tab_admin, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", f"Admin: Custom Plan Request ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _assigned_plan:
@@ -2243,7 +2284,7 @@ with _bender_ctx:
 
         # Generate action + Request Custom Plan (separate individual buttons)
         st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-        _col_gen, _col_gap, _col_request = st.columns([1, 0.15, 1])
+        _col_gen, _col_request = st.columns(2)
         with _col_gen:
             generate_clicked = st.button("Generate workout", type="primary", use_container_width=True)
         with _col_request:
@@ -2501,6 +2542,8 @@ if _tab_admin is not None:
 
         st.subheader("Admin: Plan Builder")
         st.caption("Multi-week workout plans. Generate with full workouts for each day (Bible App–style view).")
+        if st.session_state.pop("admin_custom_request_integrated", False):
+            st.info("Form pre-filled from a custom plan request. Review the settings below and click **Generate plan** when ready.")
         # Build plan for: dropdown to select target player (uses their equipment & age)
         _all_profiles_for_builder = list_profiles()
         _builder_options = [(None, "Default (admin / no equipment filter)")] + [(p, (p.get("display_name") or p.get("user_id") or "Unknown")) for p in _all_profiles_for_builder]
@@ -2605,12 +2648,19 @@ if _tab_admin is not None:
                     if _total_slots:
                         _progress.progress(min(1.0, _slot[0] / _total_slots), text=f"Generating workout {_slot[0]} of {_total_slots}…")
                     seed = params.get("seed", day_idx * 100)
+                    session_mode = params.get("mode", "performance")
+                    # Shooting slot without shooting equipment → fallback to stickhandling
+                    if session_mode == "shooting" and user_equipment:
+                        has_shooting = any("shooting pad" in (e or "").lower() for e in user_equipment)
+                        if not has_shooting:
+                            session_mode = "stickhandling"
+                            params["mode"] = "stickhandling"  # so label matches generated workout
                     resp = ENGINE.generate_session(
                         data=data,
                         age=_plan_age,
                         seed=seed,
                         focus=params.get("focus"),
-                        session_mode=params.get("mode", "performance"),
+                        session_mode=session_mode,
                         session_len_min=params.get("session_len_min", 25),
                         athlete_id=f"plan_{_plan_athlete}",
                         use_memory=False,
@@ -2753,10 +2803,46 @@ if _tab_admin is not None:
             else:
                 st.caption("No other profiles found. Create accounts for players first.")
 
+def _apply_custom_request_to_plan_builder(req: dict) -> None:
+    """Pre-fill Admin Plan Builder form with data from a custom plan request."""
+    weeks = int(req.get("weeks") or 4)
+    days_per_week = int(req.get("days_per_week") or 4)
+    session_len_str = str(req.get("session_length") or "45")
+    try:
+        session_min = int(re.search(r"\d+", session_len_str).group(0))
+    except (AttributeError, ValueError):
+        session_min = 45
+    session_min = max(10, min(90, session_min))
+    plan_name = f"Custom: {req.get('display_name', 'Unknown')} — {str(req.get('primary_goal', ''))[:40]}"
+    st.session_state.admin_weeks = weeks
+    st.session_state.admin_plan_name = plan_name
+    all_profiles = list_profiles()
+    builder_options = [(None, "Default (admin / no equipment filter)")] + [(p, (p.get("display_name") or p.get("user_id") or "Unknown")) for p in all_profiles]
+    req_user = (req.get("user_id") or "").strip()
+    target_idx = 0
+    for idx, (prof, _) in enumerate(builder_options):
+        if prof and (prof.get("user_id") or "").strip() == req_user:
+            target_idx = idx
+            break
+    st.session_state.admin_plan_target = target_idx
+    try:
+        from admin_plan_builder import PLAN_MODES, MODE_SESSION_LEN_DEFAULTS
+    except ImportError:
+        return
+    days_to_select = list(range(min(days_per_week, 7)))
+    for mode_key in PLAN_MODES:
+        default_len = MODE_SESSION_LEN_DEFAULTS.get(mode_key, 30)
+        use_len = session_min if mode_key == "performance" else default_len
+        st.session_state[f"admin_mode_len_{mode_key}"] = use_len
+        for wd in range(7):
+            st.session_state[f"admin_mode_day_{mode_key}_{wd}"] = wd in days_to_select
+    st.session_state.admin_custom_request_integrated = True
+
+
 # Custom Plan Requester tab (admin only)
 if _tab_custom_requests is not None:
     with _tab_custom_requests:
-        st.subheader("Admin: Custom Plan Requested")
+        st.subheader("Admin: Custom Plan Request")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
         if not requests_list:
@@ -2773,3 +2859,7 @@ if _tab_custom_requests is not None:
                     st.markdown(f"**4. Lifting experience:** {req.get('lifting_experience', '—')}")
                     st.markdown(f"**5. Session length:** {req.get('session_length', '—')}")
                     st.markdown(f"**6. Commitment (1–10):** {req.get('commitment_1_10', '—')}")
+                    if st.button("Integrate into Plan Builder", key=f"integrate_req_{req.get('id', i)}", type="primary"):
+                        _apply_custom_request_to_plan_builder(req)
+                        st.success("Custom plan request integrated. Switch to **Admin: Plan Builder** to review and generate.")
+                        st.rerun()

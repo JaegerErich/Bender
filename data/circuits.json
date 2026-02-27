@@ -4,16 +4,40 @@
     "name": "Skating Edge Strength",
     "status": "active",
     "session_type": "bodyweight_circuit",
-    "focus": ["edges", "strength", "core"],
+    "focus": [
+      "edges",
+      "strength",
+      "core"
+    ],
     "age_min": 9,
     "age_max": 16,
-    "format": { "style": "timed", "work_sec": 45, "rest_sec": 15, "rounds": 3 },
+    "format": {
+      "style": "timed",
+      "work_sec": 45,
+      "rest_sec": 15,
+      "rounds": 3
+    },
     "drills": [
-      { "id": "BW_004", "role": "primary_lower" },
-      { "id": "BW_013", "role": "lateral_power" },
-      { "id": "BW_015", "role": "isometric" },
-      { "id": "BW_016", "role": "mobility" },
-      { "id": "BW_017", "role": "core" }
+      {
+        "id": "BW_004",
+        "role": "primary_lower"
+      },
+      {
+        "id": "BW_013",
+        "role": "lateral_power"
+      },
+      {
+        "id": "BW_015",
+        "role": "isometric"
+      },
+      {
+        "id": "BW_016",
+        "role": "mobility"
+      },
+      {
+        "id": "BW_017",
+        "role": "core"
+      }
     ]
   },
   {
@@ -21,16 +45,38 @@
     "name": "Acceleration & Deceleration",
     "status": "active",
     "session_type": "bodyweight_circuit",
-    "focus": ["speed", "braking", "core"],
+    "focus": [
+      "speed",
+      "braking",
+      "core"
+    ],
     "age_min": 9,
     "age_max": 16,
-    "format": { "style": "mixed", "rounds": 3 },
+    "format": {
+      "style": "mixed",
+      "rounds": 3
+    },
     "drills": [
-      { "id": "BW_018", "role": "power" },
-      { "id": "BW_019", "role": "power" },
-      { "id": "BW_020", "role": "deceleration" },
-      { "id": "BW_016", "role": "lower" },
-      { "id": "BW_011", "role": "core" }
+      {
+        "id": "BW_018",
+        "role": "power"
+      },
+      {
+        "id": "BW_019",
+        "role": "power"
+      },
+      {
+        "id": "BW_020",
+        "role": "deceleration"
+      },
+      {
+        "id": "BW_016",
+        "role": "lower"
+      },
+      {
+        "id": "BW_011",
+        "role": "core"
+      }
     ]
   },
   {
@@ -38,16 +84,40 @@
     "name": "Rotation & Shot Power",
     "status": "active",
     "session_type": "bodyweight_circuit",
-    "focus": ["rotation", "core", "coordination"],
+    "focus": [
+      "rotation",
+      "core",
+      "coordination"
+    ],
     "age_min": 9,
     "age_max": 16,
-    "format": { "style": "timed", "work_sec": 40, "rest_sec": 20, "rounds": 3 },
+    "format": {
+      "style": "timed",
+      "work_sec": 40,
+      "rest_sec": 20,
+      "rounds": 3
+    },
     "drills": [
-      { "id": "BW_001", "role": "primary_lower" },
-      { "id": "BW_010", "role": "anti_extension" },
-      { "id": "BW_011", "role": "core" },
-      { "id": "BW_012", "role": "lateral_core" },
-      { "id": "BW_005", "role": "activation" }
+      {
+        "id": "BW_001",
+        "role": "primary_lower"
+      },
+      {
+        "id": "BW_010",
+        "role": "anti_extension"
+      },
+      {
+        "id": "BW_011",
+        "role": "core"
+      },
+      {
+        "id": "BW_012",
+        "role": "lateral_core"
+      },
+      {
+        "id": "BW_005",
+        "role": "activation"
+      }
     ]
   },
   {
@@ -55,16 +125,39 @@
     "name": "Hockey Conditioning",
     "status": "active",
     "session_type": "conditioning",
-    "focus": ["conditioning", "posture"],
+    "focus": [
+      "conditioning",
+      "posture"
+    ],
     "age_min": 9,
     "age_max": 16,
-    "format": { "style": "interval", "work_sec": 20, "rest_sec": 40, "rounds": 8 },
+    "format": {
+      "style": "interval",
+      "work_sec": 20,
+      "rest_sec": 40,
+      "rounds": 8
+    },
     "drills": [
-      { "id": "BW_013", "role": "lateral_power" },
-      { "id": "BW_014", "role": "power" },
-      { "id": "BW_021", "role": "speed" },
-      { "id": "BW_010", "role": "core" },
-      { "id": "BW_004", "role": "primary_lower" }
+      {
+        "id": "BW_013",
+        "role": "lateral_power"
+      },
+      {
+        "id": "BW_014",
+        "role": "power"
+      },
+      {
+        "id": "BW_021",
+        "role": "speed"
+      },
+      {
+        "id": "BW_010",
+        "role": "core"
+      },
+      {
+        "id": "BW_004",
+        "role": "primary_lower"
+      }
     ]
   },
   {
@@ -72,16 +165,40 @@
     "name": "Knee & Groin Armor",
     "status": "active",
     "session_type": "activation",
-    "focus": ["injury_prevention", "mobility", "core"],
+    "focus": [
+      "injury_prevention",
+      "mobility",
+      "core"
+    ],
     "age_min": 8,
     "age_max": 18,
-    "format": { "style": "timed", "work_sec": 30, "rest_sec": 15, "rounds": 2 },
+    "format": {
+      "style": "timed",
+      "work_sec": 30,
+      "rest_sec": 15,
+      "rounds": 2
+    },
     "drills": [
-      { "id": "BW_016", "role": "mobility" },
-      { "id": "BW_006", "role": "activation" },
-      { "id": "BW_015", "role": "isometric" },
-      { "id": "BW_017", "role": "core" },
-      { "id": "BW_001", "role": "patterning" }
+      {
+        "id": "BW_016",
+        "role": "mobility"
+      },
+      {
+        "id": "BW_006",
+        "role": "activation"
+      },
+      {
+        "id": "BW_015",
+        "role": "isometric"
+      },
+      {
+        "id": "BW_017",
+        "role": "core"
+      },
+      {
+        "id": "BW_001",
+        "role": "patterning"
+      }
     ]
   },
   {
@@ -89,16 +206,40 @@
     "name": "Corner Battles Strength",
     "status": "active",
     "session_type": "bodyweight_circuit",
-    "focus": ["strength", "contact", "stability"],
+    "focus": [
+      "strength",
+      "contact",
+      "stability"
+    ],
     "age_min": 10,
     "age_max": 18,
-    "format": { "style": "timed", "work_sec": 45, "rest_sec": 15, "rounds": 3 },
+    "format": {
+      "style": "timed",
+      "work_sec": 45,
+      "rest_sec": 15,
+      "rounds": 3
+    },
     "drills": [
-      { "id": "BW_002", "role": "primary_lower" },
-      { "id": "BW_004", "role": "primary_lower" },
-      { "id": "BW_015", "role": "isometric" },
-      { "id": "BW_006", "role": "activation" },
-      { "id": "BW_012", "role": "core" }
+      {
+        "id": "BW_002",
+        "role": "primary_lower"
+      },
+      {
+        "id": "BW_004",
+        "role": "primary_lower"
+      },
+      {
+        "id": "BW_015",
+        "role": "isometric"
+      },
+      {
+        "id": "BW_006",
+        "role": "activation"
+      },
+      {
+        "id": "BW_012",
+        "role": "core"
+      }
     ]
   },
   {
@@ -106,16 +247,38 @@
     "name": "Speed & First-Step Power",
     "status": "active",
     "session_type": "bodyweight_circuit",
-    "focus": ["speed", "power", "core"],
+    "focus": [
+      "speed",
+      "power",
+      "core"
+    ],
     "age_min": 9,
     "age_max": 15,
-    "format": { "style": "mixed", "rounds": 3 },
+    "format": {
+      "style": "mixed",
+      "rounds": 3
+    },
     "drills": [
-      { "id": "BW_002", "role": "single_leg" },
-      { "id": "BW_018", "role": "power" },
-      { "id": "BW_013", "role": "lateral_power" },
-      { "id": "BW_020", "role": "deceleration" },
-      { "id": "BW_011", "role": "core" }
+      {
+        "id": "BW_002",
+        "role": "single_leg"
+      },
+      {
+        "id": "BW_018",
+        "role": "power"
+      },
+      {
+        "id": "BW_013",
+        "role": "lateral_power"
+      },
+      {
+        "id": "BW_020",
+        "role": "deceleration"
+      },
+      {
+        "id": "BW_011",
+        "role": "core"
+      }
     ]
   },
   {
@@ -123,16 +286,40 @@
     "name": "Movement Quality & Recovery",
     "status": "active",
     "session_type": "recovery",
-    "focus": ["movement", "core", "recovery"],
+    "focus": [
+      "movement",
+      "core",
+      "recovery"
+    ],
     "age_min": 8,
     "age_max": 18,
-    "format": { "style": "timed", "work_sec": 30, "rest_sec": 15, "rounds": 2 },
+    "format": {
+      "style": "timed",
+      "work_sec": 30,
+      "rest_sec": 15,
+      "rounds": 2
+    },
     "drills": [
-      { "id": "BW_010", "role": "core" },
-      { "id": "BW_003", "role": "primary_lower" },
-      { "id": "BW_005", "role": "activation" },
-      { "id": "BW_012", "role": "lateral_core" },
-      { "id": "BW_001", "role": "patterning" }
+      {
+        "id": "BW_010",
+        "role": "core"
+      },
+      {
+        "id": "BW_003",
+        "role": "primary_lower"
+      },
+      {
+        "id": "BW_005",
+        "role": "activation"
+      },
+      {
+        "id": "BW_012",
+        "role": "lateral_core"
+      },
+      {
+        "id": "BW_001",
+        "role": "patterning"
+      }
     ]
   }
 ]

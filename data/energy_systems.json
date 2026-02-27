@@ -18,7 +18,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_002",
@@ -39,7 +39,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_003",
@@ -60,7 +60,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_004",
@@ -81,7 +81,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_005",
@@ -102,7 +102,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_006",
@@ -123,7 +123,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_007",
@@ -144,7 +144,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_008",
@@ -165,7 +165,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_009",
@@ -186,7 +186,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_010",
@@ -207,7 +207,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_011",
@@ -228,7 +228,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_012",
@@ -249,7 +249,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_013",
@@ -270,7 +270,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_014",
@@ -291,7 +291,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_015",
@@ -305,14 +305,14 @@
     "intensity": "med-high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Squat walk forward and backward",
     "coaching_cues": "Burn legs, steady pace",
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_016",
@@ -326,14 +326,14 @@
     "intensity": "med-high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "30 yd lane",
     "step_by_step": "Alternate 30s hard run and 30s moderate run continuously for duration",
     "coaching_cues": "Never stop moving, control breathing",
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_017",
@@ -354,7 +354,7 @@
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_033",
@@ -368,14 +368,14 @@
     "intensity": "med-high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Continuous lateral push-offs side to side for duration",
     "coaching_cues": "Stay low, rhythmic breathing",
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_019",
@@ -389,14 +389,14 @@
     "intensity": "med-high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "15 yd lane",
     "step_by_step": "Run forward then lateral shuffle",
     "coaching_cues": "Control breathing in recovery",
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "CD_020",
@@ -410,13 +410,13 @@
     "intensity": "med-high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "20 yd lane",
     "step_by_step": "Alternate 30s walking lunges and 30s light run",
     "coaching_cues": "Stay smooth on transitions",
     "video_url": null,
     "session_type": "conditioning",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   }
 ]

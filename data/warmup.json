@@ -9,14 +9,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft line",
     "step_by_step": "Run forwards",
     "notes": "Initial muscle warmup",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_002",
@@ -28,14 +28,14 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "March in place lifting knees to waist height",
     "notes": "Posture tall, arms coordinated",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_003",
@@ -47,14 +47,14 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Crossover step laterally down and back",
     "notes": "Controlled rhythm, hips square",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_004",
@@ -66,14 +66,14 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Shuffle side to side in athletic stance",
     "notes": "Stay low, light feet",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_005",
@@ -85,14 +85,14 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Backpedal",
     "notes": "Start easy, no sprinting",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_006",
@@ -104,14 +104,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Small to large arm circles forward, then backward",
     "notes": "Relax shoulders, controlled tempo",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_007",
@@ -123,14 +123,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Swing arms across chest, alternating top and bottom",
     "notes": "Stay tall, don’t rush",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_008",
@@ -142,14 +142,14 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Step into lunge, reach arms overhead, alternate legs",
     "notes": "Slow tempo, upright torso",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_009",
@@ -161,14 +161,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Lift leg and open gate, land in lateral lunge",
     "notes": "Smooth controlled motion",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_010",
@@ -180,14 +180,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft lane",
     "step_by_step": "Walk forward pulling heel to glute",
     "notes": "Stay balanced, slow steps",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_011",
@@ -199,14 +199,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft line",
     "step_by_step": "Walk forward and swipe at ground each step",
     "notes": "Balance and control",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_012",
@@ -218,14 +218,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Hinge, walk hands to plank, walk feet in",
     "notes": "Slow and controlled",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_013",
@@ -237,14 +237,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Lie on back with knees out, drive hips up, squeeze glutes",
     "notes": "Pause briefly at top",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_014",
@@ -256,14 +256,14 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Kick leg forward, hinge into single-leg RDL",
     "notes": "Balance first, slow tempo",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_015",
@@ -275,14 +275,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Stand with legs apart, stretch down the middle, then each leg",
     "notes": "Smooth breathing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "WU_016",
@@ -294,14 +294,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Swing leg forward and back while balancing",
     "notes": "Controlled, no kicking",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "WU_017",
@@ -313,14 +313,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Swing leg side to side across body",
     "notes": "Open hips gradually",
     "video_url": null,
     "session_type": "movement,conditioning,circuit,weight_lifting",
     "inspired_by": null,
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "WU_018",
@@ -332,13 +332,13 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Slow down on pushup, explosive on up part of pushop",
     "notes": "Controlled down, explosive up",
     "video_url": null,
     "session_type": "movement",
     "inspired_by": null,
-    "coach_preference": "1"
+    "coach_preference": 1
   }
 ]

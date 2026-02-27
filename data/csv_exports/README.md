@@ -1,6 +1,28 @@
 # CSV Exports for Google Sheets
 
-These CSVs are exported from the active Bender JSON data files. Use them to reload data into Google Sheets.
+These CSVs bridge Bender JSON data and Google Sheets for easy editing.
+
+## Quick Sync (One Click or One Command)
+
+**Update Bender from your Google Sheet:**
+
+```
+# Option A: Fetch from Sheets + convert to JSON
+python scripts/sync_from_sheets.py --fetch
+
+# Option B: Use local CSVs (after you download from Sheets)
+python scripts/sync_from_sheets.py --local
+
+# Windows: Double-click run_sync.bat (fetch) or run_sync_local.bat (local)
+```
+
+See `scripts/sync_from_sheets.py` — set `SHEET_ID` and `SHEET_MAP` to your sheet. Sheet must be shared as **Anyone with the link can view** for `--fetch` to work.
+
+**Export JSON → CSV (for Sheets import):**
+
+```
+python scripts/json_to_csv_export.py
+```
 
 ## Files
 
@@ -25,7 +47,7 @@ These CSVs are exported from the active Bender JSON data files. Use them to relo
 3. Import location: **Replace spreadsheet** or **Insert new sheet(s)**.
 4. Import one CSV per sheet tab (or create multiple sheets, one per CSV).
 
-## Regenerating CSVs
+## Regenerating CSVs (JSON → CSV)
 
 From the Bender repo root:
 
@@ -35,5 +57,5 @@ python scripts/json_to_csv_export.py
 
 ## Notes
 
-- **circuits.csv**: `format` and `drills` columns contain JSON strings (nested objects/arrays). Google Sheets will show them as text; parse in Apps Script or keep as reference.
-- **nhl_combine_results.csv**: Sparse data — each player has only the tests they placed in; other cells are empty.
+- **circuits.csv**: `format` and `drills` columns contain JSON strings. Don’t break the JSON syntax when editing in Sheets.
+- **nhl_combine_results.csv**: Sparse data — each player has only the tests they placed in.

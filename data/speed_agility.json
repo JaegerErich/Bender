@@ -18,8 +18,8 @@
     "coaching_cues": "Control over speed",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   }
 ]

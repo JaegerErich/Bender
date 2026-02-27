@@ -9,17 +9,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "squat",
     "tags": "squat, bilateral, foundation",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Squat down under control and stand back up",
     "coaching_cues": "Knees track over toes",
@@ -27,12 +27,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_002",
@@ -44,17 +39,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "split_squat, single_leg, balance",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Rear foot stays back as athlete lowers into split squat",
     "coaching_cues": "Chest tall, control depth",
@@ -62,10 +57,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_003",
@@ -77,17 +69,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "reverse_lunge, single_leg, control",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Step backward into lunge then return to start",
     "coaching_cues": "Push through front heel",
@@ -95,10 +87,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_004",
@@ -110,17 +99,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "lateral_lunge, frontal_plane, hips",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Step laterally into deep lunge then return",
     "coaching_cues": "Hips back, sit into side",
@@ -128,10 +117,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_005",
@@ -143,17 +129,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "glute_bridge, posterior_chain",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Lift hips by squeezing glutes",
     "coaching_cues": "Hips fully extended",
@@ -161,10 +147,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_006",
@@ -176,17 +159,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "single_leg, glutes, posterior_chain",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Perform glute bridge on one leg",
     "coaching_cues": "Hips level",
@@ -194,10 +177,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_007",
@@ -209,17 +189,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "pushup, upper_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Lower chest to floor and push back up",
     "coaching_cues": "Body stays straight",
@@ -227,10 +207,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_008",
@@ -242,11 +219,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "incline_pushup, upper_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -260,10 +237,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "BW_009",
@@ -275,11 +249,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "inverted_row, scap_control",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -293,10 +267,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_010",
@@ -308,17 +279,17 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "core_stability, anti_extension",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Hold bear crawl position with knees hovering",
     "coaching_cues": "Hips steady, breathe",
@@ -326,10 +297,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_011",
@@ -341,17 +309,17 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "core_control, contralateral",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Alternate opposite arm and leg while keeping back flat",
     "coaching_cues": "Slow controlled movement",
@@ -359,10 +327,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_012",
@@ -374,17 +339,17 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "lateral_core, stability",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Hold side plank position",
     "coaching_cues": "Hips stacked",
@@ -392,10 +357,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_013",
@@ -407,17 +369,17 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "lateral_power, plyometric",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Lateral jump from one leg to the other",
     "coaching_cues": "Stick landing",
@@ -425,10 +387,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_014",
@@ -440,17 +399,17 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "vertical_jump, plyometric",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Squat down and jump vertically",
     "coaching_cues": "Soft quiet landings",
@@ -458,10 +417,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_015",
@@ -473,11 +429,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "squat",
     "tags": "single_leg, isometric, knee_stability",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -491,10 +447,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_016",
@@ -506,17 +459,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "squat",
     "tags": "frontal_plane, hips, adductors",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Squat to one side while opposite leg stays extended",
     "coaching_cues": "Chest tall, sit into hip",
@@ -524,10 +477,7 @@
     "session_type": "strength",
     "signal": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_017",
@@ -539,11 +489,11 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "adductors, lateral_core",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -557,10 +507,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_018",
@@ -572,17 +519,17 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "horizontal_jump, plyometric",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "8 ft lane",
     "step_by_step": "Jump forward explosively and stick landing",
     "coaching_cues": "Load hips, land softly",
@@ -590,10 +537,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_019",
@@ -605,17 +549,17 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "split_stance, plyometric",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-5/side",
     "default_duration_sec": 30,
     "intensity": "moderate",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Jump explosively from split squat stance",
     "coaching_cues": "Control landing, switch legs if programmed",
@@ -623,10 +567,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "BW_020",
@@ -638,17 +579,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "deceleration, single_leg, control",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-8/side",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 9,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "8 ft lane",
     "step_by_step": "Step forward into lunge and aggressively stop",
     "coaching_cues": "Brake with front leg, stable torso",
@@ -656,10 +597,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_001",
@@ -671,11 +609,11 @@
     "lift_role": "primary",
     "movement_pattern": "squat",
     "tags": "barbell_squat, bilateral",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 45,
     "intensity": "high",
@@ -689,10 +627,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_002",
@@ -704,11 +639,11 @@
     "lift_role": "primary",
     "movement_pattern": "squat",
     "tags": "front_squat, quad_dominant",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-5",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -722,10 +657,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_003",
@@ -737,11 +669,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "squat",
     "tags": "goblet_squat, foundation",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -755,10 +687,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_004",
@@ -770,11 +699,11 @@
     "lift_role": "primary",
     "movement_pattern": "hinge",
     "tags": "trap_bar_deadlift, posterior_chain",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -788,10 +717,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_005",
@@ -803,11 +729,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "RDL, hamstrings",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "6-8",
     "default_duration_sec": 45,
     "intensity": "high",
@@ -821,10 +747,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_006",
@@ -836,28 +759,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "hip_thrust, glutes",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "6-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Barbell, Bench",
-    "space": "Bench area",
-    "step_by_step": "Drive hips upward squeezing glutes",
-    "coaching_cues": "Full lockout",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Barbell",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Drive hips upward squeezing glutes",
+    "video_url": "Full lockout",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_007",
@@ -869,11 +789,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "bulgarian_split, single_leg",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "high",
@@ -887,10 +807,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_008",
@@ -902,11 +819,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "slider_split_squat, unilateral",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -920,12 +837,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_009",
@@ -937,11 +849,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "walking_lunge, single_leg",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 60,
     "intensity": "high",
@@ -955,10 +867,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_010",
@@ -970,11 +879,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "frontal_plane, lateral_lunge",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -988,10 +897,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_011",
@@ -1003,28 +909,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "lunge",
     "tags": "step_up, single_leg",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Box",
-    "space": "Box area",
-    "step_by_step": "Step onto box and drive through lead leg",
-    "coaching_cues": "Full foot on box",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Box",
+    "step_by_step": "Box area",
+    "coaching_cues": "Step onto box and drive through lead leg",
+    "video_url": "Full foot on box",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_012",
@@ -1036,30 +939,25 @@
     "lift_role": "primary",
     "movement_pattern": "push",
     "tags": "bench_press, upper_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Barbell, Bench",
-    "space": "Bench area",
-    "step_by_step": "Lower bar to chest and press upward",
-    "coaching_cues": "Control descent",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Barbell",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Lower bar to chest and press upward",
+    "video_url": "Control descent",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_013",
@@ -1071,28 +969,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "DB_bench, shoulder_control",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "6-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Bench area",
-    "step_by_step": "Press dumbbells with neutral control",
-    "coaching_cues": "Stable shoulders",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Press dumbbells with neutral control",
+    "video_url": "Stable shoulders",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_014",
@@ -1104,11 +999,11 @@
     "lift_role": "primary",
     "movement_pattern": "push",
     "tags": "push_press, triple_extension",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "advanced",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1122,10 +1017,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_015",
@@ -1137,11 +1029,11 @@
     "lift_role": "primary",
     "movement_pattern": "push",
     "tags": "med_ball_throw, upper_power",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1155,10 +1047,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_016",
@@ -1170,11 +1059,11 @@
     "lift_role": "primary",
     "movement_pattern": "pull",
     "tags": "pullup, vertical_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-6",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1188,10 +1077,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_017",
@@ -1203,11 +1089,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "lat_pulldown, vertical_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1221,12 +1107,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_018",
@@ -1238,11 +1119,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "barbell_row, horizontal_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "6-10",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1256,12 +1137,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_019",
@@ -1273,30 +1149,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "single_arm_row, unilateral",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Bench area",
-    "step_by_step": "Pull dumbbell toward hip",
-    "coaching_cues": "Squeeze lat",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Pull dumbbell toward hip",
+    "video_url": "Squeeze lat",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_020",
@@ -1308,11 +1179,11 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "anti_rotation, core_stability",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1326,10 +1197,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_021",
@@ -1341,11 +1209,11 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "core_control, anti_extension",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1359,10 +1227,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_022",
@@ -1374,11 +1239,11 @@
     "lift_role": "accessory",
     "movement_pattern": "rotation",
     "tags": "rotational_strength",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1392,10 +1257,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_023",
@@ -1407,11 +1269,11 @@
     "lift_role": "accessory",
     "movement_pattern": "rotation",
     "tags": "diagonal_lift",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1425,10 +1287,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_024",
@@ -1440,11 +1299,11 @@
     "lift_role": "accessory",
     "movement_pattern": "carry",
     "tags": "loaded_carry, posture",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 60,
     "intensity": "moderate",
@@ -1458,10 +1317,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_025",
@@ -1473,11 +1329,11 @@
     "lift_role": "accessory",
     "movement_pattern": "carry",
     "tags": "unilateral_carry, anti_lateral_flexion",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "20-40s",
     "default_duration_sec": 60,
     "intensity": "moderate",
@@ -1491,10 +1347,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_026",
@@ -1506,11 +1359,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "rotational_power",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "advanced",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1524,10 +1377,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_027",
@@ -1539,11 +1389,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "box_jump, plyometric",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1557,10 +1407,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_028",
@@ -1572,11 +1419,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "trap_bar_jump, loaded_jump",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "advanced",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1590,10 +1437,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_029",
@@ -1605,11 +1449,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "landmine_press, shoulder_stability",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1623,10 +1467,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_030",
@@ -1638,11 +1479,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "landmine_row, unilateral",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1656,10 +1497,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_031",
@@ -1671,11 +1509,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "single_leg_RDL, balance",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1689,10 +1527,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_032",
@@ -1704,28 +1539,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "hinge",
     "tags": "single_leg_hip_thrust",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Barbell, Bench",
-    "space": "Bench area",
-    "step_by_step": "Single-leg hip thrust",
-    "coaching_cues": "Glute drive",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Barbell",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Single-leg hip thrust",
+    "video_url": "Glute drive",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_033",
@@ -1737,11 +1569,11 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "hip_flexion, core_control",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1755,10 +1587,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_034",
@@ -1770,11 +1599,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "overhead_slam, full_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "advanced",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "3-5",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1788,10 +1617,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_035",
@@ -1803,11 +1629,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "squat",
     "tags": "single_leg_box_squat",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1821,10 +1647,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_leg"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_036",
@@ -1836,11 +1659,11 @@
     "lift_role": "accessory",
     "movement_pattern": "anti_rotation",
     "tags": "trunk_control, anti_extension",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1854,10 +1677,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_037",
@@ -1869,11 +1689,11 @@
     "lift_role": "accessory",
     "movement_pattern": "push",
     "tags": "shoulder_abduction",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1887,10 +1707,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_038",
@@ -1902,11 +1719,11 @@
     "lift_role": "accessory",
     "movement_pattern": "push",
     "tags": "shoulder_flexion",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1920,10 +1737,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_039",
@@ -1935,11 +1749,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "squat_to_throw",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "advanced",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-5",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -1953,10 +1767,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_040",
@@ -1968,11 +1779,11 @@
     "lift_role": "accessory",
     "movement_pattern": "hinge",
     "tags": "hamstring_curl, core",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -1986,10 +1797,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_041",
@@ -2001,11 +1809,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "single_arm_snatch",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "advanced",
-    "default_sets": "5",
+    "default_sets": 5,
     "default_reps": "2-4",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -2019,10 +1827,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "PL_001",
@@ -2034,17 +1839,17 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "vertical_jump, plyometric, testing",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "advanced",
-    "default_sets": "6",
-    "default_reps": 1,
+    "default_sets": 6,
+    "default_reps": "1",
     "default_duration_sec": 30,
     "intensity": "high",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Perform maximal vertical jump attempts with full recovery between reps",
     "coaching_cues": "Full arm swing, violent extension, stick landing",
@@ -2052,10 +1857,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_001",
@@ -2067,11 +1869,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "face_pull, scap_retraction, external_rotation",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "12-20",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2085,12 +1887,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_002",
@@ -2102,11 +1899,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "band_pullapart, scap_control",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "15-25",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2120,10 +1917,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_003",
@@ -2135,11 +1929,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "external_rotation, rotator_cuff",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "12-20/side",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2153,10 +1947,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_004",
@@ -2168,11 +1959,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "external_rotation, rotator_cuff, overhead",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15/side",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2186,10 +1977,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_005",
@@ -2201,17 +1989,17 @@
     "lift_role": "accessory",
     "movement_pattern": "push",
     "tags": "serratus, scap_pushup",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-20",
     "default_duration_sec": 45,
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Push through shoulders at top of plank",
     "coaching_cues": "Move shoulder blades, not elbows",
@@ -2219,10 +2007,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_006",
@@ -2234,11 +2019,11 @@
     "lift_role": "accessory",
     "movement_pattern": "push",
     "tags": "wall_slide, serratus, upward_rotation",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2252,10 +2037,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_007",
@@ -2267,11 +2049,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "scap_control, lower_trap",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12 each",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2285,10 +2067,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "SC_008",
@@ -2300,11 +2079,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "lower_trap, scap_control",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2318,10 +2097,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_042",
@@ -2333,28 +2109,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "incline_DB_bench, upper_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "6-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Bench area",
-    "step_by_step": "Press dumbbells on an incline bench with control",
-    "coaching_cues": "Shoulders packed, elbows 30-45 degrees",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Press dumbbells on an incline bench with control",
+    "video_url": "Shoulders packed, elbows 30-45 degrees",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_043",
@@ -2366,30 +2139,25 @@
     "lift_role": "primary",
     "movement_pattern": "push",
     "tags": "close_grip_bench, triceps",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "4-7",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Barbell, Bench",
-    "space": "Bench area",
-    "step_by_step": "Lower bar to lower chest with close grip and press up",
-    "coaching_cues": "Tuck elbows slightly, control descent",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Barbell",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Lower bar to lower chest with close grip and press up",
+    "video_url": "Tuck elbows slightly, control descent",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_044",
@@ -2401,28 +2169,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "DB_overhead_press, vertical_push",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Open area",
-    "step_by_step": "Press dumbbells overhead from seated position",
-    "coaching_cues": "Ribs down, avoid arching back",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Open area",
+    "coaching_cues": "Press dumbbells overhead from seated position",
+    "video_url": "Ribs down, avoid arching back",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_045",
@@ -2434,30 +2199,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "chest_supported_row, horizontal_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Bench area",
-    "step_by_step": "Row dumbbells while chest is supported on incline bench",
-    "coaching_cues": "Pull elbows to hips, squeeze upper back",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Row dumbbells while chest is supported on incline bench",
+    "video_url": "Pull elbows to hips, squeeze upper back",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_046",
@@ -2469,11 +2229,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "seated_row, horizontal_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2487,12 +2247,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_047",
@@ -2504,11 +2259,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "single_arm_pulldown, vertical_pull",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2522,12 +2277,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_048",
@@ -2539,11 +2289,11 @@
     "lift_role": "primary",
     "movement_pattern": "pull",
     "tags": "chinup, vertical_pull",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "high",
     "fatigue_cost": "high",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-6",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2557,12 +2307,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_049",
@@ -2574,11 +2319,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "floor_press, unilateral_press",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2592,10 +2337,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_050",
@@ -2607,11 +2349,11 @@
     "lift_role": "accessory",
     "movement_pattern": "push",
     "tags": "triceps_pressdown, arm_strength",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2625,10 +2367,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_051",
@@ -2640,11 +2379,11 @@
     "lift_role": "accessory",
     "movement_pattern": "pull",
     "tags": "hammer_curl, arm_strength",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "low",
     "progression_level": "foundation",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "10-15",
     "default_duration_sec": 45,
     "intensity": "low",
@@ -2658,12 +2397,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "heavy_explosive",
-      "heavy_leg",
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "BW_022",
@@ -2675,17 +2409,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "triceps_pushup, upper_body",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "low",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-12",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Push-up with hands close together under chest",
     "coaching_cues": "Keep elbows tucked, body straight",
@@ -2693,10 +2427,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "BW_023",
@@ -2708,17 +2439,17 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "vertical_push, shoulders",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Push-up in pike position targeting shoulders",
     "coaching_cues": "Head moves toward floor, control tempo",
@@ -2726,10 +2457,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   },
   {
     "id": "LS_052",
@@ -2741,28 +2469,25 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "single_arm_DB_bench, unilateral_press",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "8-12/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
     "age_min": 14,
     "age_max": 99,
-    "equipment": "Dumbbells, Bench",
-    "space": "Bench area",
-    "step_by_step": "Press dumbbell with one arm while stabilizing torso",
-    "coaching_cues": "Brace core, control rotation",
-    "video_url": null,
-    "session_type": "strength",
+    "equipment": "Dumbbells",
+    "space": "Bench",
+    "step_by_step": "Bench area",
+    "coaching_cues": "Press dumbbell with one arm while stabilizing torso",
+    "video_url": "Brace core, control rotation",
+    "session_type": null,
     "signal": "strength",
-    "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "inspired_by": "strength",
+    "coach_preference": null
   },
   {
     "id": "LS_053",
@@ -2774,11 +2499,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "push",
     "tags": "half_kneeling_landmine, unilateral_press",
-    "unilateral": "TRUE",
+    "unilateral": true,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2792,10 +2517,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_054",
@@ -2807,11 +2529,11 @@
     "lift_role": "primary",
     "movement_pattern": "power",
     "tags": "scoop_throw, rotational_power",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "4",
+    "default_sets": 4,
     "default_reps": "3-5/side",
     "default_duration_sec": 30,
     "intensity": "moderate",
@@ -2825,10 +2547,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": "1",
-    "program_day_type": [
-      "heavy_explosive"
-    ]
+    "coach_preference": 1
   },
   {
     "id": "LS_055",
@@ -2840,11 +2559,11 @@
     "lift_role": "auxiliary",
     "movement_pattern": "pull",
     "tags": "renegade_row, anti_rotation",
-    "unilateral": "FALSE",
+    "unilateral": false,
     "cns_load": "medium",
     "fatigue_cost": "medium",
     "progression_level": "intermediate",
-    "default_sets": "3",
+    "default_sets": 3,
     "default_reps": "6-10/side",
     "default_duration_sec": 45,
     "intensity": "moderate",
@@ -2858,9 +2577,6 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
-    "coach_preference": "2",
-    "program_day_type": [
-      "upper_core_stability"
-    ]
+    "coach_preference": 2
   }
 ]

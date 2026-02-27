@@ -12,15 +12,15 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Crossover run laterally down and back",
     "coaching_cues": "Hips rotate naturally",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_025",
@@ -35,14 +35,14 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Crossover step and hold position",
     "coaching_cues": "Hip control",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   }
 ]

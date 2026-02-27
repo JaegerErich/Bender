@@ -17,7 +17,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck forehand to backhand in front of body",
     "coaching_cues": "Soft hands, relaxed grip, head up",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -40,7 +40,7 @@
     "space": "4x4 ft",
     "step_by_step": "Reach puck wide forehand and backhand",
     "coaching_cues": "Extend arms, control puck, head up",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -63,7 +63,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck in figure 8 around feet",
     "coaching_cues": "Head up if possible",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -86,7 +86,7 @@
     "space": "4x4 ft",
     "step_by_step": "Stickhandle while balancing on one leg",
     "coaching_cues": "Stable posture, head up",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -109,7 +109,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck in, push it out repeatedly",
     "coaching_cues": "Use wrists not arms, head up",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -132,7 +132,7 @@
     "space": "4x4 ft",
     "step_by_step": "Stickhandle on backhand side of body",
     "coaching_cues": "Comfort on backhand, head up",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -155,7 +155,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck wide then push across body",
     "coaching_cues": "Full extension",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -178,7 +178,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck in triangle pattern",
     "coaching_cues": "Quick but controlled",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -201,7 +201,7 @@
     "space": "4x4 ft",
     "step_by_step": "Toe drag puck and hold position",
     "coaching_cues": "Control the drag",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -224,7 +224,7 @@
     "space": "6x6 ft",
     "step_by_step": "Shuffle laterally while pull-pushing puck",
     "coaching_cues": "Feet and hands together",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -247,7 +247,7 @@
     "space": "4x4 ft",
     "step_by_step": "Reach puck side to side at full width",
     "coaching_cues": "Stay balanced",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -270,7 +270,7 @@
     "space": "4x4 ft",
     "step_by_step": "Rapid small touches in front of body",
     "coaching_cues": "Relax wrists",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -293,7 +293,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck behind feet side to side",
     "coaching_cues": "Control behind body",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -316,7 +316,7 @@
     "space": "4x4 ft",
     "step_by_step": "Repeated toe drags side to side",
     "coaching_cues": "Sell the fake",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -339,7 +339,7 @@
     "space": "10 ft lane",
     "step_by_step": "Walk forward while stickhandling",
     "coaching_cues": "Head up",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -362,7 +362,7 @@
     "space": "10 ft lane",
     "step_by_step": "Walk backward while controlling puck",
     "coaching_cues": "Soft hands",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -385,7 +385,7 @@
     "space": "4x4 ft",
     "step_by_step": "Change direction on verbal cue",
     "coaching_cues": "React not rush",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -408,7 +408,7 @@
     "space": "10 ft lane",
     "step_by_step": "Lateral shuffle while stickhandling",
     "coaching_cues": "Stay low",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -431,7 +431,7 @@
     "space": "4x4 ft",
     "step_by_step": "Toe drag then pull-push across body",
     "coaching_cues": "Smooth combo",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -454,7 +454,7 @@
     "space": "4x4 ft",
     "step_by_step": "Alternate wide and narrow touches",
     "coaching_cues": "Change pace",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -477,7 +477,7 @@
     "space": "10 ft lane",
     "step_by_step": "Crossover steps while stickhandling",
     "coaching_cues": "Feet lead hands",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -500,7 +500,7 @@
     "space": "4x4 ft",
     "step_by_step": "Stick handle two balls/pucks and control each independently",
     "coaching_cues": "Soft hands",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -523,7 +523,7 @@
     "space": "4x4 ft",
     "step_by_step": "Toe drag then push puck wide explosively",
     "coaching_cues": "Sell deception",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -546,7 +546,7 @@
     "space": "4x4 ft",
     "step_by_step": "Continuous figure 8 at higher speed",
     "coaching_cues": "Control speed",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -569,7 +569,7 @@
     "space": "10 ft lane",
     "step_by_step": "Walk forward then backward while handling",
     "coaching_cues": "Smooth transitions",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -592,7 +592,7 @@
     "space": "4x4 ft",
     "step_by_step": "Wide reach toe drags side to side",
     "coaching_cues": "Max reach control",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -615,7 +615,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck around entire body starting forehand and returning to forehand",
     "coaching_cues": "Smooth transitions around body",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -638,7 +638,7 @@
     "space": "4x4 ft",
     "step_by_step": "Perform repeated backhand toe drags maintaining control",
     "coaching_cues": "Strong backhand blade control",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -661,7 +661,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck through legs and kick it out to forehand",
     "coaching_cues": "Sell deception",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -684,7 +684,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck through legs and kick it out to backhand",
     "coaching_cues": "Quick feet, soft hands",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -707,7 +707,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck through legs directly to forehand",
     "coaching_cues": "Protect puck through middle",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -730,7 +730,7 @@
     "space": "4x4 ft",
     "step_by_step": "Pull puck through legs directly to backhand",
     "coaching_cues": "Backhand control",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -753,7 +753,7 @@
     "space": "4x4 ft",
     "step_by_step": "Toe drag puck then shift body to protect it",
     "coaching_cues": "Use body between puck and defender",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -776,7 +776,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck wide across body into backhand protection",
     "coaching_cues": "Strong edges stance",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -799,7 +799,7 @@
     "space": "4x4 ft",
     "step_by_step": "Fake pass, quick stickhandles, second deceptive fake",
     "coaching_cues": "Sell fakes with eyes",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -822,7 +822,7 @@
     "space": "4x4 ft",
     "step_by_step": "Stickhandle around the entire body while balancing on one leg",
     "coaching_cues": "Stable posture",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -845,7 +845,7 @@
     "space": "4x4 ft",
     "step_by_step": "Hop over a line on one leg while controlling puck",
     "coaching_cues": "Stay balanced",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -868,7 +868,7 @@
     "space": "6 ft lane",
     "step_by_step": "Hop forward on one leg while stickhandling",
     "coaching_cues": "Soft landings",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -891,7 +891,7 @@
     "space": "6 ft lane",
     "step_by_step": "Hop backward on one leg while controlling puck",
     "coaching_cues": "Control center of mass",
-    "coach_preference": "2",
+    "coach_preference": 2,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -914,7 +914,7 @@
     "space": "10 ft grid",
     "step_by_step": "Move forward/backward and laterally in cross pattern while handling",
     "coaching_cues": "Stay controlled through transitions",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -937,7 +937,7 @@
     "space": "4x4 ft",
     "step_by_step": "Quick forehand touches, one wide move, quick backhand touches",
     "coaching_cues": "Change pace smoothly",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -960,7 +960,7 @@
     "space": "4x4 ft",
     "step_by_step": "Protect puck on forehand or backhand while keeping head up and scanning",
     "coaching_cues": "Chest tall, puck outside feet",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -983,7 +983,7 @@
     "space": "4x4 ft",
     "step_by_step": "Move puck wide across body while maintaining protection and eyes up",
     "coaching_cues": "See space, feel puck",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -1006,7 +1006,7 @@
     "space": "4x4 ft",
     "step_by_step": "Protect puck while responding to visual or verbal cues",
     "coaching_cues": "Head stays up entire rep",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"
@@ -1029,7 +1029,7 @@
     "space": "4x4 ft",
     "step_by_step": "Protect puck while performing quick shoulder checks",
     "coaching_cues": "Scan without losing control",
-    "coach_preference": "1",
+    "coach_preference": 1,
     "inspired_by": "self",
     "video_url": null,
     "session_type": "movement"

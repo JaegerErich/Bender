@@ -11,7 +11,8 @@ from typing import Any, Callable, Optional
 MODE_DISPLAY_LABELS: dict[str, str] = {
     "performance": "Performance",
     "skating_mechanics": "Skating Mechanics",
-    "skills_only": "Puck Mastery",
+    "shooting": "Shooting",
+    "stickhandling": "Stickhandling",
     "energy_systems": "Conditioning",
     "mobility": "Mobility/Recovery",
 }
@@ -20,7 +21,8 @@ MODE_DISPLAY_LABELS: dict[str, str] = {
 PLAN_MODES: list[str] = [
     "performance",
     "skating_mechanics",
-    "skills_only",
+    "shooting",
+    "stickhandling",
     "energy_systems",
     "mobility",
 ]
@@ -29,7 +31,8 @@ PLAN_MODES: list[str] = [
 MODE_SESSION_LEN_DEFAULTS: dict[str, int] = {
     "performance": 60,
     "skating_mechanics": 12,
-    "skills_only": 25,
+    "shooting": 25,
+    "stickhandling": 25,
     "energy_systems": 15,
     "mobility": 12,
 }
@@ -197,7 +200,8 @@ def get_template_from_mode_days(
         focus_list: list[str] = []
         has_perf = wd in mode_days.get("performance", set())
         has_skate = wd in mode_days.get("skating_mechanics", set())
-        has_puck = wd in mode_days.get("skills_only", set())
+        has_shooting = wd in mode_days.get("shooting", set())
+        has_stickhandling = wd in mode_days.get("stickhandling", set())
         has_cond = wd in mode_days.get("energy_systems", set())
         has_mob = wd in mode_days.get("mobility", set())
 
@@ -207,8 +211,10 @@ def get_template_from_mode_days(
             if has_skate:
                 focus_list.append(SKATING_VARIANTS[skate_idx % len(SKATING_VARIANTS)])
                 skate_idx += 1
-            if has_puck:
-                focus_list.append(PUCK_LIGHT if has_perf else "Puck Mastery")
+            if has_shooting:
+                focus_list.append(PUCK_LIGHT + " (Shooting)" if has_perf else "Puck Mastery (Shooting)")
+            if has_stickhandling:
+                focus_list.append(PUCK_LIGHT + " (Stickhandling)" if has_perf else "Puck Mastery (Stickhandling)")
         else:
             if has_perf:
                 focus_list.append(PERFORMANCE_VARIANTS[perf_idx % len(PERFORMANCE_VARIANTS)])
@@ -216,8 +222,10 @@ def get_template_from_mode_days(
             if has_skate:
                 focus_list.append(SKATING_VARIANTS[skate_idx % len(SKATING_VARIANTS)])
                 skate_idx += 1
-            if has_puck:
-                focus_list.append(PUCK_LIGHT if has_perf else PUCK_PRIMARY)
+            if has_shooting:
+                focus_list.append((PUCK_LIGHT if has_perf else PUCK_PRIMARY) + " (Shooting)")
+            if has_stickhandling:
+                focus_list.append((PUCK_LIGHT if has_perf else PUCK_PRIMARY) + " (Stickhandling)")
         if has_cond:
             focus_list.append(CONDITIONING_VARIANTS[cond_idx % len(CONDITIONING_VARIANTS)])
             cond_idx += 1
@@ -357,7 +365,18 @@ def parse_focus_to_engine_params(
             out["focus"] = None
         return _apply_mode_config(out, mode_config)
 
-    # Puck Mastery
+    # Puck Mastery: Shooting and Stickhandling (plan builder splits by equipment)
+    if "shooting" in s:
+        out["mode"] = "shooting"
+        out["session_len_min"] = 25 if "light" in s else 20
+        out["focus"] = None
+        return _apply_mode_config(out, mode_config)
+    if "stickhandling" in s:
+        out["mode"] = "stickhandling"
+        out["session_len_min"] = 25 if "light" in s else 20
+        out["focus"] = None
+        return _apply_mode_config(out, mode_config)
+    # Backward compat: generic puck/skills -> skills_only (engine filters by equipment)
     if "puck" in s or "skills" in s:
         out["mode"] = "skills_only"
         out["session_len_min"] = 25 if "light" in s else 20

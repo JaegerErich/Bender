@@ -12,14 +12,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Sink into deep lateral squat, shift side to side under control",
     "coaching_cues": "Sit into hips, keep chest tall",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_002",
@@ -34,14 +34,14 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Rotate hips side to side keeping torso upright",
     "coaching_cues": "Move slow, no forcing",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_003",
@@ -56,14 +56,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Rock hips back from hands-and-knees position with one leg extended back",
     "coaching_cues": "Feel stretch in inner thigh",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_004",
@@ -78,14 +78,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Hold bottom of lateral lunge position",
     "coaching_cues": "Breathe and relax into position",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_005",
@@ -100,14 +100,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Shift between hip flexor stretch and glute sit-back",
     "coaching_cues": "Squeeze glute on stretch side",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_006",
@@ -122,14 +122,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Lunge forward, rotate torso toward lead leg",
     "coaching_cues": "Rotate through upper back",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_007",
@@ -144,14 +144,14 @@
     "intensity": "very-low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Sit upright and rotate hips internally one side at a time",
     "coaching_cues": "Internal rotation matters most",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_008",
@@ -166,14 +166,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Shift body weight side to side in wide stance",
     "coaching_cues": "Hips back, feet stay flat",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_009",
@@ -188,14 +188,14 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Rotate upper body while keeping hips square",
     "coaching_cues": "Rotate slow, breathe out",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_010",
@@ -210,14 +210,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Hold deep squat and gently shift side to side",
     "coaching_cues": "Knees out, heels down",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_011",
@@ -232,14 +232,14 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Rock knee forward over toes keeping heel down",
     "coaching_cues": "Skating depth focus",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_012",
@@ -254,14 +254,14 @@
     "intensity": "very-low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Controlled hip circles one leg at a time",
     "coaching_cues": "Small controlled circles",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_013",
@@ -276,14 +276,14 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Round then extend spine slowly",
     "coaching_cues": "Breathe with movement",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_014",
@@ -298,14 +298,14 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Cross ankle over knee and gently pull in",
     "coaching_cues": "No forcing stretch",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_018",
@@ -320,14 +320,14 @@
     "intensity": "very-low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor or bench",
     "step_by_step": "Inhale 4s, hold 4s, exhale 4s, hold 4s",
     "coaching_cues": "Calm controlled rhythm",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_019",
@@ -342,14 +342,14 @@
     "intensity": "very-low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Hold hip flexor stretch while emphasizing long exhales",
     "coaching_cues": "Relax into hips",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_020",
@@ -364,14 +364,14 @@
     "intensity": "very-low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Hold deep squat and perform slow nasal breathing",
     "coaching_cues": "Breathe into hips",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_021",
@@ -393,7 +393,7 @@
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_022",
@@ -408,14 +408,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "From all fours, bring one knee forward into half pigeon and sit tall",
     "coaching_cues": "Breathe into hips, no forcing",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_023",
@@ -437,7 +437,7 @@
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_024",
@@ -452,14 +452,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Long lunge with elbows inside lead foot, hips sink down",
     "coaching_cues": "Relax hips, chest long",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_025",
@@ -474,14 +474,14 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Move between downward dog and alternating heel pedals",
     "coaching_cues": "Lengthen calves and spine",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   },
   {
     "id": "SMR_026",
@@ -496,14 +496,14 @@
     "intensity": "low",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Flow between deep squat, forward fold, and stand",
     "coaching_cues": "Breathe through transitions",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "SMR_027",
@@ -518,13 +518,13 @@
     "intensity": "very-low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "Floor",
     "step_by_step": "Gentle seated or kneeling twists alternating sides",
     "coaching_cues": "Rotate slow with breath",
     "video_url": null,
     "session_type": "recovery",
     "inspired_by": "self",
-    "coach_preference": "2"
+    "coach_preference": 2
   }
 ]

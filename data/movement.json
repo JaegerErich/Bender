@@ -12,15 +12,15 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Hold athletic stance with knees bent and chest tall",
     "coaching_cues": "Feel weight mid-foot",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_002",
@@ -35,15 +35,15 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "March forward emphasizing knee drive and posture",
     "coaching_cues": "Slow and controlled",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_004",
@@ -58,15 +58,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Skip forward with explosive vertical skips",
     "coaching_cues": "focus on explosive and soft landing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_005",
@@ -81,15 +81,15 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Balance on one leg while reaching forward and sideways",
     "coaching_cues": "Hips level",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_006",
@@ -104,15 +104,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Shuffle laterally maintaining athletic stance",
     "coaching_cues": "Push not step",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_037",
@@ -133,9 +133,9 @@
     "coaching_cues": "Control balance before speed",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_038",
@@ -156,9 +156,9 @@
     "coaching_cues": "Land soft, absorb force",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_010",
@@ -173,15 +173,15 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Hinge on one leg reaching opposite hand forward",
     "coaching_cues": "Balance first",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_011",
@@ -196,15 +196,15 @@
     "intensity": "med",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Bound laterally and stick the landing",
     "coaching_cues": "Hold the landing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_012",
@@ -225,9 +225,9 @@
     "coaching_cues": "Light feet",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_013",
@@ -248,9 +248,9 @@
     "coaching_cues": "Stay relaxed",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_015",
@@ -271,9 +271,9 @@
     "coaching_cues": "Change directions cleanly",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_016",
@@ -294,9 +294,9 @@
     "coaching_cues": "Stay low through cuts",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_017",
@@ -311,19 +311,19 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Accelerate then drop hips to stop",
     "coaching_cues": "Sink hips",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_018",
-    "name": "Forward \u2192 Lateral Transition",
+    "name": "Forward → Lateral Transition",
     "status": "active",
     "movement_bucket": "multi_direction",
     "tags": "transitions, lateral, coordination",
@@ -334,15 +334,15 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Jog forward then shuffle sideways",
     "coaching_cues": "Smooth transitions",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_019",
@@ -357,15 +357,15 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Move toward called direction cue",
     "coaching_cues": "Quick reaction, easy speed",
     "video_url": null,
     "session_type": "movement,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_020",
@@ -386,9 +386,9 @@
     "coaching_cues": "Eyes first",
     "video_url": null,
     "session_type": "movement,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_021",
@@ -405,13 +405,13 @@
     "age_max": 99,
     "equipment": "Partner",
     "space": "6x6 ft",
-    "step_by_step": "Mirror partner\u2019s lateral movement",
+    "step_by_step": "Mirror partner’s lateral movement",
     "coaching_cues": "Stay balanced",
     "video_url": null,
     "session_type": "movement,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_022",
@@ -426,15 +426,15 @@
     "intensity": "med",
     "age_min": 12,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Hop forward and stick landing",
     "coaching_cues": "Quiet landing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_023",
@@ -449,15 +449,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Skip forward then stick landing",
     "coaching_cues": "Control landing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_039",
@@ -475,16 +475,16 @@
     "equipment": "Hurdles",
     "space": "6 ft lane",
     "step_by_step": "Jump laterally over hurdle with two feet and stick landing",
-    "coaching_cues": "Stay square, don\u2019t rush",
+    "coaching_cues": "Stay square, don’t rush",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_026",
-    "name": "Forward Run \u2192 Backpedal",
+    "name": "Forward Run → Backpedal",
     "status": "active",
     "movement_bucket": "multi_direction",
     "tags": "transitions, forward_backward, coordination",
@@ -495,15 +495,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Run forward then backpedal back",
     "coaching_cues": "Smooth change",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_027",
@@ -524,9 +524,9 @@
     "coaching_cues": "Slow and steady",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_028",
@@ -547,9 +547,9 @@
     "coaching_cues": "Stay low",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_029",
@@ -566,13 +566,13 @@
     "age_max": 99,
     "equipment": "Cones",
     "space": "6x6 ft",
-    "step_by_step": "Move to cone color that\u2019s called",
+    "step_by_step": "Move to cone color that’s called",
     "coaching_cues": "Decision first",
     "video_url": null,
     "session_type": "movement,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_030",
@@ -587,15 +587,15 @@
     "intensity": "low",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "4x4 ft",
     "step_by_step": "Reach forward while balancing on one leg",
     "coaching_cues": "Hips square",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_031",
@@ -616,9 +616,9 @@
     "coaching_cues": "Light feet",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_032",
@@ -639,13 +639,13 @@
     "coaching_cues": "Control foot placement",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_033",
-    "name": "Forward Accel \u2192 Hold",
+    "name": "Forward Accel → Hold",
     "status": "active",
     "movement_bucket": "deceleration",
     "tags": "acceleration, deceleration, control",
@@ -656,15 +656,15 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Accelerate then hold athletic stance",
-    "coaching_cues": "Don\u2019t drift",
+    "coaching_cues": "Don’t drift",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_040",
@@ -685,9 +685,9 @@
     "coaching_cues": "Control direction change",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_035",
@@ -702,15 +702,15 @@
     "intensity": "low-med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6x6 ft",
     "step_by_step": "Shuffle laterally adding arm reach",
     "coaching_cues": "Stay coordinated",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_036",
@@ -725,15 +725,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 yd lane",
     "step_by_step": "Start movement on clap cue",
     "coaching_cues": "Quick start, easy speed",
     "video_url": null,
     "session_type": "movement,circuit",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_040",
@@ -754,9 +754,9 @@
     "coaching_cues": "Control direction change",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_041",
@@ -777,9 +777,9 @@
     "coaching_cues": "Stick each landing",
     "video_url": null,
     "session_type": "movement,conditioning,circuit",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_042",
@@ -794,15 +794,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft lane",
     "step_by_step": "Start in bear crawl, move right arm and right leg only for several steps, then switch to left side",
     "coaching_cues": "Keep hips level, slow and controlled",
     "video_url": null,
     "session_type": "movement",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_045",
@@ -817,15 +817,15 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft lane",
     "step_by_step": "Reach right arm and right leg laterally, then bring left arm and left leg to meet, repeat both directions",
     "coaching_cues": "Controlled reach, no hip sway",
     "video_url": null,
     "session_type": "movement",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_043",
@@ -840,15 +840,15 @@
     "intensity": "med",
     "age_min": 10,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "6 ft lane",
     "step_by_step": "Perform a lateral jump on one leg immediately followed by a vertical jump on the same leg",
     "coaching_cues": "Stick the landing before next rep",
     "video_url": null,
     "session_type": "movement",
-    "Plyo": "TRUE",
+    "Plyo": true,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   },
   {
     "id": "MC_044",
@@ -863,14 +863,14 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": "None",
+    "equipment": null,
     "space": "10 ft lane",
     "step_by_step": "Start in bear crawl, move right arm and right leg together for several controlled steps, then switch to left side",
     "coaching_cues": "Slow tempo, hips stay level",
     "video_url": null,
     "session_type": "movement",
-    "Plyo": "FALSE",
+    "Plyo": false,
     "inspired_by": "self",
-    "coach_preference": "1"
+    "coach_preference": 1
   }
 ]
