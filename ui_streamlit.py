@@ -370,18 +370,17 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
             elif missed:
                 st.markdown('<div class="plan-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
-            label = f"{'✓ ' if day_complete else ''}{i + 1}"
+            # Single unified label: number, date, status — no separate smaller rectangle
+            if missed:
+                label = f"{i + 1}\n{date_str}\nMissed day"
+            elif day_complete:
+                label = f"✓ {i + 1}\n{date_str}\nDay complete"
+            else:
+                label = f"{i + 1}\n{date_str}"
             btn_type = "primary" if i == sel_idx else "secondary"
             if st.button(label, key=f"plan_day_{i}", type=btn_type):
                 st.session_state.plan_selected_day = i
                 st.rerun()
-            date_cls = "plan-day-date plan-day-date-selected" if i == sel_idx else "plan-day-date"
-            if missed:
-                st.markdown(f'<div class="plan-day-date-block"><p class="{date_cls}">{date_str}</p><p class="plan-day-missed">Missed day</p></div>', unsafe_allow_html=True)
-            elif day_complete:
-                st.markdown(f'<div class="plan-day-date-block"><p class="{date_cls}">{date_str}</p><p class="plan-day-complete-label">Day complete</p></div>', unsafe_allow_html=True)
-            else:
-                st.markdown(f'<p class="{date_cls}">{date_str}</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -1359,7 +1358,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
-    /* Card: fixed size, subtle background, rounded corners for cleaner look */
+    /* Card: fixed size, overflow visible so "Missed day" Y not cut off */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1373,8 +1372,9 @@ st.markdown("""
         min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
         flex: 0 0 4.25rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
         gap: 0.25rem !important; box-sizing: border-box !important;
-        padding: 0.4rem 0.25rem !important; border-radius: 10px !important;
+        padding: 0.5rem 0.3rem !important; border-radius: 10px !important;
         background: #5a5a5a !important; border: 1px solid rgba(255,255,255,0.1) !important;
+        overflow: visible !important; min-height: 4rem !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1417,7 +1417,7 @@ st.markdown("""
             -webkit-overflow-scrolling: touch !important;
             width: 22.75rem !important; max-width: 100% !important; min-width: 0 !important;
         }
-        /* Each day card: 5 visible, same as desktop — lighter grey, black number */
+        /* Each day card: 5 visible, overflow visible so Missed day not cut off */
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1430,6 +1430,7 @@ st.markdown("""
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
             -webkit-flex: 0 0 4.25rem !important; flex: 0 0 4.25rem !important;
             min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
+            min-height: 4.5rem !important;
             background: #5a5a5a !important; border: 1px solid rgba(255,255,255,0.1) !important;
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-shrink: 0 !important; flex-shrink: 0 !important;
@@ -1437,6 +1438,7 @@ st.markdown("""
             -webkit-align-items: center !important; align-items: center !important;
             -webkit-justify-content: center !important; justify-content: center !important;
             gap: 0.1rem !important;
+            overflow: visible !important;
         }
         /* Inner block: column so number on top, date under (centered) */
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > [data-testid="stVerticalBlock"],
@@ -1574,15 +1576,17 @@ st.markdown("""
         -webkit-justify-content: center !important; justify-content: center !important;
         flex-wrap: nowrap !important; word-break: keep-all !important; overflow: visible !important; text-overflow: clip !important;
     }
-    /* Force button label to stay on one line — prevents digits stacking vertically for 10+ */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
+    /* Plan day: multi-line button (number + date + Missed day) — override nowrap above */
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
+        white-space: pre-line !important; font-size: 0.95rem !important; min-height: 3rem !important;
+    }
+    /* Force button label one line for admin (10+ days); plan-day-grid uses multi-line for number+date+status */
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
     #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button *,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button *,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button * {
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
@@ -1693,20 +1697,50 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Plan day cards: buttons match grey card, no white block overlay */
+    /* Player tab bar: pill/segmented tab design */
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"],
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] {
+        display: flex !important; gap: 0.25rem !important; padding: 0.25rem !important;
+        background: #1a1a1a !important; border-radius: 10px !important;
+        border: 1px solid #333333 !important; margin-bottom: 0.75rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"],
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] {
+        flex: 1 !important; margin: 0 !important; padding: 0.4rem 0.75rem !important;
+        border-radius: 8px !important; color: #888888 !important; font-weight: 500 !important;
+        background: transparent !important; border: none !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"]:hover,
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"]:hover {
+        color: #cccccc !important; background: rgba(255,255,255,0.05) !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
+        color: #ffffff !important; font-weight: 600 !important;
+        background: #333333 !important;
+    }
+
+    /* Plan day cards: single unified button, no smaller rectangle, multi-line label */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         background: transparent !important;
         color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.25) !important;
+        border: none !important;
+        box-shadow: none !important;
+        white-space: pre-line !important;
+        line-height: 1.35 !important;
+        text-align: center !important;
+        width: 100% !important;
+        min-height: auto !important;
+        padding: 0.25rem 0.15rem !important;
+        overflow: visible !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
-        background: rgba(255,255,255,0.12) !important;
-        color: #ffffff !important;
-        border: 1px solid rgba(255,255,255,0.45) !important;
+        background: rgba(255,255,255,0.1) !important;
+        outline: 1px solid rgba(255,255,255,0.35) !important;
     }
 
     /* Form card (black/white theme) */
@@ -2722,6 +2756,7 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
+    st.markdown('<div id="player-tab-bar" aria-hidden="true"></div>', unsafe_allow_html=True)
     _sel = st.radio("Tab", options=_tab_opts, key="player_tab_radio", horizontal=True, label_visibility="collapsed")
     st.session_state.player_tab = _sel
 
