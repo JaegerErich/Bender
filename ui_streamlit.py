@@ -159,6 +159,42 @@ def list_profiles() -> list[dict]:
     return sorted(out, key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
 
 
+def _apply_custom_request_to_plan_builder(req: dict) -> None:
+    """Pre-fill Admin Plan Builder form with data from a custom plan request."""
+    weeks = int(req.get("weeks") or 4)
+    days_per_week = int(req.get("days_per_week") or 4)
+    session_len_str = str(req.get("session_length") or "45")
+    try:
+        session_min = int(re.search(r"\d+", session_len_str).group(0))
+    except (AttributeError, ValueError):
+        session_min = 45
+    session_min = max(10, min(90, session_min))
+    plan_name = f"Custom: {req.get('display_name', 'Unknown')} — {str(req.get('primary_goal', ''))[:40]}"
+    st.session_state.admin_weeks = weeks
+    st.session_state.admin_plan_name = plan_name
+    all_profiles = list_profiles()
+    builder_options = [(None, "Default (admin / no equipment filter)")] + [(p, (p.get("display_name") or p.get("user_id") or "Unknown")) for p in all_profiles]
+    req_user = (req.get("user_id") or "").strip()
+    target_idx = 0
+    for idx, (prof, _) in enumerate(builder_options):
+        if prof and (prof.get("user_id") or "").strip() == req_user:
+            target_idx = idx
+            break
+    st.session_state.admin_plan_target = target_idx
+    try:
+        from admin_plan_builder import PLAN_MODES, MODE_SESSION_LEN_DEFAULTS
+    except ImportError:
+        return
+    days_to_select = list(range(min(days_per_week, 7)))
+    for mode_key in PLAN_MODES:
+        default_len = MODE_SESSION_LEN_DEFAULTS.get(mode_key, 30)
+        use_len = session_min if mode_key == "performance" else default_len
+        st.session_state[f"admin_mode_len_{mode_key}"] = use_len
+        for wd in range(7):
+            st.session_state[f"admin_mode_day_{mode_key}_{wd}"] = wd in days_to_select
+    st.session_state.admin_custom_request_integrated = True
+
+
 POSITION_OPTIONS = ["Forward", "Defense", "Goalie"]
 CURRENT_LEVEL_OPTIONS = ["Youth", "HS", "AA", "AAA", "Junior", "College", "Beer League"]
 
@@ -3007,42 +3043,6 @@ if _tab_admin is not None:
                     st.rerun()
             else:
                 st.caption("No other profiles found. Create accounts for players first.")
-
-def _apply_custom_request_to_plan_builder(req: dict) -> None:
-    """Pre-fill Admin Plan Builder form with data from a custom plan request."""
-    weeks = int(req.get("weeks") or 4)
-    days_per_week = int(req.get("days_per_week") or 4)
-    session_len_str = str(req.get("session_length") or "45")
-    try:
-        session_min = int(re.search(r"\d+", session_len_str).group(0))
-    except (AttributeError, ValueError):
-        session_min = 45
-    session_min = max(10, min(90, session_min))
-    plan_name = f"Custom: {req.get('display_name', 'Unknown')} — {str(req.get('primary_goal', ''))[:40]}"
-    st.session_state.admin_weeks = weeks
-    st.session_state.admin_plan_name = plan_name
-    all_profiles = list_profiles()
-    builder_options = [(None, "Default (admin / no equipment filter)")] + [(p, (p.get("display_name") or p.get("user_id") or "Unknown")) for p in all_profiles]
-    req_user = (req.get("user_id") or "").strip()
-    target_idx = 0
-    for idx, (prof, _) in enumerate(builder_options):
-        if prof and (prof.get("user_id") or "").strip() == req_user:
-            target_idx = idx
-            break
-    st.session_state.admin_plan_target = target_idx
-    try:
-        from admin_plan_builder import PLAN_MODES, MODE_SESSION_LEN_DEFAULTS
-    except ImportError:
-        return
-    days_to_select = list(range(min(days_per_week, 7)))
-    for mode_key in PLAN_MODES:
-        default_len = MODE_SESSION_LEN_DEFAULTS.get(mode_key, 30)
-        use_len = session_min if mode_key == "performance" else default_len
-        st.session_state[f"admin_mode_len_{mode_key}"] = use_len
-        for wd in range(7):
-            st.session_state[f"admin_mode_day_{mode_key}_{wd}"] = wd in days_to_select
-    st.session_state.admin_custom_request_integrated = True
-
 
 # Custom Plan Requester tab (admin only)
 if _tab_custom_requests is not None:
