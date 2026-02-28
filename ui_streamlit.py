@@ -1772,8 +1772,10 @@ st.markdown("""
         line-height: 1.3 !important;
     }
     #plan-day-grid ~ * .plan-day-date-pill,
-    div:has(#plan-day-grid) .plan-day-date-pill {
-        display: inline-block !important; background: #ffffff !important; color: #1a1a1a !important;
+    div:has(#plan-day-grid) .plan-day-date-pill,
+    .stMarkdown .plan-day-date-pill {
+        display: inline-block !important; background: #ffffff !important;
+        color: #000000 !important; -webkit-text-fill-color: #000000 !important;
         padding: 0.2rem 0.5rem !important; border-radius: 999px !important; margin-top: 0.2rem !important;
         font-size: 0.7rem !important; font-weight: 500 !important;
     }
