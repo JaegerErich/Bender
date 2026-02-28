@@ -1741,18 +1741,26 @@ st.markdown("""
         display: none !important;
     }
 
-    /* Tab style: Pill — rounded chips, selected has filled background */
+    /* Tab style: Pill — rounded chips, selected has filled background (default) */
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"],
     div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] {
-        border-bottom: none !important; gap: 0.5rem !important; padding: 0.25rem !important;
+        border-bottom: none !important; gap: 0.6rem !important; padding: 0.35rem 0 !important; margin-bottom: 1.25rem !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"],
     div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] {
-        border-bottom: none !important; border-radius: 999px !important; background: #333333 !important;
+        border-bottom: none !important; border-radius: 999px !important; background: #3a3a3a !important;
+        padding: 0.5rem 1.25rem !important; color: #b0b0b0 !important; font-weight: 500 !important;
+        border: 1px solid #4a4a4a !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"]:hover,
+    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"]:hover {
+        background: #444444 !important; color: #e0e0e0 !important; border-color: #555555 !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
     div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        background: #ffffff !important; color: #000000 !important; border-bottom-color: transparent !important; margin-bottom: 0 !important;
+        background: #ffffff !important; color: #000000 !important; border-color: #ffffff !important;
+        border-bottom-color: transparent !important; margin-bottom: 0 !important; font-weight: 600 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] label,
     div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] label {
@@ -2426,7 +2434,7 @@ with st.sidebar:
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
         st.caption("Tab headers")
-        _tab_style = st.session_state.get("player_tab_style") or "Underline"
+        _tab_style = st.session_state.get("player_tab_style") or "Pill"
         _tab_style_idx = ["Underline", "Pill", "Segmented", "Minimal"].index(_tab_style) if _tab_style in ["Underline", "Pill", "Segmented", "Minimal"] else 0
         st.selectbox("Tab header style", options=["Underline", "Pill", "Segmented", "Minimal"], index=_tab_style_idx, key="player_tab_style")
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
@@ -2853,7 +2861,7 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
-    _tab_style_val = (st.session_state.get("player_tab_style") or "Underline").lower().replace(" ", "-")
+    _tab_style_val = (st.session_state.get("player_tab_style") or "Pill").lower().replace(" ", "-")
     st.markdown(f'<div id="player-tab-bar" data-tab-style="{_tab_style_val}" aria-hidden="true"></div>', unsafe_allow_html=True)
     _sel = st.radio("Tab", options=_tab_opts, key="player_tab_radio", horizontal=True, label_visibility="collapsed")
     st.session_state.player_tab = _sel
