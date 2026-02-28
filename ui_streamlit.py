@@ -1696,16 +1696,16 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Player tab bar: clean underline tabs (no dots, no pill box) */
+    /* Player tab bar: clean underline tabs (no circles, no bubbles) — default */
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"],
     div:has(#player-tab-bar) ~ div [role="radiogroup"] {
-        display: flex !important; gap: 0 !important; padding: 0 !important; margin-bottom: 1rem !important;
+        display: flex !important; gap: 0 !important; padding: 0 !important; margin-bottom: 1.25rem !important;
         background: transparent !important; border: none !important; border-bottom: 1px solid #444444 !important;
         border-radius: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"],
     div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] {
-        flex: 0 1 auto !important; margin: 0 !important; padding: 0.6rem 1rem !important;
+        flex: 0 1 auto !important; margin: 0 !important; padding: 0.65rem 1.1rem !important;
         border: none !important; border-radius: 0 !important; border-bottom: 3px solid transparent !important;
         color: #888888 !important; font-weight: 500 !important; font-size: 0.95rem !important;
         background: transparent !important; cursor: pointer !important;
@@ -1719,16 +1719,20 @@ st.markdown("""
         color: #ffffff !important; font-weight: 600 !important;
         border-bottom-color: #ffffff !important; margin-bottom: -1px !important;
     }
-    /* Hide radio circle/dot completely — text-only tab headers, no dots */
+    /* Hide radio circles/dots completely — text-only tabs, no bubbles */
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"],
     div:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"] {
         -webkit-appearance: none !important; appearance: none !important; margin: 0 !important;
-        width: 100% !important; height: 100% !important; position: absolute !important; opacity: 0 !important;
+        width: 0 !important; height: 0 !important; min-width: 0 !important; min-height: 0 !important;
+        position: absolute !important; opacity: 0 !important; pointer-events: none !important;
+        clip: rect(0,0,0,0) !important; clip-path: inset(100%) !important; overflow: hidden !important;
     }
-    /* Hide any radio indicator (circle/dot), keep only label text */
+    /* Hide any radio indicator (circle/dot/bubble), keep only label text */
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label),
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label) {
-        display: none !important;
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label),
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] svg,
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] svg {
+        display: none !important; visibility: hidden !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label,
     div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label {
@@ -1787,22 +1791,29 @@ st.markdown("""
         background: #4a4a4a !important; color: #ffffff !important; border-bottom-color: transparent !important; margin-bottom: 0 !important;
     }
 
-    /* Tab style: Minimal — text only, subtle dot for selected */
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"],
-    div:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] {
-        border-bottom: none !important; gap: 1.5rem !important;
+    /* Tab style: Bordered — sharp rectangles, no curves, selected has white border */
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"],
+    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] {
+        border-bottom: none !important; gap: 0.5rem !important; padding: 0.25rem 0 !important; margin-bottom: 1.25rem !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"],
-    div:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"] {
-        border-bottom: none !important; padding: 0.5rem 0 !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"],
+    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] {
+        border-radius: 0 !important; background: transparent !important; border: 1px solid #444444 !important;
+        padding: 0.5rem 1.25rem !important; color: #999999 !important; font-weight: 500 !important;
+        border-bottom: none !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
-    div:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        border-bottom: none !important; margin-bottom: 0 !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"]:hover,
+    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"]:hover {
+        background: #2a2a2a !important; color: #cccccc !important; border-color: #555555 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] label::before,
-    div:has(#player-tab-bar[data-tab-style="minimal"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] label::before {
-        content: "● " !important; display: inline !important; font-size: 0.6em !important; vertical-align: middle !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
+    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
+        background: #1a1a1a !important; color: #ffffff !important; border-color: #ffffff !important;
+        border-bottom-color: transparent !important; margin-bottom: 0 !important; font-weight: 600 !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] label,
+    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] label {
+        color: inherit !important;
     }
 
     /* Plan day cards: number (button) large on top, date below */
@@ -2434,9 +2445,9 @@ with st.sidebar:
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
         st.caption("Tab headers")
-        _tab_style = st.session_state.get("player_tab_style") or "Pill"
-        _tab_style_idx = ["Underline", "Pill", "Segmented", "Minimal"].index(_tab_style) if _tab_style in ["Underline", "Pill", "Segmented", "Minimal"] else 0
-        st.selectbox("Tab header style", options=["Underline", "Pill", "Segmented", "Minimal"], index=_tab_style_idx, key="player_tab_style")
+        _tab_style = st.session_state.get("player_tab_style") or "Underline"
+        _tab_style_idx = ["Underline", "Bordered", "Segmented", "Pill"].index(_tab_style) if _tab_style in ["Underline", "Bordered", "Segmented", "Pill"] else 0
+        st.selectbox("Tab header style", options=["Underline", "Bordered", "Segmented", "Pill"], index=_tab_style_idx, key="player_tab_style")
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
@@ -2861,7 +2872,7 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
-    _tab_style_val = (st.session_state.get("player_tab_style") or "Pill").lower().replace(" ", "-")
+    _tab_style_val = (st.session_state.get("player_tab_style") or "Underline").lower().replace(" ", "-")
     st.markdown(f'<div id="player-tab-bar" data-tab-style="{_tab_style_val}" aria-hidden="true"></div>', unsafe_allow_html=True)
     _sel = st.radio("Tab", options=_tab_opts, key="player_tab_radio", horizontal=True, label_visibility="collapsed")
     st.session_state.player_tab = _sel
