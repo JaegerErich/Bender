@@ -1696,22 +1696,24 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Player tab bar: button-based tabs (no circles) — first horizontal block after #player-tab-bar markdown */
+    /* Player tab bar: clean underline style (app, browser, mobile) — text + base line + white underline for selected */
     [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 0.5rem !important; margin-bottom: 1.25rem !important;
+        display: flex !important; gap: 0 !important; margin-bottom: 1.25rem !important;
+        padding-bottom: 0 !important; flex-wrap: wrap !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar):not(:has([data-tab-style])) + div [data-testid="stHorizontalBlock"],
+    /* Grey base line for underline style (default) */
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] {
         border-bottom: 1px solid #444444 !important;
     }
-    /* Underline style (default): text + bottom border for selected */
+    /* Default: underline style — inactive = grey text, active = white + white underline on grey base */
     [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button {
         background: transparent !important; border: none !important; border-radius: 0 !important;
-        border-bottom: 3px solid transparent !important; color: #888888 !important;
-        font-weight: 500 !important; font-size: 0.95rem !important; padding: 0.65rem 1.1rem !important;
+        border-bottom: 3px solid transparent !important; margin-bottom: -1px !important;
+        color: #999999 !important; font-weight: 500 !important; font-size: 0.95rem !important;
+        padding: 0.7rem 1rem !important; box-shadow: none !important;
     }
     [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
@@ -1720,6 +1722,13 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         color: #ffffff !important; font-weight: 600 !important; border-bottom-color: #ffffff !important;
+    }
+    /* Responsive: mobile — slightly smaller taps, same layout */
+    @media (max-width: 640px) {
+        [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button {
+            padding: 0.6rem 0.75rem !important; font-size: 0.9rem !important;
+        }
     }
     /* Pill style */
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button,
