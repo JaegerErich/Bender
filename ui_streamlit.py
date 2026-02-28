@@ -1284,7 +1284,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: hidden !important;
-        width: 21rem !important; max-width: 100% !important; min-width: 0 !important;
+        width: 22.75rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.5rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: thin !important;
         scrollbar-color: #888888 #2a2a2a !important;
@@ -1329,7 +1329,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
-    /* Card: fixed size so 5 fit in view; constrain strictly to prevent overlap with many days */
+    /* Card: fixed size, subtle background, rounded corners for cleaner look */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1340,9 +1340,11 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 4rem !important; width: 4rem !important; max-width: 4rem !important;
-        flex: 0 0 4rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
-        gap: 0 !important; box-sizing: border-box !important;
+        min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
+        flex: 0 0 4.25rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        gap: 0.25rem !important; box-sizing: border-box !important;
+        padding: 0.4rem 0.25rem !important; border-radius: 10px !important;
+        background: rgba(40,40,40,0.5) !important; border: 1px solid rgba(255,255,255,0.08) !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1352,9 +1354,9 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
-        gap: 0.15rem !important;
+        gap: 0.35rem !important;
     }
-    /* Constrain inner content of day columns to prevent overflow/overlap */
+    /* Day column content: allow date/missed to display fully (no clipping) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
@@ -1364,7 +1366,7 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > * {
-        max-width: 100% !important; min-width: 0 !important; overflow: hidden !important;
+        max-width: 100% !important; min-width: 0 !important; overflow: visible !important;
     }
     /* Mobile + Safari: keep day cards in one horizontal row; inside each card show number + date side-by-side */
     @media (max-width: 768px) {
@@ -1520,6 +1522,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
         display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
+    /* Selected card: subtle highlight ring */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
@@ -1530,7 +1533,7 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
-        border-color: white !important;
+        border-color: rgba(255,255,255,0.4) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.2) !important;
     }
     /* Workout number button: fixed size box, text side-by-side for 10+ */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -1566,23 +1569,24 @@ st.markdown("""
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
         font-size: inherit !important; line-height: inherit !important;
     }
-    /* Date: centered under number */
+    /* Date: centered under number, always visible including when selected */
     .plan-day-date {
-        background: transparent !important; color: #cccccc !important; font-size: 0.6rem !important; text-align: center !important;
-        margin: 0 auto !important; padding: 0 !important; line-height: 1.15 !important; width: 100% !important; display: block !important;
+        background: transparent !important; color: #b0b0b0 !important; font-size: 0.7rem !important; text-align: center !important;
+        margin: 0.2rem auto 0 !important; padding: 0 !important; line-height: 1.25 !important; width: 100% !important;
+        display: block !important; overflow: visible !important;
     }
     .plan-day-date-selected {
-        background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
-        border-radius: 999px !important; display: inline-block !important;
+        background: rgba(255,255,255,0.15) !important; color: #ffffff !important; padding: 0.2rem 0.4rem !important;
+        border-radius: 6px !important; display: inline-block !important; font-weight: 600 !important; font-size: 0.7rem !important;
     }
-    /* Date + missed block: date on top, missed text directly below */
+    /* Date + missed/complete block: date on top, label directly below */
     .plan-day-date-block {
         display: flex !important; flex-direction: column !important; align-items: center !important;
-        width: 100% !important; gap: 0 !important; margin: 0 !important; padding: 0 !important;
+        width: 100% !important; gap: 0.15rem !important; margin: 0.2rem 0 0 !important; padding: 0 !important;
     }
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
-    .plan-day-date-block .plan-day-missed { margin-top: 0.2rem !important; }
-    .plan-day-date-block .plan-day-complete-label { margin-top: 0.05rem !important; }
+    .plan-day-date-block .plan-day-missed { margin-top: 0 !important; }
+    .plan-day-date-block .plan-day-complete-label { margin-top: 0 !important; }
     /* Day missed: whole day card turns red (like green for complete) */
     .plan-day-missed-marker { display: none; }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
@@ -1590,15 +1594,17 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) {
         background: #dc2626 !important;
     }
-    /* Missed day: small text under date (white on red card) */
+    /* Missed day: text below date (white on red card, clearly visible) */
     .plan-day-missed {
-        font-size: 0.5rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
+        font-size: 0.6rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1.2 !important; text-align: center !important; width: 100% !important; display: block !important;
+        font-weight: 600 !important;
     }
-    /* Day complete: small text under date (white on green card) */
+    /* Day complete: text under date (white on green card) */
     .plan-day-complete-label {
-        font-size: 0.5rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1.1 !important; text-align: center !important; width: 100% !important; display: block !important;
+        font-size: 0.6rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
+        line-height: 1.2 !important; text-align: center !important; width: 100% !important; display: block !important;
+        font-weight: 600 !important;
     }
     /* Player day complete: whole day card turns green */
     .plan-day-complete { display: none; }
@@ -1610,12 +1616,12 @@ st.markdown("""
     /* Admin plan day selector: same as player plan — 5 visible, scroll, fixed card size, number then date */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #cccccc !important; margin: 0 !important; padding: 0 !important; font-size: 0.6rem !important; line-height: 1.15 !important; text-align: center !important; width: 100% !important; display: block !important;
+        background: transparent !important; color: #b0b0b0 !important; margin: 0 !important; padding: 0 !important; font-size: 0.7rem !important; line-height: 1.25 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
-        background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
-        border-radius: 999px !important;
+        background: rgba(255,255,255,0.15) !important; color: #ffffff !important; padding: 0.2rem 0.4rem !important;
+        border-radius: 6px !important; font-weight: 600 !important;
     }
     /* Admin day complete: card turns green, number crossed off */
     .admin-day-complete { display: none; }
@@ -3116,37 +3122,22 @@ if _tab_custom_requests is not None:
                             mark_custom_plan_request_complete(req.get("id", ""))
                             st.rerun()
 
-# Your Work tab (players only)
+# Your Work tab (players only) — total hours only
 if _tab_silent_work is not None:
     with _tab_silent_work:
-        st.subheader("Your Work")
-        st.caption("Your lifetime volume. Data adds when you complete a workout from **Training Session** or **My Plan**.")
         prof = st.session_state.get("current_profile") or {}
         stats = prof.get("private_victory_stats") or {}
-        completions = int(stats.get("completions_count", 0))
-        if completions == 0:
-            st.caption("Generate a session, do it, and click **Workout Complete** to start tracking.")
         gym_h = float(stats.get("gym_hours", 0) or 0)
         skating_h = float(stats.get("skating_hours", 0) or 0)
         cond_h = float(stats.get("conditioning_hours", 0) or 0)
         stick_h = float(stats.get("stickhandling_hours", 0) or 0)
         mob_h = float(stats.get("mobility_hours", 0) or 0)
         total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
-        shots = int(stats.get("shots", 0) or 0)
 
         st.markdown(
             '<div class="your-work-stats-card">'
             '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
-            '<div class="your-work-divider"></div>'
-            '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
-            '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
-            '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
-            '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
-            '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
-            '<div class="your-work-divider"></div>'
-            '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
-            '<div class="your-work-footer">{} workout{} completed</div>'
-            '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots, completions, "s" if completions != 1 else ""),
+            '</div>'.format(total_hours),
             unsafe_allow_html=True,
         )
 
@@ -3197,34 +3188,37 @@ if _tab_highscores is not None:
                     unsafe_allow_html=True,
                 )
             st.divider()
-            st.caption("Leaderboard (players with completions)")
-            players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
-            players_with_stats.sort(key=lambda x: x[1].get("completions_count", 0), reverse=True)
-            if not players_with_stats:
-                st.info("No player completions yet.")
+            st.caption("Category leaders (who leads each category)")
+            # For each category, find the account with the highest value
+            _cat_defs = [
+                ("Total Hours", "total_hours", lambda s: float(s.get("gym_hours", 0) or 0) + float(s.get("skating_hours", 0) or 0) + float(s.get("conditioning_hours", 0) or 0) + float(s.get("stickhandling_hours", 0) or 0) + float(s.get("mobility_hours", 0) or 0), "{:.1f} h"),
+                ("Gym", "gym_hours", lambda s: float(s.get("gym_hours", 0) or 0), "{:.1f} h"),
+                ("Skating mechanics", "skating_hours", lambda s: float(s.get("skating_hours", 0) or 0), "{:.1f} h"),
+                ("Conditioning", "conditioning_hours", lambda s: float(s.get("conditioning_hours", 0) or 0), "{:.1f} h"),
+                ("Stickhandling", "stickhandling_hours", lambda s: float(s.get("stickhandling_hours", 0) or 0), "{:.1f} h"),
+                ("Mobility / recovery", "mobility_hours", lambda s: float(s.get("mobility_hours", 0) or 0), "{:.1f} h"),
+                ("Total Shots", "shots", lambda s: int(s.get("shots", 0) or 0), "{:,}"),
+            ]
+            _leader_rows = []
+            for cat_label, _key, get_val, fmt in _cat_defs:
+                best_val = -1
+                best_prof = None
+                for p in all_profs:
+                    stats = p.get("private_victory_stats") or {}
+                    v = get_val(stats)
+                    if v > best_val:
+                        best_val = v
+                        best_prof = p
+                if best_prof is not None and best_val >= 0:
+                    name = best_prof.get("display_name") or best_prof.get("user_id") or "Unknown"
+                    _leader_rows.append((cat_label, name, fmt.format(best_val)))
+            if not _leader_rows:
+                st.info("No category data yet. Complete workouts to see leaders.")
             else:
-                for i, (p, stats) in enumerate(players_with_stats):
-                    name = p.get("display_name") or p.get("user_id") or "Unknown"
-                    comp = int(stats.get("completions_count", 0))
-                    gym_h = float(stats.get("gym_hours", 0) or 0)
-                    skating_h = float(stats.get("skating_hours", 0) or 0)
-                    cond_h = float(stats.get("conditioning_hours", 0) or 0)
-                    stick_h = float(stats.get("stickhandling_hours", 0) or 0)
-                    mob_h = float(stats.get("mobility_hours", 0) or 0)
-                    total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
-                    shots = int(stats.get("shots", 0) or 0)
-                    with st.expander(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed", expanded=(i == 0)):
-                        st.markdown(
-                            '<div class="your-work-stats-card">'
-                            '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
-                            '<div class="your-work-divider"></div>'
-                            '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
-                            '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
-                            '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
-                            '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
-                            '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
-                            '<div class="your-work-divider"></div>'
-                            '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
-                            '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots),
-                            unsafe_allow_html=True,
-                        )
+                _card_lines = ['<div class="your-work-stats-card">']
+                _card_lines.append('<div class="your-work-section"><span class="your-work-label">Category leaders</span><span class="your-work-value"></span></div>')
+                _card_lines.append('<div class="your-work-divider"></div>')
+                for cat_label, leader_name, value in _leader_rows:
+                    _card_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{cat_label}</span><span class="your-work-num">{leader_name} — {value}</span></div>')
+                _card_lines.append('</div>')
+                st.markdown("\n".join(_card_lines), unsafe_allow_html=True)
