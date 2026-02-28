@@ -2353,39 +2353,21 @@ if _admin:
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _has_valid_plan:
-    _tab_options = ["Training Session", "My Plan", "Your Work"]
     _tab_admin = None
     _tab_custom_requests = None
     _tab_highscores = None
     _tab_plan = None
     _tab_silent_work = None
 else:
-    _tab_options = ["Training Session", "Your Work"]
     _tab_admin = None
     _tab_custom_requests = None
     _tab_plan = None
     _tab_highscores = None
     _tab_silent_work = None
 
-# Player tab selector: only render selected tab so Training Session workout stays isolated
-if not _admin:
-    if "player_tab" not in st.session_state:
-        st.session_state.player_tab = "Training Session"
-    _selected_tab = st.radio(
-        "Tab",
-        options=_tab_options,
-        key="player_tab_radio",
-        horizontal=True,
-        label_visibility="collapsed",
-    )
-    st.session_state.player_tab = _selected_tab
-
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
-
-# Admin: inside Workout Generator tab. Player: only when Training Session selected (keeps workout isolated).
-_show_training = _admin or (not _admin and st.session_state.get("player_tab") == "Training Session")
 
 
 def _render_training_session():
@@ -2641,6 +2623,7 @@ def _render_training_session():
             with _clear_col:
                 if st.button("Clear workout", key="clear_workout_top"):
                     clear_last_output()
+                    st.rerun()
             st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
             tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
 
@@ -2663,6 +2646,7 @@ def _render_training_session():
                     st.rerun()
                 if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                     clear_last_output()
+                    st.rerun()
 
             with tab_download:
                 safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
@@ -2670,7 +2654,7 @@ def _render_training_session():
                 download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
                 st.download_button(
                     label="Download workout (.txt)",
-                    data=st.session_state.last_output_text,
+                    data=st.session_state.last_output_text or "",
                     file_name=download_filename,
                     mime="text/plain",
                 )
@@ -2684,38 +2668,43 @@ def _render_training_session():
     _training_session_fragment()
 
 
-if _show_training:
-    if _admin:
-        with _bender_ctx:
-            _render_training_session()
-    else:
+# Admin: training in Workout Generator tab. Player: st.tabs — Training Session | My Plan | Your Work (workout stays in Training tab only)
+if _admin:
+    with _bender_ctx:
         _render_training_session()
+else:
+    # Player: use st.tabs for tab UI; each tab shows only its own content (workout isolated in Training Session)
+    if _has_valid_plan:
+        _pt_train, _pt_plan, _pt_work = st.tabs(["Training Session", "My Plan", "Your Work"])
+    else:
+        _pt_train, _pt_work = st.tabs(["Training Session", "Your Work"])
+        _pt_plan = None
+    with _pt_train:
+        _render_training_session()
+    if _pt_plan is not None:
+        with _pt_plan:
+            _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
+            _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
+            if isinstance(_plan_completed, dict):
+                _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
 
+            def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
+                prof = dict(st.session_state.current_profile or {})
+                c = dict(prof.get("assigned_plan_completed") or {})
+                key = str(day_idx)
+                c[key] = list(set(c.get(key, [])) | {mode_key})
+                prof["assigned_plan_completed"] = c
+                if params_or_meta:
+                    prof = _add_completion_to_profile(prof, params_or_meta)
+                st.session_state.current_profile = prof
+                save_profile(prof)
+                st.rerun()
 
-# My Plan tab (for players with assigned plan) — rendered after Training Session for correct tab order
-# Admin: N/A (no My Plan tab). Player: render only when My Plan tab selected.
-if not _admin and st.session_state.get("player_tab") == "My Plan" and _has_valid_plan and _assigned_plan:
-    # Player on My Plan tab — render directly (no st.tabs for players)
-    _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
-    _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
-    if isinstance(_plan_completed, dict):
-        _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
-
-    def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
-        prof = dict(st.session_state.current_profile or {})
-        c = dict(prof.get("assigned_plan_completed") or {})
-        key = str(day_idx)
-        c[key] = list(set(c.get(key, [])) | {mode_key})
-        prof["assigned_plan_completed"] = c
-        if params_or_meta:
-            prof = _add_completion_to_profile(prof, params_or_meta)
-        st.session_state.current_profile = prof
-        save_profile(prof)
-        st.rerun()
-
-    if _plan_name:
-        st.markdown(f"### {_plan_name}")
-    _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
+            if _plan_name:
+                st.markdown(f"### {_plan_name}")
+            _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
+    with _pt_work:
+        _render_your_work_stats()
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
 if _tab_admin is not None:
@@ -3161,6 +3150,7 @@ if _tab_custom_requests is not None:
                             st.rerun()
 
 def _render_your_work_stats():
+    """Show all mode hours and shots, including 0 values."""
     prof = st.session_state.get("current_profile") or {}
     stats = prof.get("private_victory_stats") or {}
     gym_h = float(stats.get("gym_hours", 0) or 0)
@@ -3168,23 +3158,29 @@ def _render_your_work_stats():
     cond_h = float(stats.get("conditioning_hours", 0) or 0)
     stick_h = float(stats.get("stickhandling_hours", 0) or 0)
     mob_h = float(stats.get("mobility_hours", 0) or 0)
+    shots = int(stats.get("shots", 0) or 0)
     total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
 
     st.markdown(
         '<div class="your-work-stats-card">'
         '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
-        '</div>'.format(total_hours),
+        '<div class="your-work-divider"></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-divider"></div>'
+        '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
+        '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots),
         unsafe_allow_html=True,
     )
 
 
-# Your Work tab — admin: in tab. Player: render when Your Work tab selected.
+# Your Work tab — admin only (players get Your Work via st.tabs above)
 if _tab_silent_work is not None:
     with _tab_silent_work:
         _render_your_work_stats()
-elif not _admin and st.session_state.get("player_tab") == "Your Work":
-    # Player on Your Work tab — render directly (no st.tabs for players)
-    _render_your_work_stats()
 
 
 # Admin: Highscores tab (admin only)
