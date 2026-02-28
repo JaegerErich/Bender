@@ -641,7 +641,7 @@ def _render_your_work_stats():
 
     st.markdown(
         '<div class="your-work-stats-card">'
-        '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+        '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
         '<div class="your-work-divider"></div>'
         '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
         '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
@@ -649,8 +649,8 @@ def _render_your_work_stats():
         '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
         '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
         '<div class="your-work-divider"></div>'
-        '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
-        '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots),
+        '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+        '</div>'.format(shots, gym_h, skating_h, cond_h, stick_h, mob_h, total_hours),
         unsafe_allow_html=True,
     )
 
@@ -1307,7 +1307,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: hidden !important;
-        width: 23rem !important; max-width: 100% !important; min-width: 0 !important;
+        width: 24rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.75rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: auto !important;
         scrollbar-color: #888888 #2a2a2a !important;
@@ -1363,19 +1363,19 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
-        flex: 0 0 4.25rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
+        flex: 0 0 4.5rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
         gap: 0.25rem !important; box-sizing: border-box !important;
-        padding: 0.5rem 0.3rem !important; border-radius: 10px !important;
-        background: #5a5a5a !important; border: 2px solid #444444 !important;
+        padding: 0.55rem 0.35rem !important; border-radius: 12px !important;
+        background: #4a4a4a !important; border: 2px solid #3a3a3a !important;
         overflow: visible !important; min-height: 4rem !important;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
     }
-    /* Selected day: white bg + dark grey border (match Faith That Endures exactly) */
+    /* Selected day: white bg + black border (distinct, like Faith That Endures) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]),
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]) {
-        background: #ffffff !important; border: 2px solid #444444 !important;
+        background: #ffffff !important; border: 2px solid #000000 !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1385,7 +1385,7 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
-        gap: 0.35rem !important;
+        gap: 0.4rem !important;
     }
     /* Day column content: allow date/missed to display fully (no clipping) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
@@ -1416,7 +1416,7 @@ st.markdown("""
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
             overflow-x: auto !important; overflow-y: hidden !important;
             -webkit-overflow-scrolling: touch !important;
-            width: 22.75rem !important; max-width: 100% !important; min-width: 0 !important;
+            width: 24rem !important; max-width: 100% !important; min-width: 0 !important;
         }
         /* Each day card: 5 visible, scroll for more, match reference design */
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1429,10 +1429,10 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            -webkit-flex: 0 0 4.25rem !important; flex: 0 0 4.25rem !important;
-            min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
-            min-height: 4.5rem !important;
-            background: #5a5a5a !important; border: 2px solid #444444 !important;
+            -webkit-flex: 0 0 4.5rem !important; flex: 0 0 4.5rem !important;
+            min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
+            min-height: 4.75rem !important;
+            background: #4a4a4a !important; border: 2px solid #3a3a3a !important;
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-shrink: 0 !important; flex-shrink: 0 !important;
             -webkit-flex-direction: column !important; flex-direction: column !important;
@@ -1503,7 +1503,7 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            flex: 0 0 4.25rem !important; min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
+            flex: 0 0 4.5rem !important; min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
         }
     }
 
@@ -1744,22 +1744,22 @@ st.markdown("""
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         background: transparent !important;
-        color: #b8b8b8 !important;
+        color: #ffffff !important;
         border: none !important;
         box-shadow: none !important;
         white-space: pre-line !important;
-        line-height: 1.35 !important;
+        line-height: 1.4 !important;
         text-align: center !important;
         width: 100% !important;
         min-height: auto !important;
-        padding: 0.4rem 0.25rem !important;
+        padding: 0.45rem 0.3rem !important;
         overflow: visible !important;
-        font-size: 0.8rem !important;
+        font-size: 0.75rem !important;
     }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button::first-line,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button::first-line,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button::first-line {
-        font-size: 1.35rem !important; font-weight: 600 !important;
+        font-size: 1.5rem !important; font-weight: 600 !important;
     }
     /* Selected day: black text on white card */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
