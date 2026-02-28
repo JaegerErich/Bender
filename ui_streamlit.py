@@ -1764,6 +1764,21 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #4a4a4a !important; color: #ffffff !important;
     }
+    /* Floating style — selected tab appears raised with shadow, like a card */
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: #2a2a2a !important; border: 1px solid #3a3a3a !important; border-radius: 8px !important;
+        color: #999999 !important; padding: 0.55rem 1.2rem !important; box-shadow: none !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
+        background: #333333 !important; color: #cccccc !important; border-color: #555555 !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="floating"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #ffffff !important; color: #000000 !important; border-color: #ffffff !important;
+        font-weight: 600 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.4) !important; transform: translateY(-1px) !important;
+    }
 
     /* Plan day cards: number (button) large on top, date below */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -2395,8 +2410,8 @@ with st.sidebar:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
         st.caption("Tab headers")
         _tab_style = st.session_state.get("player_tab_style") or "Underline"
-        _tab_style_idx = ["Underline", "Bordered", "Segmented", "Pill"].index(_tab_style) if _tab_style in ["Underline", "Bordered", "Segmented", "Pill"] else 0
-        st.selectbox("Tab header style", options=["Underline", "Bordered", "Segmented", "Pill"], index=_tab_style_idx, key="player_tab_style")
+        _tab_style_idx = ["Underline", "Bordered", "Segmented", "Pill", "Floating"].index(_tab_style) if _tab_style in ["Underline", "Bordered", "Segmented", "Pill", "Floating"] else 0
+        st.selectbox("Tab header style", options=["Underline", "Bordered", "Segmented", "Pill", "Floating"], index=_tab_style_idx, key="player_tab_style")
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
