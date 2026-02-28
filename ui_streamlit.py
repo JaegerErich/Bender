@@ -358,7 +358,7 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
         with row_cols[i]:
             day_data = flat_days[i][1]
             day_date = day_data.get("date")
-            date_str = day_date.strftime("%a") if hasattr(day_date, "strftime") else str(day_date)[:3]
+            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
             _completed = completed.get(i) or completed.get(str(i)) or []
             _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
             focus_items_i = day_data.get("focus_items", [])
@@ -1284,7 +1284,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: hidden !important;
-        width: 20.75rem !important; max-width: 100% !important; min-width: 0 !important;
+        width: 21rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.5rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: thin !important;
         scrollbar-color: #888888 #2a2a2a !important;
@@ -1520,7 +1520,6 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
         display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
-    /* Selected day: clean highlight — subtle border, no harsh shadows */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
@@ -1531,22 +1530,9 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
-        border: 1px solid rgba(255,255,255,0.5) !important; border-radius: 10px !important;
-        box-shadow: 0 0 0 1px rgba(255,255,255,0.15) !important;
+        border-color: white !important;
     }
-    /* Workout number button: fixed size box, number + date stacked cleanly; selected = subtle highlight */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
-        background: rgba(255,255,255,0.12) !important; border: 1px solid rgba(255,255,255,0.4) !important;
-        box-shadow: none !important;
-    }
+    /* Workout number button: fixed size box, text side-by-side for 10+ */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -1557,7 +1543,7 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 2.5rem !important; width: 2.5rem !important; max-width: 2.5rem !important; height: 1.75rem !important; min-height: 1.75rem !important;
+        min-width: 2.25rem !important; width: 2.25rem !important; max-width: 2.25rem !important; height: 1.6rem !important; min-height: 1.6rem !important;
         border-radius: 8px !important; font-weight: 600 !important; font-size: 1rem !important;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important; padding: 0 0.3rem !important;
@@ -1580,10 +1566,10 @@ st.markdown("""
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
         font-size: inherit !important; line-height: inherit !important;
     }
-    /* Date: centered under number, day of week (Mon, Tue, etc.) */
+    /* Date: centered under number */
     .plan-day-date {
-        background: transparent !important; color: #d0d0d0 !important; font-size: 0.75rem !important; text-align: center !important;
-        margin: 0.15rem auto 0 !important; padding: 0 !important; line-height: 1.2 !important; width: 100% !important; display: block !important;
+        background: transparent !important; color: #cccccc !important; font-size: 0.6rem !important; text-align: center !important;
+        margin: 0 auto !important; padding: 0 !important; line-height: 1.15 !important; width: 100% !important; display: block !important;
     }
     .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
@@ -2751,7 +2737,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with _row_cols[i]:
                     _dd = flat_days_edit[i][1]
-                    _ds = _dd["date"].strftime("%a") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:3]
+                    _ds = _dd["date"].strftime("%b %d") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:8]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     _focus_i = _dd.get("focus_items", [])
                     _day_done = len(_focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in _focus_i)
@@ -3033,7 +3019,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with row_cols[i]:
                     day_data_i = flat_days[i][1]
-                    date_str = day_data_i["date"].strftime("%a") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:3]
+                    date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     focus_i = day_data_i.get("focus_items", [])
                     day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
