@@ -1773,7 +1773,7 @@ st.markdown("""
     }
     #plan-day-grid ~ * .plan-day-date-pill,
     div:has(#plan-day-grid) .plan-day-date-pill {
-        display: inline-block !important; background: #ffffff !important; color: #333333 !important;
+        display: inline-block !important; background: #ffffff !important; color: #4a4a4a !important;
         padding: 0.2rem 0.5rem !important; border-radius: 999px !important; margin-top: 0.2rem !important;
         font-size: 0.7rem !important; font-weight: 500 !important;
     }
