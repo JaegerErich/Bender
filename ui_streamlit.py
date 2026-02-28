@@ -519,7 +519,7 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
 
 
 def _compute_volume_from_metadata(metadata: dict) -> dict:
-    """Compute volume deltas from workout metadata for The Silent Work stats.
+    """Compute volume deltas from workout metadata for Your Work stats.
     Returns {stickhandling_hours, shots, gym_hours, skating_hours, conditioning_hours, mobility_hours}."""
     mode = (metadata.get("mode") or "").lower()
     minutes = max(0, int(metadata.get("minutes") or 0))
@@ -558,7 +558,7 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
 
 
 def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
-    """Add workout completion volumes to profile's private_victory_stats (The Silent Work)."""
+    """Add workout completion volumes to profile's private_victory_stats (Your Work)."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -1956,6 +1956,8 @@ if "auth_page" not in st.session_state:
     st.session_state.auth_page = "login"  # "login" or "create_account" when not logged in
 if "admin_plan" not in st.session_state:
     st.session_state.admin_plan = None
+if "admin_pending_integration" not in st.session_state:
+    st.session_state.admin_pending_integration = None
 
 # Restore login from URL (e.g. after page refresh) — keep user logged in unless they sign out
 if st.session_state.current_user_id is None:
@@ -2127,7 +2129,7 @@ with st.sidebar:
     if os.path.isfile(_b_logo_path):
         st.image(_b_logo_path, width=44)
     else:
-        st.markdown('<p style="font-weight:700; letter-spacing:0.1em; color:#ffffff; margin-bottom:0;">BENDER</p>', unsafe_allow_html=True)
+        st.markdown('<p style="font-size:2rem; font-weight:700; letter-spacing:0.05em; color:#ffffff; margin-bottom:0;">B</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
     with st.expander("Account Settings", expanded=False):
         st.caption("Position, level, height & weight")
@@ -2176,6 +2178,18 @@ with st.sidebar:
         if "uid" in st.query_params:
             del st.query_params["uid"]
         st.rerun()  # Shows landing (Log in page)
+    _sidebar_athlete = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
+    _sidebar_meta = st.session_state.get("last_output_metadata") or {}
+    _sidebar_prefill = build_prefilled_feedback_url(
+        athlete=_sidebar_athlete.strip(),
+        mode_label={"performance": "Performance", "energy_systems": "Conditioning", "skating_mechanics": "Skating Mechanics", "shooting": "Puck Mastery (Shooting)", "stickhandling": "Puck Mastery (Stickhandling)", "skills_only": "Puck Mastery (Both)", "mobility": "Mobility"}.get(_sidebar_meta.get("mode", ""), ""),
+        location_label="Gym" if _sidebar_meta.get("location") == "gym" else "No Gym",
+        emphasis_key="",
+        rating=4,
+        notes="",
+    )
+    st.link_button("Leave Feedback (auto-filled)", _sidebar_prefill)
+    st.link_button("Open Feedback Form (blank)", FORM_BASE)
 
 # ---------- Main area: form in card ----------
 # Signed-in line (Sign out is only in the sidebar Equipment section)
@@ -2217,18 +2231,24 @@ except (ImportError, KeyError, Exception):
 
 _admin = is_admin_user(display_name)
 _assigned_plan = (st.session_state.current_profile or {}).get("assigned_plan")
+# Only show My Plan tab if player has a real plan with content
+_weeks = []
+if _assigned_plan:
+    _weeks = (_assigned_plan.get("plan", _assigned_plan) if isinstance(_assigned_plan, dict) else _assigned_plan) or []
+_has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["Bender", "Admin: Plan Builder", "Admin: Highscores", "The Silent Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
+    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["B", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
-elif _assigned_plan:
-    _tab_generate, _tab_plan, _tab_silent_work = st.tabs(["Training Session", "My Plan", "The Silent Work"])
+elif _has_valid_plan:
+    _tab_generate, _tab_plan, _tab_silent_work = st.tabs(["Training Session", "My Plan", "Your Work"])
     _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
+    _tab_highscores = None
 else:
-    _tab_generate, _tab_silent_work = st.tabs(["Training Session", "The Silent Work"])
+    _tab_generate, _tab_silent_work = st.tabs(["Training Session", "Your Work"])
     _bender_ctx = _tab_generate
     _tab_admin = None
     _tab_custom_requests = None
@@ -2238,30 +2258,6 @@ else:
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
-
-# My Plan tab (for players with assigned plan)
-if _tab_plan is not None and _assigned_plan:
-    with _tab_plan:
-        _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
-        _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
-        if isinstance(_plan_completed, dict):
-            _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
-
-        def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
-            prof = dict(st.session_state.current_profile or {})
-            c = dict(prof.get("assigned_plan_completed") or {})
-            key = str(day_idx)
-            c[key] = list(set(c.get(key, [])) | {mode_key})
-            prof["assigned_plan_completed"] = c
-            if params_or_meta:
-                prof = _add_completion_to_profile(prof, params_or_meta)
-            st.session_state.current_profile = prof
-            save_profile(prof)
-            st.rerun()
-
-        if _plan_name:
-            st.markdown(f"### {_plan_name}")
-        _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 with _bender_ctx:
     # Custom Plan Intake questionnaire (shown when Request Custom Plan clicked)
@@ -2511,7 +2507,7 @@ with _bender_ctx:
                 height=0,
             )
         st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-        tab_workout, tab_download, tab_feedback = st.tabs(["Workout", "Download / Copy", "Feedback"])
+        tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
 
         with tab_workout:
             st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
@@ -2522,7 +2518,7 @@ with _bender_ctx:
             else:
                 render_workout_readable(st.session_state.last_output_text)
             st.divider()
-            st.caption("Finished? Log your completion to The Silent Work.")
+            st.caption("Finished? Log your completion to Your Work.")
             _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
             if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
                 prof = st.session_state.get("current_profile") or {}
@@ -2531,7 +2527,7 @@ with _bender_ctx:
                     st.session_state.current_profile = prof
                     save_profile(prof)
                 clear_last_output()
-                st.success("Workout logged to The Silent Work!")
+                st.success("Workout logged to Your Work!")
                 st.rerun()
             if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                 clear_last_output()
@@ -2554,38 +2550,39 @@ with _bender_ctx:
                     st.code(st.session_state.last_output_text)
                     st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
 
-        with tab_feedback:
-            st.write("Leave feedback so I can improve workouts.")
 
-        # Map your internal mode token to the form’s expected label
-            form_mode_value = {
-                "skills_only": "Puck Mastery (Both)",
-                "shooting": "Puck Mastery (Shooting)",
-                "stickhandling": "Puck Mastery (Stickhandling)",
-                "performance": "Performance",
-                "energy_systems": "Conditioning",
-                "skating_mechanics": "Skating Mechanics",
-                "mobility": "Mobility",
-            }.get(effective_mode, mode_label)
-            if effective_mode in ("performance", "energy_systems"):
-                form_location_value = "Gym" if location == "gym" else "No Gym"
-            else:
-                form_location_value = "No Gym"
-            form_emphasis_value = strength_emphasis if effective_mode == "performance" else ""
-            prefill_url = build_prefilled_feedback_url(
-                athlete=athlete_id.strip(),
-                mode_label=form_mode_value,
-                location_label=form_location_value,
-                emphasis_key=form_emphasis_value,
-                rating=4,
-                notes="",
-            )
-            st.link_button("Leave Feedback (auto-filled)", prefill_url)
-            st.link_button("Open Feedback Form (blank)", FORM_BASE)
+# My Plan tab (for players with assigned plan) — rendered after Training Session for correct tab order
+if _tab_plan is not None and _has_valid_plan and _assigned_plan:
+    with _tab_plan:
+        _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
+        _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
+        if isinstance(_plan_completed, dict):
+            _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
+
+        def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
+            prof = dict(st.session_state.current_profile or {})
+            c = dict(prof.get("assigned_plan_completed") or {})
+            key = str(day_idx)
+            c[key] = list(set(c.get(key, [])) | {mode_key})
+            prof["assigned_plan_completed"] = c
+            if params_or_meta:
+                prof = _add_completion_to_profile(prof, params_or_meta)
+            st.session_state.current_profile = prof
+            save_profile(prof)
+            st.rerun()
+
+        if _plan_name:
+            st.markdown(f"### {_plan_name}")
+        _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
 if _tab_admin is not None:
     with _tab_admin:
+        # Process pending integration from Custom Plan Request tab (before any widgets that use these keys)
+        if st.session_state.get("admin_pending_integration"):
+            _req = st.session_state.admin_pending_integration
+            st.session_state.admin_pending_integration = None
+            _apply_custom_request_to_plan_builder(_req)
         # Edit mode: player view only, Back + Save. Hide Build plan, Generate, Assign, etc.
         _edit_target = st.session_state.get("admin_plan_edit_target")
         if _edit_target and st.session_state.get("admin_plan"):
@@ -3044,32 +3041,30 @@ if _tab_custom_requests is not None:
                     st.markdown(f"**5. Session length:** {req.get('session_length', '—')}")
                     st.markdown(f"**6. Commitment (1–10):** {req.get('commitment_1_10', '—')}")
                     if st.button("Integrate into Plan Builder", key=f"integrate_req_{req.get('id', i)}", type="primary"):
-                        _apply_custom_request_to_plan_builder(req)
-                        st.success("Custom plan request integrated. Switch to **Admin: Plan Builder** to review and generate.")
+                        st.session_state.admin_pending_integration = req
                         st.rerun()
 
-# The Silent Work tab (players only)
+# Your Work tab (players only)
 if _tab_silent_work is not None:
     with _tab_silent_work:
-        st.subheader("The Silent Work")
+        st.subheader("Your Work")
         st.caption("Your lifetime highscores. Data adds only when you complete a workout from **Training Session** or **My Plan**.")
         prof = st.session_state.get("current_profile") or {}
         stats = prof.get("private_victory_stats") or {}
         completions = int(stats.get("completions_count", 0))
         if completions == 0:
-            st.info("No completions yet. Generate a session, do it, and click **Workout Complete** at the end to start tracking.")
-        else:
-            st.metric("Workouts completed", completions)
-            cols = st.columns(3)
-            with cols[0]:
-                st.metric("Hours in gym", f"{stats.get('gym_hours', 0):.1f}")
-                st.metric("Skating mechanics (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-            with cols[1]:
-                st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
-                st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-            with cols[2]:
-                st.metric("Mobility/recovery (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
-                st.metric("Shots taken", f"{stats.get('shots', 0):,}")
+            st.caption("Generate a session, do it, and click **Workout Complete** to start tracking.")
+        st.metric("Workouts completed", completions)
+        cols = st.columns(3)
+        with cols[0]:
+            st.metric("Hours in gym", f"{stats.get('gym_hours', 0):.1f}")
+            st.metric("Skating mechanics (hrs)", f"{stats.get('skating_hours', 0):.1f}")
+        with cols[1]:
+            st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+            st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+        with cols[2]:
+            st.metric("Mobility/recovery (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+            st.metric("Shots taken", f"{stats.get('shots', 0):,}")
 
 # Admin: Highscores tab (admin only)
 if _tab_highscores is not None:
@@ -3077,22 +3072,53 @@ if _tab_highscores is not None:
         st.subheader("Admin: Highscores")
         st.caption("Lifetime completions across all players. Data from **Workout Complete** (Training Session) and plan completions (My Plan).")
         all_profs = list_profiles()
-        players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
-        players_with_stats.sort(key=lambda x: x[1].get("completions_count", 0), reverse=True)
-        if not players_with_stats:
-            st.info("No player completions yet.")
+        if not all_profs:
+            st.info("No accounts created yet.")
         else:
-            for i, (p, stats) in enumerate(players_with_stats):
-                name = p.get("display_name") or p.get("user_id") or "Unknown"
+            _highscore_options = [(p.get("user_id") or "unknown", p.get("display_name") or p.get("user_id") or "Unknown") for p in all_profs]
+            _highscore_ids = [x[0] for x in _highscore_options]
+            _highscore_labels = [x[1] for x in _highscore_options]
+            _selected_idx = st.selectbox(
+                "Select account to view high scores",
+                options=range(len(_highscore_ids)),
+                format_func=lambda i: _highscore_labels[i],
+                key="admin_highscore_select",
+            )
+            _selected_id = _highscore_ids[_selected_idx]
+            _selected_prof = next((p for p in all_profs if (p.get("user_id") or "unknown") == _selected_id), None)
+            if _selected_prof:
+                stats = _selected_prof.get("private_victory_stats") or {}
                 comp = int(stats.get("completions_count", 0))
-                with st.expander(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed", expanded=(i == 0)):
-                    c1, c2, c3 = st.columns(3)
-                    with c1:
-                        st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-                        st.metric("Shots", f"{stats.get('shots', 0):,}")
-                    with c2:
-                        st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
-                        st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-                    with c3:
-                        st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
-                        st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+                name = _selected_prof.get("display_name") or _selected_prof.get("user_id") or "Unknown"
+                st.markdown(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed")
+                c1, c2, c3 = st.columns(3)
+                with c1:
+                    st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+                    st.metric("Shots", f"{stats.get('shots', 0):,}")
+                with c2:
+                    st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
+                    st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
+                with c3:
+                    st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+                    st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+            st.divider()
+            st.caption("Leaderboard (players with completions)")
+            players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
+            players_with_stats.sort(key=lambda x: x[1].get("completions_count", 0), reverse=True)
+            if not players_with_stats:
+                st.info("No player completions yet.")
+            else:
+                for i, (p, stats) in enumerate(players_with_stats):
+                    name = p.get("display_name") or p.get("user_id") or "Unknown"
+                    comp = int(stats.get("completions_count", 0))
+                    with st.expander(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed", expanded=(i == 0)):
+                        c1, c2, c3 = st.columns(3)
+                        with c1:
+                            st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
+                            st.metric("Shots", f"{stats.get('shots', 0):,}")
+                        with c2:
+                            st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
+                            st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
+                        with c3:
+                            st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
+                            st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
