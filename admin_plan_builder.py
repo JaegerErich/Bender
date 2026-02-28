@@ -434,7 +434,11 @@ def generate_plan_with_workouts(
                 except Exception:
                     workout = "(Workout generation failed)"
                 mode_key = params.get("mode", "unknown")
-                label = MODE_DISPLAY_LABELS.get(mode_key, mode_key.replace("_", " ").title())
+                if mode_key == "performance":
+                    st = (params.get("strength_day_type") or "full").lower()
+                    label = {"leg": "Heavy legs", "upper": "Upper / Core stability", "full": "Explosive legs"}.get(st, MODE_DISPLAY_LABELS.get(mode_key, "Performance"))
+                else:
+                    label = MODE_DISPLAY_LABELS.get(mode_key, mode_key.replace("_", " ").title())
                 focus_items.append({
                     "label": label,
                     "mode_key": mode_key,

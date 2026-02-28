@@ -703,11 +703,19 @@ def render_workout_readable(text: str) -> None:
     """
     Renders engine text into clean sections.
     Only the warm-up section uses a dropdown (expander); all other sections are always visible.
+    Hides the BENDER SINGLE WORKOUT | mode=... header line from display.
     """
     if not text:
         return
 
     lines = text.splitlines()
+    # Skip BENDER SINGLE WORKOUT | mode=... header and any leading blank lines
+    while lines:
+        s = lines[0].strip()
+        if s.startswith("BENDER SINGLE WORKOUT") or (not s and len(lines) > 1):
+            lines.pop(0)
+        else:
+            break
     current_title = None
     buffer: list[str] = []
 
@@ -1332,9 +1340,9 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
-        flex: 0 0 2.75rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
-        gap: 0 !important; box-sizing: border-box !important; overflow: hidden !important;
+        min-width: 4rem !important; width: 4rem !important; max-width: 4rem !important;
+        flex: 0 0 4rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        gap: 0 !important; box-sizing: border-box !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1524,7 +1532,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
         border-color: white !important;
     }
-    /* Workout number button: fixed size box, text side-by-side for 10+ (smaller font so digits fit) */
+    /* Workout number button: fixed size box, number + date stacked cleanly */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -1535,10 +1543,10 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 2.25rem !important; width: 2.25rem !important; max-width: 2.25rem !important; height: 1.6rem !important; min-height: 1.6rem !important;
-        border-radius: 8px !important; font-weight: 600 !important; font-size: 0.95rem !important;
+        min-width: 2.5rem !important; width: 2.5rem !important; max-width: 2.5rem !important; height: 1.75rem !important; min-height: 1.75rem !important;
+        border-radius: 8px !important; font-weight: 600 !important; font-size: 1rem !important;
         background: transparent !important; color: white !important; border: none !important;
-        white-space: nowrap !important; padding: 0 0.25rem !important;
+        white-space: nowrap !important; padding: 0 0.3rem !important;
         display: -webkit-inline-flex !important; display: inline-flex !important;
         -webkit-align-items: center !important; align-items: center !important;
         -webkit-justify-content: center !important; justify-content: center !important;
@@ -1558,10 +1566,10 @@ st.markdown("""
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
         font-size: inherit !important; line-height: inherit !important;
     }
-    /* Date: centered under number, one line */
+    /* Date: centered under number, day of month + workout number layout */
     .plan-day-date {
-        background: transparent !important; color: #cccccc !important; font-size: 0.6rem !important; text-align: center !important;
-        margin: 0 auto !important; padding: 0 !important; line-height: 1.15 !important; width: 100% !important; display: block !important;
+        background: transparent !important; color: #b8b8b8 !important; font-size: 0.7rem !important; text-align: center !important;
+        margin: 0.15rem auto 0 !important; padding: 0 !important; line-height: 1.2 !important; width: 100% !important; display: block !important;
     }
     .plan-day-date-selected {
         background: #333333 !important; color: #ffffff !important; padding: 0.15rem 0.35rem !important;
