@@ -84,6 +84,18 @@ def save_custom_plan_request(request: dict) -> None:
         json.dump(requests, f, indent=2)
 
 
+def mark_custom_plan_request_complete(req_id: str) -> None:
+    """Mark a custom plan request as complete. Updates the request in place."""
+    requests = load_custom_plan_requests()
+    for req in requests:
+        if str(req.get("id", "")) == str(req_id):
+            req["completed"] = True
+            break
+    CUSTOM_PLAN_REQUESTS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CUSTOM_PLAN_REQUESTS_PATH, "w", encoding="utf-8") as f:
+        json.dump(requests, f, indent=2)
+
+
 def _hash_password(password: str, salt: bytes | None = None) -> tuple[str, str]:
     """Return (salt_hex, hash_hex). If salt is None, generate a new one."""
     if salt is None:
@@ -1309,7 +1321,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
-    /* Card: fixed size so 5 fit in view; same size regardless of total weeks */
+    /* Card: fixed size so 5 fit in view; constrain strictly to prevent overlap with many days */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1320,7 +1332,9 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 4rem !important; width: 4rem !important; max-width: 4rem !important; flex: 0 0 4rem !important; gap: 0 !important; box-sizing: border-box !important;
+        min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
+        flex: 0 0 2.75rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        gap: 0 !important; box-sizing: border-box !important; overflow: hidden !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1330,7 +1344,19 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
-        gap: 0.2rem !important;
+        gap: 0.15rem !important;
+    }
+    /* Constrain inner content of day columns to prevent overflow/overlap */
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+    #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > * > *,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > * > *,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > *,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * > * {
+        max-width: 100% !important; min-width: 0 !important; overflow: hidden !important;
     }
     /* Mobile + Safari: keep day cards in one horizontal row; inside each card show number + date side-by-side */
     @media (max-width: 768px) {
@@ -1362,8 +1388,8 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            -webkit-flex: 0 0 3.8rem !important; flex: 0 0 3.8rem !important;
-            min-width: 3.8rem !important; width: 3.8rem !important; max-width: 3.8rem !important;
+            -webkit-flex: 0 0 2.75rem !important; flex: 0 0 2.75rem !important;
+            min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-shrink: 0 !important; flex-shrink: 0 !important;
             -webkit-flex-direction: column !important; flex-direction: column !important;
@@ -1433,7 +1459,7 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            flex: 0 0 3.2rem !important; min-width: 3.2rem !important; width: 3.2rem !important; max-width: 3.2rem !important;
+            flex: 0 0 2.75rem !important; min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
         }
     }
 
@@ -1509,7 +1535,7 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 2.5rem !important; width: 2.5rem !important; max-width: 2.5rem !important; height: 1.8rem !important; min-height: 1.8rem !important;
+        min-width: 2.25rem !important; width: 2.25rem !important; max-width: 2.25rem !important; height: 1.6rem !important; min-height: 1.6rem !important;
         border-radius: 8px !important; font-weight: 600 !important; font-size: 0.95rem !important;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important; padding: 0 0.25rem !important;
@@ -2296,8 +2322,9 @@ if _assigned_plan:
     _weeks = (_assigned_plan.get("plan", _assigned_plan) if isinstance(_assigned_plan, dict) else _assigned_plan) or []
 _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
-    _custom_req_count = len(load_custom_plan_requests())
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"]
+    _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
+    _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", _custom_req_tab_label]
     _admin_default = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else None
     _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(_admin_tab_names, default=_admin_default)
     _bender_ctx = _tab_bender
@@ -2394,181 +2421,186 @@ with _bender_ctx:
             st.rerun()
         st.stop()
 
-    form_container = st.container()
-    with form_container:
-        st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
-        st.markdown("#### Session options")
-        minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
-        minutes = int(minutes)
-
-        mode_label = st.selectbox("Mode", DISPLAY_MODES)
-        mode = LABEL_TO_MODE[mode_label]
-
-        if mode == "puck_mastery":
-            skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-            effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
-        else:
-            effective_mode = mode
-
-        if effective_mode == "performance":
-            location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
-        else:
-            location = "no_gym"
-
-        focus = None
-        strength_day_type = None
-        strength_emphasis = "strength"
-        skate_within_24h = False
-        conditioning_focus = None
-        conditioning_mode = None
-        conditioning_effort = None
-
-        if effective_mode == "energy_systems":
-            prof_equip = (st.session_state.current_profile or {}).get("equipment") or []
-            _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
-            prof_equip_canonical = _canonicalize(prof_equip) if _canonicalize else prof_equip
-            cond_modes = getattr(ENGINE, "get_conditioning_modes_for_equipment", lambda x: [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill"), ("surprise", "Surprise me")])(prof_equip_canonical)
-            mode_options = [label for _, label in cond_modes]
-            mode_values = [v for v, _ in cond_modes]
-            mode_idx = st.selectbox("Conditioning Mode", range(len(mode_options)), format_func=lambda i: mode_options[i], key="cond_mode")
-            conditioning_mode = mode_values[mode_idx]
-            effort_options = ["Easy", "Hard", "Surprise me"]
-            effort_idx = st.selectbox("Effort", range(len(effort_options)), format_func=lambda i: effort_options[i], key="cond_effort")
-            conditioning_effort = ["easy", "hard", "surprise"][effort_idx]
-            if minutes > 25:
-                st.caption("Conditioning capped at 25 min for quality.")
-
-        elif effective_mode == "performance":
-            if location == "gym":
-                # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
-                STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
-                STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
-                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
-                strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
-                strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+    @st.fragment
+    def _training_session_fragment():
+        form_container = st.container()
+        with form_container:
+            st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
+            st.markdown("#### Session options")
+            minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+            minutes = int(minutes)
+    
+            mode_label = st.selectbox("Mode", DISPLAY_MODES)
+            mode = LABEL_TO_MODE[mode_label]
+    
+            if mode == "puck_mastery":
+                skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+                effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
             else:
-                st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
-                strength_day_type = "heavy_explosive"
-                strength_emphasis = "strength"
-                skate_within_24h = False
-
-        elif effective_mode == "mobility":
-            focus = "mobility"
-
-        available_space = None  # Assume user has necessary space
-
-        conditioning = False
-        conditioning_type = None
-        if effective_mode == "performance" and location == "gym":
-            conditioning = st.checkbox("Post-lift conditioning?", value=False)
-            if conditioning:
-                conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+                effective_mode = mode
+    
+            if effective_mode == "performance":
+                location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
             else:
-                conditioning_type = None
-
-        # Auto-clear old output if key inputs change
-        inputs_fingerprint = (
-            athlete_id.strip().lower(),
-            int(age),
-            int(minutes),
-            effective_mode,
-            location,
-            focus,
-            strength_day_type,
-            strength_emphasis,
-            skate_within_24h,
-            conditioning,
-            conditioning_type,
-            conditioning_mode,
-            conditioning_effort,
-        )
-
-        if st.session_state.last_inputs_fingerprint is None:
-            st.session_state.last_inputs_fingerprint = inputs_fingerprint
-        else:
-            if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
-                if st.session_state.last_session_id or st.session_state.last_output_text:
-                    clear_last_output()
-                st.session_state.last_inputs_fingerprint = inputs_fingerprint
-
-        # Generate action + Request Custom Plan — side by side
-        st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-        col_gen, col_req = st.columns(2)
-        with col_gen:
-            generate_clicked = st.button("Generate session", type="primary", use_container_width=True)
-        with col_req:
-            request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
-        if request_plan_clicked:
-            st.session_state.custom_plan_intake_open = True
-            st.rerun()
-        if generate_clicked:
-            profile = st.session_state.get("current_profile") or {}
-            user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
-            payload = {
-                "athlete_id": athlete_id,
-                "age": int(age),
-                "minutes": int(minutes),
-                "mode": effective_mode,
-                "focus": focus,
-                "location": location,
-                "strength_day_type": strength_day_type,
-                "strength_emphasis": strength_emphasis,
-                "skate_within_24h": skate_within_24h,
-                "conditioning": conditioning,
-                "conditioning_type": conditioning_type,
-                "user_equipment": user_equipment,
-                "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
-                "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
-                "conditioning_effort": conditioning_effort if effective_mode == "energy_systems" else None,
-            }
-
-            try:
-                with st.spinner("Generating workout..."):
-                    if USE_API:
-                        resp = _generate_via_api(payload)
-                    else:
-                        resp = _generate_via_engine(payload)
-
-                st.session_state.last_session_id = resp.get("session_id")
-                out_text = resp.get("output_text")
-                if out_text and out_text.strip():
-                    st.session_state.last_output_text = out_text
-                    st.session_state.last_output_metadata = {
-                        "mode": effective_mode,
-                        "minutes": int(minutes),
-                        "location": location,
-                        "conditioning": conditioning,
-                        "conditioning_type": conditioning_type,
-                    }
-                    st.session_state.scroll_to_workout = True
-                    st.success("Generated")
+                location = "no_gym"
+    
+            focus = None
+            strength_day_type = None
+            strength_emphasis = "strength"
+            skate_within_24h = False
+            conditioning_focus = None
+            conditioning_mode = None
+            conditioning_effort = None
+    
+            if effective_mode == "energy_systems":
+                prof_equip = (st.session_state.current_profile or {}).get("equipment") or []
+                _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
+                prof_equip_canonical = _canonicalize(prof_equip) if _canonicalize else prof_equip
+                cond_modes = getattr(ENGINE, "get_conditioning_modes_for_equipment", lambda x: [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill"), ("surprise", "Surprise me")])(prof_equip_canonical)
+                mode_options = [label for _, label in cond_modes]
+                mode_values = [v for v, _ in cond_modes]
+                mode_idx = st.selectbox("Conditioning Mode", range(len(mode_options)), format_func=lambda i: mode_options[i], key="cond_mode")
+                conditioning_mode = mode_values[mode_idx]
+                effort_options = ["Easy", "Hard", "Surprise me"]
+                effort_idx = st.selectbox("Effort", range(len(effort_options)), format_func=lambda i: effort_options[i], key="cond_effort")
+                conditioning_effort = ["easy", "hard", "surprise"][effort_idx]
+                if minutes > 25:
+                    st.caption("Conditioning capped at 25 min for quality.")
+    
+            elif effective_mode == "performance":
+                if location == "gym":
+                    # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
+                    STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
+                    STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
+                    day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
+                    strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
+                    em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+                    strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
                 else:
-                    st.session_state.last_output_text = (
-                        "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
-                        "Generation returned no content. This can happen if:\n"
-                        "- Data files (performance.json) are missing or empty\n"
-                        "- All drills were filtered out by equipment/age\n\n"
-                        "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
-                    )
-                    st.warning("Generated but no exercises were returned — see message below.")
-                    st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
-            except Exception as e:
-                st.error(str(e))
-
-    # Display last generated workout (Tabbed) — inside fixed-height container so it doesn't push other tabs down
-    if st.session_state.last_output_text:
-        st.divider()
-        st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
-        st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
-        if st.session_state.get("scroll_to_workout"):
-            st.session_state.scroll_to_workout = False
-            st.components.v1.html(
-                "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
-                height=0,
+                    st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
+                    strength_day_type = "heavy_explosive"
+                    strength_emphasis = "strength"
+                    skate_within_24h = False
+    
+            elif effective_mode == "mobility":
+                focus = "mobility"
+    
+            available_space = None  # Assume user has necessary space
+    
+            conditioning = False
+            conditioning_type = None
+            if effective_mode == "performance" and location == "gym":
+                conditioning = st.checkbox("Post-lift conditioning?", value=False)
+                if conditioning:
+                    conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+                else:
+                    conditioning_type = None
+    
+            # Auto-clear old output if key inputs change
+            inputs_fingerprint = (
+                athlete_id.strip().lower(),
+                int(age),
+                int(minutes),
+                effective_mode,
+                location,
+                focus,
+                strength_day_type,
+                strength_emphasis,
+                skate_within_24h,
+                conditioning,
+                conditioning_type,
+                conditioning_mode,
+                conditioning_effort,
             )
-        _badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
-        with st.container(height=550):
+    
+            if st.session_state.last_inputs_fingerprint is None:
+                st.session_state.last_inputs_fingerprint = inputs_fingerprint
+            else:
+                if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
+                    if st.session_state.last_session_id or st.session_state.last_output_text:
+                        clear_last_output()
+                    st.session_state.last_inputs_fingerprint = inputs_fingerprint
+    
+            # Generate action + Request Custom Plan — side by side
+            st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
+            col_gen, col_req = st.columns(2)
+            with col_gen:
+                generate_clicked = st.button("Generate session", type="primary", use_container_width=True)
+            with col_req:
+                request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
+            if request_plan_clicked:
+                st.session_state.custom_plan_intake_open = True
+                st.rerun()
+            if generate_clicked:
+                profile = st.session_state.get("current_profile") or {}
+                user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
+                payload = {
+                    "athlete_id": athlete_id,
+                    "age": int(age),
+                    "minutes": int(minutes),
+                    "mode": effective_mode,
+                    "focus": focus,
+                    "location": location,
+                    "strength_day_type": strength_day_type,
+                    "strength_emphasis": strength_emphasis,
+                    "skate_within_24h": skate_within_24h,
+                    "conditioning": conditioning,
+                    "conditioning_type": conditioning_type,
+                    "user_equipment": user_equipment,
+                    "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
+                    "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
+                    "conditioning_effort": conditioning_effort if effective_mode == "energy_systems" else None,
+                }
+    
+                try:
+                    with st.spinner("Generating workout..."):
+                        if USE_API:
+                            resp = _generate_via_api(payload)
+                        else:
+                            resp = _generate_via_engine(payload)
+    
+                    st.session_state.last_session_id = resp.get("session_id")
+                    out_text = resp.get("output_text")
+                    if out_text and out_text.strip():
+                        st.session_state.last_output_text = out_text
+                        st.session_state.last_output_metadata = {
+                            "mode": effective_mode,
+                            "minutes": int(minutes),
+                            "location": location,
+                            "conditioning": conditioning,
+                            "conditioning_type": conditioning_type,
+                        }
+                        st.session_state.scroll_to_workout = True
+                        st.success("Generated")
+                    else:
+                        st.session_state.last_output_text = (
+                            "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
+                            "Generation returned no content. This can happen if:\n"
+                            "- Data files (performance.json) are missing or empty\n"
+                            "- All drills were filtered out by equipment/age\n\n"
+                            "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
+                        )
+                        st.warning("Generated but no exercises were returned — see message below.")
+                        st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
+                except Exception as e:
+                    st.error(str(e))
+
+        # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Your Work tabs
+        if st.session_state.last_output_text:
+            st.divider()
+            st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
+            st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
+            if st.session_state.get("scroll_to_workout"):
+                st.session_state.scroll_to_workout = False
+                st.components.v1.html(
+                    "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
+                    height=0,
+                )
+            _badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
+            _clear_col, _spacer = st.columns([1, 4])
+            with _clear_col:
+                if st.button("Clear workout", key="clear_workout_top"):
+                    clear_last_output()
             st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
             tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
 
@@ -2593,7 +2625,6 @@ with _bender_ctx:
                     st.rerun()
                 if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                     clear_last_output()
-                    st.rerun()
 
             with tab_download:
                 safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
@@ -2611,6 +2642,8 @@ with _bender_ctx:
                     with st.expander("Copy workout (raw text)"):
                         st.code(st.session_state.last_output_text)
                         st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
+
+    _training_session_fragment()
 
 
 # My Plan tab (for players with assigned plan) — rendered after Training Session for correct tab order
@@ -3056,7 +3089,9 @@ if _tab_custom_requests is not None:
             st.info("No custom plan requests yet. Athletes can submit requests via **Request Custom Plan** on the Bender tab.")
         else:
             for i, req in enumerate(reversed(requests_list)):
-                with st.expander(f"**{req.get('display_name', 'Unknown')}** — {req.get('created_at', '')[:10]}", expanded=(i == 0)):
+                _req_completed = req.get("completed", False)
+                _req_title = f"✓ **{req.get('display_name', 'Unknown')}** — {req.get('created_at', '')[:10]}" if _req_completed else f"**{req.get('display_name', 'Unknown')}** — {req.get('created_at', '')[:10]}"
+                with st.expander(_req_title, expanded=(i == 0)):
                     st.markdown(f"**User:** {req.get('display_name', '—')} ({req.get('user_id', '—')})")
                     st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
                     st.markdown("---")
@@ -3066,9 +3101,15 @@ if _tab_custom_requests is not None:
                     st.markdown(f"**4. Lifting experience:** {req.get('lifting_experience', '—')}")
                     st.markdown(f"**5. Session length:** {req.get('session_length', '—')}")
                     st.markdown(f"**6. Commitment (1–10):** {req.get('commitment_1_10', '—')}")
-                    if st.button("Integrate into Plan Builder", key=f"integrate_req_{req.get('id', i)}", type="primary"):
-                        st.session_state.admin_pending_integration = req
-                        st.rerun()
+                    _btn_col1, _btn_col2 = st.columns(2)
+                    with _btn_col1:
+                        if st.button("Integrate into Plan Builder", key=f"integrate_req_{req.get('id', i)}", type="primary", use_container_width=True):
+                            st.session_state.admin_pending_integration = req
+                            st.rerun()
+                    with _btn_col2:
+                        if st.button("Mark as complete", key=f"complete_req_{req.get('id', i)}", type="secondary", use_container_width=True):
+                            mark_custom_plan_request_complete(req.get("id", ""))
+                            st.rerun()
 
 # Your Work tab (players only)
 if _tab_silent_work is not None:
@@ -3128,17 +3169,28 @@ if _tab_highscores is not None:
                 stats = _selected_prof.get("private_victory_stats") or {}
                 comp = int(stats.get("completions_count", 0))
                 name = _selected_prof.get("display_name") or _selected_prof.get("user_id") or "Unknown"
-                st.markdown(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed")
-                c1, c2, c3 = st.columns(3)
-                with c1:
-                    st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-                    st.metric("Shots", f"{stats.get('shots', 0):,}")
-                with c2:
-                    st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
-                    st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-                with c3:
-                    st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
-                    st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+                gym_h = float(stats.get("gym_hours", 0) or 0)
+                skating_h = float(stats.get("skating_hours", 0) or 0)
+                cond_h = float(stats.get("conditioning_hours", 0) or 0)
+                stick_h = float(stats.get("stickhandling_hours", 0) or 0)
+                mob_h = float(stats.get("mobility_hours", 0) or 0)
+                total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+                shots = int(stats.get("shots", 0) or 0)
+                st.markdown(
+                    '<div class="your-work-stats-card">'
+                    '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+                    '<div class="your-work-divider"></div>'
+                    '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
+                    '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
+                    '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
+                    '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
+                    '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
+                    '<div class="your-work-divider"></div>'
+                    '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
+                    '<div class="your-work-footer">{} workout{} completed</div>'
+                    '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots, comp, "s" if comp != 1 else ""),
+                    unsafe_allow_html=True,
+                )
             st.divider()
             st.caption("Leaderboard (players with completions)")
             players_with_stats = [(p, p.get("private_victory_stats") or {}) for p in all_profs if (p.get("private_victory_stats") or {}).get("completions_count", 0) > 0]
@@ -3149,14 +3201,25 @@ if _tab_highscores is not None:
                 for i, (p, stats) in enumerate(players_with_stats):
                     name = p.get("display_name") or p.get("user_id") or "Unknown"
                     comp = int(stats.get("completions_count", 0))
+                    gym_h = float(stats.get("gym_hours", 0) or 0)
+                    skating_h = float(stats.get("skating_hours", 0) or 0)
+                    cond_h = float(stats.get("conditioning_hours", 0) or 0)
+                    stick_h = float(stats.get("stickhandling_hours", 0) or 0)
+                    mob_h = float(stats.get("mobility_hours", 0) or 0)
+                    total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+                    shots = int(stats.get("shots", 0) or 0)
                     with st.expander(f"**{name}** — {comp} workout{'s' if comp != 1 else ''} completed", expanded=(i == 0)):
-                        c1, c2, c3 = st.columns(3)
-                        with c1:
-                            st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-                            st.metric("Shots", f"{stats.get('shots', 0):,}")
-                        with c2:
-                            st.metric("Gym (hrs)", f"{stats.get('gym_hours', 0):.1f}")
-                            st.metric("Skating (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-                        with c3:
-                            st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
-                            st.metric("Mobility (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
+                        st.markdown(
+                            '<div class="your-work-stats-card">'
+                            '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+                            '<div class="your-work-divider"></div>'
+                            '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
+                            '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
+                            '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
+                            '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
+                            '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
+                            '<div class="your-work-divider"></div>'
+                            '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
+                            '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots),
+                            unsafe_allow_html=True,
+                        )
