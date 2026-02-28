@@ -1474,7 +1474,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         min-width: 2.5rem !important; width: 2.5rem !important; max-width: 2.5rem !important; height: 1.8rem !important; min-height: 1.8rem !important;
-        border-radius: 8px !important; font-weight: 600 !important; font-size: 0.75rem !important;
+        border-radius: 8px !important; font-weight: 600 !important; font-size: 0.95rem !important;
         background: transparent !important; color: white !important; border: none !important;
         white-space: nowrap !important; padding: 0 0.25rem !important;
         display: -webkit-inline-flex !important; display: inline-flex !important;
@@ -1494,6 +1494,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button * {
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
+        font-size: inherit !important; line-height: inherit !important;
     }
     /* Date: centered under number, one line */
     .plan-day-date {
@@ -1652,6 +1653,28 @@ st.markdown("""
     }
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
+
+    /* Your Work stats card */
+    .your-work-stats-card {
+        background: #1a1a1a; border: 1px solid #333333; border-radius: 12px; padding: 1.25rem 1.5rem;
+        max-width: 24rem; margin-top: 0.5rem; font-family: 'DM Sans', sans-serif;
+    }
+    .your-work-section {
+        display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;
+    }
+    .your-work-label { color: #ffffff; font-weight: 700; font-size: 1rem; }
+    .your-work-value { color: #ffffff; font-weight: 600; font-size: 1.1rem; }
+    .your-work-divider {
+        height: 1px; background: #333333; margin: 0.5rem 0;
+    }
+    .your-work-row {
+        display: flex; justify-content: space-between; align-items: center; padding: 0.25rem 0;
+    }
+    .your-work-cat { color: #cccccc; font-size: 0.9rem; }
+    .your-work-num { color: #e0e0e0; font-size: 0.9rem; font-weight: 500; }
+    .your-work-footer {
+        margin-top: 0.75rem; color: #888888; font-size: 0.8rem; text-align: center;
+    }
 
     /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
@@ -2238,7 +2261,7 @@ if _assigned_plan:
 _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["B", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
+    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _has_valid_plan:
@@ -2495,7 +2518,7 @@ with _bender_ctx:
             except Exception as e:
                 st.error(str(e))
 
-    # Display last generated workout (Tabbed)
+    # Display last generated workout (Tabbed) — inside fixed-height container so it doesn't push other tabs down
     if st.session_state.last_output_text:
         st.divider()
         st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
@@ -2506,49 +2529,50 @@ with _bender_ctx:
                 "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
                 height=0,
             )
-        st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-        tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
+        _badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
+        with st.container(height=550):
+            st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+            tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
 
-        with tab_workout:
-            st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
-            badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
-            st.markdown(f'<span class="workout-result-badge">{badge_label}</span>', unsafe_allow_html=True)
-            if effective_mode == "performance" and location == "no_gym":
-                render_no_gym_strength_circuits_only(st.session_state.last_output_text)
-            else:
-                render_workout_readable(st.session_state.last_output_text)
-            st.divider()
-            st.caption("Finished? Log your completion to Your Work.")
-            _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
-            if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
-                prof = st.session_state.get("current_profile") or {}
-                if prof and _meta:
-                    prof = _add_completion_to_profile(prof, _meta)
-                    st.session_state.current_profile = prof
-                    save_profile(prof)
-                clear_last_output()
-                st.success("Workout logged to Your Work!")
-                st.rerun()
-            if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
-                clear_last_output()
-                st.rerun()
+            with tab_workout:
+                st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
+                st.markdown(f'<span class="workout-result-badge">{_badge_label}</span>', unsafe_allow_html=True)
+                if effective_mode == "performance" and location == "no_gym":
+                    render_no_gym_strength_circuits_only(st.session_state.last_output_text)
+                else:
+                    render_workout_readable(st.session_state.last_output_text)
+                st.divider()
+                st.caption("Finished? Log your completion to Your Work.")
+                _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
+                if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
+                    prof = st.session_state.get("current_profile") or {}
+                    if prof and _meta:
+                        prof = _add_completion_to_profile(prof, _meta)
+                        st.session_state.current_profile = prof
+                        save_profile(prof)
+                    clear_last_output()
+                    st.success("Workout logged to Your Work!")
+                    st.rerun()
+                if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
+                    clear_last_output()
+                    st.rerun()
 
-        with tab_download:
-            safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
-            date_str = datetime.now().strftime("%Y-%m-%d")
-            download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
-            st.download_button(
-                label="Download workout (.txt)",
-                data=st.session_state.last_output_text,
-                file_name=download_filename,
-                mime="text/plain",
-            )
-            st.caption("Your browser will download the file when you click above.")
-            st.write("")
-            if not (effective_mode == "performance" and location == "no_gym"):
-                with st.expander("Copy workout (raw text)"):
-                    st.code(st.session_state.last_output_text)
-                    st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
+            with tab_download:
+                safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
+                date_str = datetime.now().strftime("%Y-%m-%d")
+                download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
+                st.download_button(
+                    label="Download workout (.txt)",
+                    data=st.session_state.last_output_text,
+                    file_name=download_filename,
+                    mime="text/plain",
+                )
+                st.caption("Your browser will download the file when you click above.")
+                st.write("")
+                if not (effective_mode == "performance" and location == "no_gym"):
+                    with st.expander("Copy workout (raw text)"):
+                        st.code(st.session_state.last_output_text)
+                        st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
 
 
 # My Plan tab (for players with assigned plan) — rendered after Training Session for correct tab order
@@ -3048,23 +3072,35 @@ if _tab_custom_requests is not None:
 if _tab_silent_work is not None:
     with _tab_silent_work:
         st.subheader("Your Work")
-        st.caption("Your lifetime highscores. Data adds only when you complete a workout from **Training Session** or **My Plan**.")
+        st.caption("Your lifetime volume. Data adds when you complete a workout from **Training Session** or **My Plan**.")
         prof = st.session_state.get("current_profile") or {}
         stats = prof.get("private_victory_stats") or {}
         completions = int(stats.get("completions_count", 0))
         if completions == 0:
             st.caption("Generate a session, do it, and click **Workout Complete** to start tracking.")
-        st.metric("Workouts completed", completions)
-        cols = st.columns(3)
-        with cols[0]:
-            st.metric("Hours in gym", f"{stats.get('gym_hours', 0):.1f}")
-            st.metric("Skating mechanics (hrs)", f"{stats.get('skating_hours', 0):.1f}")
-        with cols[1]:
-            st.metric("Conditioning (hrs)", f"{stats.get('conditioning_hours', 0):.1f}")
-            st.metric("Stickhandling (hrs)", f"{stats.get('stickhandling_hours', 0):.1f}")
-        with cols[2]:
-            st.metric("Mobility/recovery (hrs)", f"{stats.get('mobility_hours', 0):.1f}")
-            st.metric("Shots taken", f"{stats.get('shots', 0):,}")
+        gym_h = float(stats.get("gym_hours", 0) or 0)
+        skating_h = float(stats.get("skating_hours", 0) or 0)
+        cond_h = float(stats.get("conditioning_hours", 0) or 0)
+        stick_h = float(stats.get("stickhandling_hours", 0) or 0)
+        mob_h = float(stats.get("mobility_hours", 0) or 0)
+        total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+        shots = int(stats.get("shots", 0) or 0)
+
+        st.markdown(
+            '<div class="your-work-stats-card">'
+            '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+            '<div class="your-work-divider"></div>'
+            '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
+            '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
+            '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
+            '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
+            '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
+            '<div class="your-work-divider"></div>'
+            '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
+            '<div class="your-work-footer">{} workout{} completed</div>'
+            '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots, completions, "s" if completions != 1 else ""),
+            unsafe_allow_html=True,
+        )
 
 # Admin: Highscores tab (admin only)
 if _tab_highscores is not None:
