@@ -1696,7 +1696,44 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Player tab bar: clean underline style (app, browser, mobile) — text + base line + white underline for selected */
+    /* Classic tab style (admin + user): rectangular tabs, rounded top, active=light gray, inactive=dark, thin white line below */
+    [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
+    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
+        display: flex !important; gap: 0 !important; margin-bottom: 1rem !important;
+        border-bottom: 1px solid #ffffff !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: #2a2a2a !important; border: none !important; border-radius: 8px 8px 0 0 !important;
+        color: #999999 !important; font-weight: 500 !important; padding: 0.6rem 1rem !important;
+        margin-bottom: 0 !important; box-shadow: none !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
+        background: #383838 !important; color: #cccccc !important;
+    }
+    [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #e0e0e0 !important; color: #1a1a1a !important; font-weight: 600 !important;
+    }
+    @media (max-width: 640px) {
+        [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+        [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+            padding: 0.5rem 0.6rem !important; font-size: 0.85rem !important;
+        }
+    }
+
+    /* Player tab bar: underline style (text + base line + white underline for selected) */
     [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 0 !important; margin-bottom: 1.25rem !important;
@@ -2418,9 +2455,10 @@ with st.sidebar:
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
         st.caption("Tab headers")
-        _tab_style = st.session_state.get("player_tab_style") or "Underline"
-        _tab_style_idx = ["Underline", "Bordered", "Segmented", "Pill", "Floating"].index(_tab_style) if _tab_style in ["Underline", "Bordered", "Segmented", "Pill", "Floating"] else 0
-        st.selectbox("Tab header style", options=["Underline", "Bordered", "Segmented", "Pill", "Floating"], index=_tab_style_idx, key="player_tab_style")
+        _tab_style = st.session_state.get("player_tab_style") or "Classic"
+        _tab_opts_all = ["Classic", "Underline", "Bordered", "Segmented", "Pill", "Floating"]
+        _tab_style_idx = _tab_opts_all.index(_tab_style) if _tab_style in _tab_opts_all else 0
+        st.selectbox("Tab header style", options=_tab_opts_all, index=_tab_style_idx, key="player_tab_style")
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
@@ -2516,9 +2554,9 @@ if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
     _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", _custom_req_tab_label]
-    _admin_default = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else None
-    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(_admin_tab_names, default=_admin_default)
-    _bender_ctx = _tab_bender
+    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
+    if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
+        st.session_state.admin_tab_idx = _admin_default_idx
     _tab_plan = None
 elif _has_valid_plan:
     _tab_admin = None
@@ -2836,16 +2874,24 @@ def _render_training_session():
     _training_session_fragment()
 
 
-# Admin: training in Workout Generator tab. Player: radio tabs — only render selected tab (keeps workout in Training only, no bleed)
+# Admin: button-based tabs (independent rendering). Player: same style, different tabs.
 if _admin:
-    with _bender_ctx:
+    st.markdown('<div id="admin-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
+    _admin_cols = st.columns(len(_admin_tab_names))
+    for _ai, _aname in enumerate(_admin_tab_names):
+        with _admin_cols[_ai]:
+            _a_selected = st.session_state.admin_tab_idx == _ai
+            if st.button(_aname, key=f"admin_tab_{_ai}", type="primary" if _a_selected else "secondary"):
+                st.session_state.admin_tab_idx = _ai
+                st.rerun()
+    if st.session_state.admin_tab_idx == 0:
         _render_training_session()
 else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
-    _tab_style_val = (st.session_state.get("player_tab_style") or "Underline").lower().replace(" ", "-")
+    _tab_style_val = (st.session_state.get("player_tab_style") or "Classic").lower().replace(" ", "-")
     st.markdown(f'<div id="player-tab-bar" data-tab-style="{_tab_style_val}" aria-hidden="true"></div>', unsafe_allow_html=True)
 
     _tab_cols = st.columns(len(_tab_opts))
@@ -2885,8 +2931,7 @@ else:
         _render_your_work_stats()
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
-if _tab_admin is not None:
-    with _tab_admin:
+if _admin and st.session_state.get("admin_tab_idx") == 1:
         # Process pending integration from Custom Plan Request tab (before any widgets that use these keys)
         if st.session_state.get("admin_pending_integration"):
             _req = st.session_state.admin_pending_integration
@@ -3296,8 +3341,7 @@ if _tab_admin is not None:
                 st.caption("No other profiles found. Create accounts for players first.")
 
 # Custom Plan Requester tab (admin only)
-if _tab_custom_requests is not None:
-    with _tab_custom_requests:
+if _admin and st.session_state.get("admin_tab_idx") == 4:
         st.subheader("Admin: Custom Plan Request")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
@@ -3328,15 +3372,13 @@ if _tab_custom_requests is not None:
                             st.rerun()
 
 
-# Your Work tab — admin only (players get Your Work via radio-tab below)
-if _tab_silent_work is not None:
-    with _tab_silent_work:
+# Your Work tab — admin only (players get Your Work via player tabs)
+if _admin and st.session_state.get("admin_tab_idx") == 3:
         _render_your_work_stats()
 
 
 # Admin: Highscores tab (admin only)
-if _tab_highscores is not None:
-    with _tab_highscores:
+if _admin and st.session_state.get("admin_tab_idx") == 2:
         st.subheader("Admin: Highscores")
         st.caption("Lifetime completions across all players. Data from **Workout Complete** (Training Session) and plan completions (My Plan).")
         all_profs = list_profiles()
