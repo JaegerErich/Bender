@@ -319,7 +319,8 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
             focus_items = wv_day_data.get("focus_items", [])
             fi = next((x for x in focus_items if x["mode_key"] == wv_mode), None)
             if fi:
-                st.markdown(f"### {fi['label']} — Day {wv_day + 1}")
+                _wv_title = ({"leg": "Heavy legs", "upper": "Upper / Core stability", "full": "Explosive legs"}.get((fi.get("params") or {}).get("strength_day_type", "full") or "full", fi["label"]) if fi.get("mode_key") == "performance" else fi["label"])
+                st.markdown(f"### {_wv_title} — Day {wv_day + 1}")
                 if st.button("← Back", key="plan_workout_back"):
                     st.session_state.plan_workout_view = None
                     st.rerun()
@@ -358,7 +359,7 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
         with row_cols[i]:
             day_data = flat_days[i][1]
             day_date = day_data.get("date")
-            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
+            date_str = day_date.strftime("%a") if hasattr(day_date, "strftime") else str(day_date)[:3]
             _completed = completed.get(i) or completed.get(str(i)) or []
             _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
             focus_items_i = day_data.get("focus_items", [])
@@ -1344,7 +1345,7 @@ st.markdown("""
         flex: 0 0 4.25rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
         gap: 0.25rem !important; box-sizing: border-box !important;
         padding: 0.4rem 0.25rem !important; border-radius: 10px !important;
-        background: rgba(40,40,40,0.5) !important; border: 1px solid rgba(255,255,255,0.08) !important;
+        background: #5a5a5a !important; border: 1px solid rgba(255,255,255,0.1) !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1385,9 +1386,9 @@ st.markdown("""
             -webkit-flex-wrap: nowrap !important; flex-wrap: nowrap !important;
             overflow-x: auto !important; overflow-y: hidden !important;
             -webkit-overflow-scrolling: touch !important;
-            width: 20rem !important; max-width: 100% !important; min-width: 0 !important;
+            width: 22.75rem !important; max-width: 100% !important; min-width: 0 !important;
         }
-        /* Each day card: fixed width, number on top date under (same as desktop) */
+        /* Each day card: 5 visible, same as desktop — lighter grey, black number */
         #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
         #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
         #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1398,8 +1399,9 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            -webkit-flex: 0 0 2.75rem !important; flex: 0 0 2.75rem !important;
-            min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
+            -webkit-flex: 0 0 4.25rem !important; flex: 0 0 4.25rem !important;
+            min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
+            background: #5a5a5a !important; border: 1px solid rgba(255,255,255,0.1) !important;
             display: -webkit-flex !important; display: flex !important;
             -webkit-flex-shrink: 0 !important; flex-shrink: 0 !important;
             -webkit-flex-direction: column !important; flex-direction: column !important;
@@ -1444,7 +1446,7 @@ st.markdown("""
         #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] [data-testid="stVerticalBlock"] {
             min-width: 0 !important;
         }
-        .plan-day-date { display: inline-block !important; width: auto !important; font-size: 0.55rem !important; }
+        .plan-day-date { display: block !important; width: 100% !important; font-size: 0.65rem !important; color: #1a1a1a !important; }
     }
     @media (max-width: 380px) {
         #plan-day-grid ~ [data-testid="stHorizontalBlock"],
@@ -1469,11 +1471,11 @@ st.markdown("""
         div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
         div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-            flex: 0 0 2.75rem !important; min-width: 2.75rem !important; width: 2.75rem !important; max-width: 2.75rem !important;
+            flex: 0 0 4.25rem !important; min-width: 4.25rem !important; width: 4.25rem !important; max-width: 4.25rem !important;
         }
     }
 
-    /* Plan day card: number on top, date centered underneath; no vertical scroll, fit content */
+    /* Plan day card: number centered, day of week below */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1522,20 +1524,8 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
         display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
-    /* Selected card: subtle highlight ring */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
-    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
-        border-color: rgba(255,255,255,0.4) !important; box-shadow: 0 0 0 1px rgba(255,255,255,0.2) !important;
-    }
-    /* Workout number button: fixed size box, text side-by-side for 10+ */
+    /* No white box for selected — all cards look the same */
+    /* Day number: centered in grey box, black text, no white button/box */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -1546,10 +1536,10 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        min-width: 2.25rem !important; width: 2.25rem !important; max-width: 2.25rem !important; height: 1.6rem !important; min-height: 1.6rem !important;
-        border-radius: 8px !important; font-weight: 600 !important; font-size: 1rem !important;
-        background: transparent !important; color: white !important; border: none !important;
-        white-space: nowrap !important; padding: 0 0.3rem !important;
+        min-width: 100% !important; width: 100% !important; max-width: 100% !important; height: auto !important; min-height: 1.5rem !important;
+        border-radius: 0 !important; font-weight: 600 !important; font-size: 1.1rem !important;
+        background: transparent !important; color: #111111 !important; border: none !important; box-shadow: none !important;
+        white-space: nowrap !important; padding: 0.2rem 0 !important;
         display: -webkit-inline-flex !important; display: inline-flex !important;
         -webkit-align-items: center !important; align-items: center !important;
         -webkit-justify-content: center !important; justify-content: center !important;
@@ -1569,15 +1559,14 @@ st.markdown("""
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
         font-size: inherit !important; line-height: inherit !important;
     }
-    /* Date: centered under number, always visible including when selected */
+    /* Day of week: below number, centered */
     .plan-day-date {
-        background: transparent !important; color: #b0b0b0 !important; font-size: 0.7rem !important; text-align: center !important;
-        margin: 0.2rem auto 0 !important; padding: 0 !important; line-height: 1.25 !important; width: 100% !important;
+        background: transparent !important; color: #1a1a1a !important; font-size: 0.65rem !important; text-align: center !important;
+        margin: 0.15rem auto 0 !important; padding: 0 !important; line-height: 1.2 !important; width: 100% !important;
         display: block !important; overflow: visible !important;
     }
     .plan-day-date-selected {
-        background: rgba(255,255,255,0.15) !important; color: #ffffff !important; padding: 0.2rem 0.4rem !important;
-        border-radius: 6px !important; display: inline-block !important; font-weight: 600 !important; font-size: 0.7rem !important;
+        background: transparent !important; color: #1a1a1a !important; padding: 0 !important;
     }
     /* Date + missed/complete block: date on top, label directly below */
     .plan-day-date-block {
@@ -1587,6 +1576,27 @@ st.markdown("""
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
     .plan-day-date-block .plan-day-missed { margin-top: 0 !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0 !important; }
+    /* Green/red cards: white text for contrast */
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .stButton button,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .plan-day-date,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .plan-day-date,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .stButton button,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .plan-day-date,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .plan-day-date {
+        color: #ffffff !important;
+    }
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button,
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
+        color: #ffffff !important;
+    }
     /* Day missed: whole day card turns red (like green for complete) */
     .plan-day-missed-marker { display: none; }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
@@ -1616,12 +1626,11 @@ st.markdown("""
     /* Admin plan day selector: same as player plan — 5 visible, scroll, fixed card size, number then date */
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        background: transparent !important; color: #b0b0b0 !important; margin: 0 !important; padding: 0 !important; font-size: 0.7rem !important; line-height: 1.25 !important; text-align: center !important; width: 100% !important; display: block !important;
+        background: transparent !important; color: #1a1a1a !important; margin: 0 !important; padding: 0 !important; font-size: 0.65rem !important; line-height: 1.2 !important; text-align: center !important; width: 100% !important; display: block !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date-selected {
-        background: rgba(255,255,255,0.15) !important; color: #ffffff !important; padding: 0.2rem 0.4rem !important;
-        border-radius: 6px !important; font-weight: 600 !important;
+        background: transparent !important; color: #1a1a1a !important; padding: 0 !important;
     }
     /* Admin day complete: card turns green, number crossed off */
     .admin-day-complete { display: none; }
@@ -2344,24 +2353,42 @@ if _admin:
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _has_valid_plan:
-    _tab_generate, _tab_plan, _tab_silent_work = st.tabs(["Training Session", "My Plan", "Your Work"])
-    _bender_ctx = _tab_generate
+    _tab_options = ["Training Session", "My Plan", "Your Work"]
     _tab_admin = None
     _tab_custom_requests = None
     _tab_highscores = None
+    _tab_plan = None
+    _tab_silent_work = None
 else:
-    _tab_generate, _tab_silent_work = st.tabs(["Training Session", "Your Work"])
-    _bender_ctx = _tab_generate
+    _tab_options = ["Training Session", "Your Work"]
     _tab_admin = None
     _tab_custom_requests = None
     _tab_plan = None
     _tab_highscores = None
+    _tab_silent_work = None
+
+# Player tab selector: only render selected tab so Training Session workout stays isolated
+if not _admin:
+    if "player_tab" not in st.session_state:
+        st.session_state.player_tab = "Training Session"
+    _selected_tab = st.radio(
+        "Tab",
+        options=_tab_options,
+        key="player_tab_radio",
+        horizontal=True,
+        label_visibility="collapsed",
+    )
+    st.session_state.player_tab = _selected_tab
 
 # Age from profile (set at account creation)
 age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
 
-with _bender_ctx:
+# Admin: inside Workout Generator tab. Player: only when Training Session selected (keeps workout isolated).
+_show_training = _admin or (not _admin and st.session_state.get("player_tab") == "Training Session")
+
+
+def _render_training_session():
     # Custom Plan Intake questionnaire (shown when Request Custom Plan clicked)
     if st.session_state.get("custom_plan_intake_open"):
         st.markdown("### BENDER PLAN INTAKE")
@@ -2657,29 +2684,38 @@ with _bender_ctx:
     _training_session_fragment()
 
 
+if _show_training:
+    if _admin:
+        with _bender_ctx:
+            _render_training_session()
+    else:
+        _render_training_session()
+
+
 # My Plan tab (for players with assigned plan) — rendered after Training Session for correct tab order
-if _tab_plan is not None and _has_valid_plan and _assigned_plan:
-    with _tab_plan:
-        _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
-        _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
-        if isinstance(_plan_completed, dict):
-            _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
+# Admin: N/A (no My Plan tab). Player: render only when My Plan tab selected.
+if not _admin and st.session_state.get("player_tab") == "My Plan" and _has_valid_plan and _assigned_plan:
+    # Player on My Plan tab — render directly (no st.tabs for players)
+    _plan_data, _plan_name = _deserialize_plan_for_display(_assigned_plan)
+    _plan_completed = (st.session_state.current_profile or {}).get("assigned_plan_completed") or {}
+    if isinstance(_plan_completed, dict):
+        _plan_completed = {str(k): (v if isinstance(v, list) else list(v)) for k, v in _plan_completed.items()}
 
-        def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
-            prof = dict(st.session_state.current_profile or {})
-            c = dict(prof.get("assigned_plan_completed") or {})
-            key = str(day_idx)
-            c[key] = list(set(c.get(key, [])) | {mode_key})
-            prof["assigned_plan_completed"] = c
-            if params_or_meta:
-                prof = _add_completion_to_profile(prof, params_or_meta)
-            st.session_state.current_profile = prof
-            save_profile(prof)
-            st.rerun()
+    def _plan_on_complete(day_idx: int, mode_key: str, params_or_meta: dict | None = None) -> None:
+        prof = dict(st.session_state.current_profile or {})
+        c = dict(prof.get("assigned_plan_completed") or {})
+        key = str(day_idx)
+        c[key] = list(set(c.get(key, [])) | {mode_key})
+        prof["assigned_plan_completed"] = c
+        if params_or_meta:
+            prof = _add_completion_to_profile(prof, params_or_meta)
+        st.session_state.current_profile = prof
+        save_profile(prof)
+        st.rerun()
 
-        if _plan_name:
-            st.markdown(f"### {_plan_name}")
-        _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
+    if _plan_name:
+        st.markdown(f"### {_plan_name}")
+    _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
 if _tab_admin is not None:
@@ -2716,7 +2752,8 @@ if _tab_admin is not None:
                     _, wv_day_data = flat_days_edit[wv_day]
                     fi_edit = next((x for x in wv_day_data.get("focus_items", []) if x["mode_key"] == wv_mode), None)
                     if fi_edit:
-                        st.markdown(f"### {fi_edit['label']} — Day {wv_day + 1} (Edit)")
+                        _edit_title = ({"leg": "Heavy legs", "upper": "Upper / Core stability", "full": "Explosive legs"}.get((fi_edit.get("params") or {}).get("strength_day_type", "full") or "full", fi_edit["label"]) if fi_edit.get("mode_key") == "performance" else fi_edit["label"])
+                        st.markdown(f"### {_edit_title} — Day {wv_day + 1} (Edit)")
                         if st.button("← Back", key="admin_edit_workout_back"):
                             st.session_state.admin_plan_workout_view = None
                             st.rerun()
@@ -2743,7 +2780,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with _row_cols[i]:
                     _dd = flat_days_edit[i][1]
-                    _ds = _dd["date"].strftime("%b %d") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:8]
+                    _ds = _dd["date"].strftime("%a") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:3]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     _focus_i = _dd.get("focus_items", [])
                     _day_done = len(_focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in _focus_i)
@@ -2998,7 +3035,8 @@ if _tab_admin is not None:
                     focus_items_wv = wv_day_data.get("focus_items", [])
                     fi_wv = next((x for x in focus_items_wv if x["mode_key"] == wv_mode), None)
                     if fi_wv:
-                        st.markdown(f"### {fi_wv['label']} — Day {wv_day + 1}")
+                        _wv_title = ({"leg": "Heavy legs", "upper": "Upper / Core stability", "full": "Explosive legs"}.get((fi_wv.get("params") or {}).get("strength_day_type", "full") or "full", fi_wv["label"]) if fi_wv.get("mode_key") == "performance" else fi_wv["label"])
+                        st.markdown(f"### {_wv_title} — Day {wv_day + 1}")
                         if st.button("← Back", key="admin_workout_back"):
                             st.session_state.admin_plan_workout_view = None
                             st.rerun()
@@ -3025,7 +3063,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with row_cols[i]:
                     day_data_i = flat_days[i][1]
-                    date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
+                    date_str = day_data_i["date"].strftime("%a") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:3]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     focus_i = day_data_i.get("focus_items", [])
                     day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
@@ -3122,24 +3160,32 @@ if _tab_custom_requests is not None:
                             mark_custom_plan_request_complete(req.get("id", ""))
                             st.rerun()
 
-# Your Work tab (players only) — total hours only
+def _render_your_work_stats():
+    prof = st.session_state.get("current_profile") or {}
+    stats = prof.get("private_victory_stats") or {}
+    gym_h = float(stats.get("gym_hours", 0) or 0)
+    skating_h = float(stats.get("skating_hours", 0) or 0)
+    cond_h = float(stats.get("conditioning_hours", 0) or 0)
+    stick_h = float(stats.get("stickhandling_hours", 0) or 0)
+    mob_h = float(stats.get("mobility_hours", 0) or 0)
+    total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+
+    st.markdown(
+        '<div class="your-work-stats-card">'
+        '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
+        '</div>'.format(total_hours),
+        unsafe_allow_html=True,
+    )
+
+
+# Your Work tab — admin: in tab. Player: render when Your Work tab selected.
 if _tab_silent_work is not None:
     with _tab_silent_work:
-        prof = st.session_state.get("current_profile") or {}
-        stats = prof.get("private_victory_stats") or {}
-        gym_h = float(stats.get("gym_hours", 0) or 0)
-        skating_h = float(stats.get("skating_hours", 0) or 0)
-        cond_h = float(stats.get("conditioning_hours", 0) or 0)
-        stick_h = float(stats.get("stickhandling_hours", 0) or 0)
-        mob_h = float(stats.get("mobility_hours", 0) or 0)
-        total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+        _render_your_work_stats()
+elif not _admin and st.session_state.get("player_tab") == "Your Work":
+    # Player on Your Work tab — render directly (no st.tabs for players)
+    _render_your_work_stats()
 
-        st.markdown(
-            '<div class="your-work-stats-card">'
-            '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
-            '</div>'.format(total_hours),
-            unsafe_allow_html=True,
-        )
 
 # Admin: Highscores tab (admin only)
 if _tab_highscores is not None:
