@@ -358,7 +358,7 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
         with row_cols[i]:
             day_data = flat_days[i][1]
             day_date = day_data.get("date")
-            date_str = day_date.strftime("%b %d") if hasattr(day_date, "strftime") else str(day_date)[:8]
+            date_str = day_date.strftime("%a") if hasattr(day_date, "strftime") else str(day_date)[:3]
             _completed = completed.get(i) or completed.get(str(i)) or []
             _comp_set = set(_completed) if isinstance(_completed, list) else set(_completed)
             focus_items_i = day_data.get("focus_items", [])
@@ -731,7 +731,7 @@ def render_workout_readable(text: str) -> None:
         # Only warm-up gets a dropdown; rest of workout is always visible. Bold "WARMUP", same size.
         if is_warmup_header(title):
             warmup_display = "**WARMUP**" + (label[6:] if label.upper().startswith("WARMUP") else "")
-            expander_label = f"{warmup_display} — {tag}" if tag else warmup_display
+            expander_label = f"{warmup_display} — {tag}" if (tag and tag != "Section") else warmup_display
             with st.expander(expander_label):
                 for ln in body_lines:
                     s = ln.strip()
@@ -744,7 +744,7 @@ def render_workout_readable(text: str) -> None:
         else:
             with st.container(border=True):
                 st.subheader(label)
-                if tag:
+                if tag and tag != "Section":
                     st.caption(tag)
                 for ln in body_lines:
                     s = ln.strip()
@@ -1284,7 +1284,7 @@ st.markdown("""
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"],
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] {
         overflow-x: auto !important; overflow-y: hidden !important;
-        width: 21rem !important; max-width: 100% !important; min-width: 0 !important;
+        width: 20.75rem !important; max-width: 100% !important; min-width: 0 !important;
         padding-bottom: 0.5rem !important;
         -webkit-overflow-scrolling: touch !important; scrollbar-width: thin !important;
         scrollbar-color: #888888 #2a2a2a !important;
@@ -1520,6 +1520,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * .stButton {
         display: flex !important; justify-content: center !important; align-items: center !important; width: 100% !important; flex-wrap: nowrap !important;
     }
+    /* Selected day: clean highlight — subtle border, no harsh shadows */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
@@ -1530,9 +1531,22 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]),
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton button[kind="primary"]) {
-        border-color: white !important;
+        border: 1px solid rgba(255,255,255,0.5) !important; border-radius: 10px !important;
+        box-shadow: 0 0 0 1px rgba(255,255,255,0.15) !important;
     }
-    /* Workout number button: fixed size box, number + date stacked cleanly */
+    /* Workout number button: fixed size box, number + date stacked cleanly; selected = subtle highlight */
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: rgba(255,255,255,0.12) !important; border: 1px solid rgba(255,255,255,0.4) !important;
+        box-shadow: none !important;
+    }
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] .stButton button,
@@ -1566,9 +1580,9 @@ st.markdown("""
         white-space: nowrap !important; display: inline !important; flex-shrink: 0 !important;
         font-size: inherit !important; line-height: inherit !important;
     }
-    /* Date: centered under number, day of month + workout number layout */
+    /* Date: centered under number, day of week (Mon, Tue, etc.) */
     .plan-day-date {
-        background: transparent !important; color: #b8b8b8 !important; font-size: 0.7rem !important; text-align: center !important;
+        background: transparent !important; color: #d0d0d0 !important; font-size: 0.75rem !important; text-align: center !important;
         margin: 0.15rem auto 0 !important; padding: 0 !important; line-height: 1.2 !important; width: 100% !important; display: block !important;
     }
     .plan-day-date-selected {
@@ -2604,7 +2618,6 @@ with _bender_ctx:
                     "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
                     height=0,
                 )
-            _badge_label = f"{MODE_LABELS.get(effective_mode, effective_mode)} · {minutes} min"
             _clear_col, _spacer = st.columns([1, 4])
             with _clear_col:
                 if st.button("Clear workout", key="clear_workout_top"):
@@ -2613,8 +2626,6 @@ with _bender_ctx:
             tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
 
             with tab_workout:
-                st.markdown('<p class="workout-result-header">Your workout</p>', unsafe_allow_html=True)
-                st.markdown(f'<span class="workout-result-badge">{_badge_label}</span>', unsafe_allow_html=True)
                 if effective_mode == "performance" and location == "no_gym":
                     render_no_gym_strength_circuits_only(st.session_state.last_output_text)
                 else:
@@ -2740,7 +2751,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with _row_cols[i]:
                     _dd = flat_days_edit[i][1]
-                    _ds = _dd["date"].strftime("%b %d") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:8]
+                    _ds = _dd["date"].strftime("%a") if hasattr(_dd["date"], "strftime") else str(_dd["date"])[:3]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     _focus_i = _dd.get("focus_items", [])
                     _day_done = len(_focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in _focus_i)
@@ -3022,7 +3033,7 @@ if _tab_admin is not None:
             for i in range(total_days):
                 with row_cols[i]:
                     day_data_i = flat_days[i][1]
-                    date_str = day_data_i["date"].strftime("%b %d") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:8]
+                    date_str = day_data_i["date"].strftime("%a") if hasattr(day_data_i["date"], "strftime") else str(day_data_i["date"])[:3]
                     _adm_comp = st.session_state.admin_plan_completed.get(i, set()) or set()
                     focus_i = day_data_i.get("focus_items", [])
                     day_done = len(focus_i) > 0 and all(x["mode_key"] in _adm_comp for x in focus_i)
