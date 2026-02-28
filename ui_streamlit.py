@@ -1701,16 +1701,17 @@ st.markdown("""
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 0 !important; margin-bottom: 1rem !important;
+        display: flex !important; gap: 0.4rem !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #ffffff !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
-        background: #2a2a2a !important; border: none !important; border-radius: 8px 8px 0 0 !important;
-        color: #999999 !important; font-weight: 500 !important; padding: 0.6rem 1rem !important;
-        margin-bottom: 0 !important; box-shadow: none !important;
+        background: #2a2a2a !important; border: none !important; border-radius: 6px 6px 0 0 !important;
+        color: #999999 !important; font-weight: 500 !important; font-size: 0.875rem !important;
+        padding: 0.35rem 0.7rem !important; margin-bottom: 0 !important; box-shadow: none !important;
+        min-height: auto !important; line-height: 1.3 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
@@ -1729,7 +1730,7 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
-            padding: 0.5rem 0.6rem !important; font-size: 0.85rem !important;
+            padding: 0.3rem 0.5rem !important; font-size: 0.8rem !important;
         }
     }
 
