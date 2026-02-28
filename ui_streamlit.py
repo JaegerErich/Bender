@@ -1696,124 +1696,73 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Player tab bar: clean underline tabs (no circles, no bubbles) — default */
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"],
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] {
-        display: flex !important; gap: 0 !important; padding: 0 !important; margin-bottom: 1.25rem !important;
-        background: transparent !important; border: none !important; border-bottom: 1px solid #444444 !important;
-        border-radius: 0 !important;
+    /* Player tab bar: button-based tabs (no circles) — first horizontal block after #player-tab-bar markdown */
+    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] {
+        display: flex !important; gap: 0.5rem !important; margin-bottom: 1.25rem !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"],
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] {
-        flex: 0 1 auto !important; margin: 0 !important; padding: 0.65rem 1.1rem !important;
-        border: none !important; border-radius: 0 !important; border-bottom: 3px solid transparent !important;
-        color: #888888 !important; font-weight: 500 !important; font-size: 0.95rem !important;
-        background: transparent !important; cursor: pointer !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar):not(:has([data-tab-style])) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] {
+        border-bottom: 1px solid #444444 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"]:hover,
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"]:hover {
+    /* Underline style (default): text + bottom border for selected */
+    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: transparent !important; border: none !important; border-radius: 0 !important;
+        border-bottom: 3px solid transparent !important; color: #888888 !important;
+        font-weight: 500 !important; font-size: 0.95rem !important; padding: 0.65rem 1.1rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
         color: #cccccc !important; background: transparent !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        color: #ffffff !important; font-weight: 600 !important;
-        border-bottom-color: #ffffff !important; margin-bottom: -1px !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        color: #ffffff !important; font-weight: 600 !important; border-bottom-color: #ffffff !important;
     }
-    /* Hide radio circles/dots completely — text-only tabs, no bubbles */
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"],
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"] {
-        -webkit-appearance: none !important; appearance: none !important; margin: 0 !important;
-        width: 0 !important; height: 0 !important; min-width: 0 !important; min-height: 0 !important;
-        position: absolute !important; opacity: 0 !important; pointer-events: none !important;
-        clip: rect(0,0,0,0) !important; clip-path: inset(100%) !important; overflow: hidden !important;
+    /* Pill style */
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: #3a3a3a !important; border: 1px solid #4a4a4a !important; border-radius: 999px !important;
+        border-bottom: 1px solid #4a4a4a !important; color: #b0b0b0 !important; padding: 0.5rem 1.25rem !important;
     }
-    /* Hide any radio indicator (circle/dot/bubble), keep only label text */
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label),
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label),
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] svg,
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] svg {
-        display: none !important; visibility: hidden !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label,
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label {
-        cursor: pointer !important; color: inherit !important; margin: 0 !important; padding: 0 !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::before,
-    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::after,
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::before,
-    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::after {
-        display: none !important;
-    }
-
-    /* Tab style: Pill — rounded chips, selected has filled background (default) */
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"],
-    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] {
-        border-bottom: none !important; gap: 0.6rem !important; padding: 0.35rem 0 !important; margin-bottom: 1.25rem !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"],
-    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] {
-        border-bottom: none !important; border-radius: 999px !important; background: #3a3a3a !important;
-        padding: 0.5rem 1.25rem !important; color: #b0b0b0 !important; font-weight: 500 !important;
-        border: 1px solid #4a4a4a !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"]:hover,
-    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"]:hover {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
         background: #444444 !important; color: #e0e0e0 !important; border-color: #555555 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
-    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        background: #ffffff !important; color: #000000 !important; border-color: #ffffff !important;
-        border-bottom-color: transparent !important; margin-bottom: 0 !important; font-weight: 600 !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="pill"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #ffffff !important; color: #000000 !important; border-color: #ffffff !important; font-weight: 600 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] label,
-    div:has(#player-tab-bar[data-tab-style="pill"]) ~ div [role="radiogroup"] [role="radio"] label {
-        color: inherit !important;
+    /* Bordered style */
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="bordered"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: transparent !important; border: 1px solid #444444 !important; border-radius: 0 !important;
+        color: #999999 !important; padding: 0.5rem 1.25rem !important;
     }
-
-    /* Tab style: Segmented — connected blocks, selected stands out */
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"],
-    div:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] {
-        border-bottom: none !important; gap: 0 !important; padding: 0 !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="bordered"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #1a1a1a !important; color: #ffffff !important; border-color: #ffffff !important; font-weight: 600 !important;
+    }
+    /* Segmented style */
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] {
         background: #2a2a2a !important; border-radius: 10px !important; overflow: hidden !important;
+        padding: 0.25rem !important; gap: 0 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"],
-    div:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"] {
-        border-radius: 0 !important; border: none !important; border-right: 1px solid #3a3a3a !important;
-        background: transparent !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton button {
+        background: transparent !important; border: none !important; border-right: 1px solid #3a3a3a !important;
+        border-radius: 0 !important; color: #888888 !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"]:last-of-type,
-    div:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"]:last-of-type {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton:last-child button,
+    div:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton:last-child button {
         border-right: none !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
-    div:has(#player-tab-bar[data-tab-style="segmented"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        background: #4a4a4a !important; color: #ffffff !important; border-bottom-color: transparent !important; margin-bottom: 0 !important;
-    }
-
-    /* Tab style: Bordered — sharp rectangles, no curves, selected has white border */
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"],
-    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] {
-        border-bottom: none !important; gap: 0.5rem !important; padding: 0.25rem 0 !important; margin-bottom: 1.25rem !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"],
-    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] {
-        border-radius: 0 !important; background: transparent !important; border: 1px solid #444444 !important;
-        padding: 0.5rem 1.25rem !important; color: #999999 !important; font-weight: 500 !important;
-        border-bottom: none !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"]:hover,
-    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"]:hover {
-        background: #2a2a2a !important; color: #cccccc !important; border-color: #555555 !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"],
-    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"][aria-checked="true"] {
-        background: #1a1a1a !important; color: #ffffff !important; border-color: #ffffff !important;
-        border-bottom-color: transparent !important; margin-bottom: 0 !important; font-weight: 600 !important;
-    }
-    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] label,
-    div:has(#player-tab-bar[data-tab-style="bordered"]) ~ div [role="radiogroup"] [role="radio"] label {
-        color: inherit !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="segmented"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+        background: #4a4a4a !important; color: #ffffff !important;
     }
 
     /* Plan day cards: number (button) large on top, date below */
@@ -2868,14 +2817,22 @@ if _admin:
     with _bender_ctx:
         _render_training_session()
 else:
-    # Player: tab-style radio; only render the selected tab's content (fully independent, no bleed)
+    # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
     _tab_style_val = (st.session_state.get("player_tab_style") or "Underline").lower().replace(" ", "-")
     st.markdown(f'<div id="player-tab-bar" data-tab-style="{_tab_style_val}" aria-hidden="true"></div>', unsafe_allow_html=True)
-    _sel = st.radio("Tab", options=_tab_opts, key="player_tab_radio", horizontal=True, label_visibility="collapsed")
-    st.session_state.player_tab = _sel
+
+    _tab_cols = st.columns(len(_tab_opts))
+    _sel = st.session_state.player_tab
+    for _i, _opt in enumerate(_tab_opts):
+        with _tab_cols[_i]:
+            _is_selected = _sel == _opt
+            if st.button(_opt, key=f"player_tab_{_opt.replace(' ', '_')}", type="primary" if _is_selected else "secondary"):
+                st.session_state.player_tab = _opt
+                st.rerun()
+    _sel = st.session_state.player_tab
 
     if _sel == "Training Session":
         _render_training_session()
