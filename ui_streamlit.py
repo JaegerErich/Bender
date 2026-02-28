@@ -370,13 +370,8 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
             elif missed:
                 st.markdown('<div class="plan-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
-            # Single unified label: number, date, status — no separate smaller rectangle
-            if missed:
-                label = f"{i + 1}\n{date_str}\nMissed day"
-            elif day_complete:
-                label = f"✓ {i + 1}\n{date_str}\nDay complete"
-            else:
-                label = f"{i + 1}\n{date_str}"
+            # Two-line format to match reference: day number (large), date below
+            label = f"{i + 1}\n{date_str}"
             btn_type = "primary" if i == sel_idx else "secondary"
             if st.button(label, key=f"plan_day_{i}", type=btn_type):
                 st.session_state.plan_selected_day = i
@@ -1376,11 +1371,11 @@ st.markdown("""
         overflow: visible !important; min-height: 4rem !important;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
     }
-    /* Selected day: white bg + black border (stands out like reference) */
+    /* Selected day: white bg + dark grey border (match Faith That Endures exactly) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]),
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]),
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]) {
-        background: #ffffff !important; border: 2px solid #000000 !important;
+        background: #ffffff !important; border: 2px solid #444444 !important;
     }
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"],
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"],
@@ -1578,11 +1573,11 @@ st.markdown("""
         -webkit-justify-content: center !important; justify-content: center !important;
         flex-wrap: nowrap !important; word-break: keep-all !important; overflow: visible !important; text-overflow: clip !important;
     }
-    /* Plan day: multi-line button (number + date + Missed day) — override nowrap above */
+    /* Plan day: two-line button (number + date) — override nowrap above */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        white-space: pre-line !important; font-size: 0.95rem !important; min-height: 3rem !important;
+        white-space: pre-line !important; min-height: 2.75rem !important;
     }
     /* Force button label one line for admin (10+ days); plan-day-grid uses multi-line for number+date+status */
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button *,
@@ -1722,23 +1717,34 @@ st.markdown("""
         color: #ffffff !important; font-weight: 600 !important;
         border-bottom-color: #ffffff !important; margin-bottom: -1px !important;
     }
-    /* Hide radio circle/dot: no default bullet, text-only tab look */
+    /* Hide radio circle/dot completely — text-only tab headers, no dots */
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"],
     div:has(#player-tab-bar) ~ div [role="radiogroup"] input[type="radio"] {
         -webkit-appearance: none !important; appearance: none !important; margin: 0 !important;
         width: 100% !important; height: 100% !important; position: absolute !important; opacity: 0 !important;
     }
+    /* Hide any radio indicator (circle/dot), keep only label text */
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label),
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] > *:not(label) {
+        display: none !important;
+    }
     [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label,
     div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label {
         cursor: pointer !important; color: inherit !important; margin: 0 !important; padding: 0 !important;
     }
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::before,
+    [data-testid="stMarkdown"]:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::after,
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::before,
+    div:has(#player-tab-bar) ~ div [role="radiogroup"] [role="radio"] label::after {
+        display: none !important;
+    }
 
-    /* Plan day cards: number large on top, date below (match Faith That Endures) */
+    /* Plan day cards: number large on top, date smaller below (match Faith That Endures) */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button {
         background: transparent !important;
-        color: #ffffff !important;
+        color: #b8b8b8 !important;
         border: none !important;
         box-shadow: none !important;
         white-space: pre-line !important;
@@ -1746,8 +1752,14 @@ st.markdown("""
         text-align: center !important;
         width: 100% !important;
         min-height: auto !important;
-        padding: 0.25rem 0.15rem !important;
+        padding: 0.4rem 0.25rem !important;
         overflow: visible !important;
+        font-size: 0.8rem !important;
+    }
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button::first-line,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .stButton button::first-line,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .stButton button::first-line {
+        font-size: 1.35rem !important; font-weight: 600 !important;
     }
     /* Selected day: black text on white card */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
