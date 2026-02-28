@@ -2297,7 +2297,9 @@ if _assigned_plan:
 _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len(load_custom_plan_requests())
-    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"])
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", f"Admin: Custom Plan Request ({_custom_req_count})"]
+    _admin_default = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else None
+    _tab_bender, _tab_admin, _tab_highscores, _tab_silent_work, _tab_custom_requests = st.tabs(_admin_tab_names, default=_admin_default)
     _bender_ctx = _tab_bender
     _tab_plan = None
 elif _has_valid_plan:
