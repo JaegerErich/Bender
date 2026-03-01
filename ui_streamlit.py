@@ -1696,34 +1696,37 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Classic tab style (admin + user): rectangular tabs, rounded top, active=light gray, inactive=dark, thin white line below */
+    /* Classic tab style (admin + user): match reference — thin white baseline, active has thicker white underline */
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 0.4rem !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #ffffff !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
+        align-items: flex-end !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
-        background: #2a2a2a !important; border: none !important; border-radius: 6px 6px 0 0 !important;
-        color: #999999 !important; font-weight: 500 !important; font-size: 0.875rem !important;
-        padding: 0.35rem 0.7rem !important; margin-bottom: 0 !important; box-shadow: none !important;
+        background: #262626 !important; border: none !important; border-radius: 6px 6px 0 0 !important;
+        border-bottom: 2px solid transparent !important; margin-bottom: -1px !important;
+        color: #cccccc !important; font-weight: 500 !important; font-size: 0.875rem !important;
+        padding: 0.35rem 0.7rem !important; box-shadow: none !important;
         min-height: auto !important; line-height: 1.3 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
-        background: #383838 !important; color: #cccccc !important;
+        background: #333333 !important; color: #dddddd !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
-        background: #e0e0e0 !important; color: #1a1a1a !important; font-weight: 600 !important;
+        background: #eeeeee !important; color: #1a1a1a !important; font-weight: 600 !important;
+        border-bottom: 3px solid #ffffff !important; margin-bottom: -2px !important;
     }
     @media (max-width: 640px) {
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
