@@ -370,14 +370,21 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
             elif missed:
                 st.markdown('<div class="plan-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
-            # Number (button) + date below; selected date in white pill
+            # Number (button) + date below; selected date in white pill; "Missed day" below date when missed
             is_sel = i == sel_idx
             btn_type = "primary" if is_sel else "secondary"
             if st.button(str(i + 1), key=f"plan_day_{i}", type=btn_type):
                 st.session_state.plan_selected_day = i
                 st.rerun()
             _pill_cls = " plan-day-date-pill" if is_sel else ""
-            st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
+            if missed:
+                st.markdown(
+                    f'<div class="plan-day-date-block"><p class="plan-day-date{_pill_cls}">{date_str}</p>'
+                    '<p class="plan-day-missed">Missed day</p></div>',
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -1603,20 +1610,17 @@ st.markdown("""
     /* Date + missed/complete block: date on top, label directly below */
     .plan-day-date-block {
         display: flex !important; flex-direction: column !important; align-items: center !important;
-        width: 100% !important; gap: 0.15rem !important; margin: 0.2rem 0 0 !important; padding: 0 !important;
+        width: 100% !important; max-width: 4.5rem !important; gap: 0.1rem !important;
+        margin: 0.2rem 0 0 !important; padding: 0 !important; overflow: hidden !important;
     }
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
     .plan-day-date-block .plan-day-missed { margin-top: 0 !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0 !important; }
     /* Green/red cards: white text for contrast */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .stButton button,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .plan-day-date,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .plan-day-date,
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .stButton button,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .plan-day-date,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) .plan-day-date {
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .plan-day-date {
         color: #ffffff !important;
     }
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.admin-day-complete) .stButton button,
@@ -1629,18 +1633,15 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
         color: #ffffff !important;
     }
-    /* Day missed: whole day card turns red (like green for complete) */
+    /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
     .plan-day-missed-marker { display: none; }
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker),
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed-marker) {
-        background: #dc2626 !important;
-    }
-    /* Missed day: text below date (white on red card, clearly visible) */
+    /* Missed day: text below date, outside the card content area, within column width */
     .plan-day-missed {
-        font-size: 0.6rem !important; color: #ffffff !important; margin: 0 !important; padding: 0 !important;
-        line-height: 1.2 !important; text-align: center !important; width: 100% !important; display: block !important;
-        font-weight: 600 !important;
+        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
+        padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
+        display: block !important; font-weight: 500 !important;
+        max-width: 4.5rem !important; overflow: hidden !important; text-overflow: ellipsis !important;
+        white-space: nowrap !important;
     }
     /* Day complete: text under date (white on green card) */
     .plan-day-complete-label {
@@ -1696,20 +1697,20 @@ st.markdown("""
         background: #ffffff !important; color: #000000 !important; border: 1px solid #ffffff !important;
     }
 
-    /* Classic tab style: sleek, simple, side-by-side, not bulky — even spacing between all tabs */
+    /* Classic tab style: sleek, simple — words fit in each tab, light grey line, even spacing */
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 8px !important; margin-bottom: 1rem !important;
-        border-bottom: 1px solid #ffffff !important; padding-bottom: 0 !important; flex-wrap: nowrap !important;
+        border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div {
-        flex: 0 0 auto !important; min-width: 0 !important;
+        flex: 0 0 auto !important; min-width: min-content !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
@@ -1717,9 +1718,10 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
         background: #2e2e2e !important; border: 1px solid #3a3a3a !important; border-radius: 8px 8px 0 0 !important;
         border-bottom: 2px solid transparent !important; margin-bottom: -1px !important;
-        color: #cccccc !important; font-weight: 500 !important; font-size: 0.78rem !important;
+        color: #cccccc !important; font-weight: 500 !important; font-size: 0.75rem !important;
         padding: 0.25rem 0.5rem !important; box-shadow: none !important;
         min-height: auto !important; line-height: 1.2 !important; white-space: nowrap !important;
+        min-width: min-content !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
@@ -1732,7 +1734,7 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #e0e0e0 !important; color: #333333 !important; font-weight: 600 !important;
-        border-color: #e0e0e0 !important; border-bottom: 3px solid #ffffff !important; margin-bottom: -2px !important;
+        border-color: #e0e0e0 !important; border-bottom: 3px solid #888888 !important; margin-bottom: -2px !important;
     }
     @media (max-width: 640px) {
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
