@@ -351,10 +351,11 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
 
     # Plan progress summary
     st.caption(f"**Progress:** {days_complete} day{'s' if days_complete != 1 else ''} complete, {days_missed} missed • {workouts_done} of {total_workouts} workouts done")
-    # Day squares (clean dark card design): single row with horizontal scroll bar
+    # Day squares (clean dark card design): row 1 = cards, row 2 = "Missed day" labels below
     st.markdown('<div id="plan-day-grid" aria-hidden="true"></div>', unsafe_allow_html=True)
     st.markdown(f"**Day {sel_idx + 1} of {total_days}**")
     row_cols = st.columns(total_days)
+    missed_per_day = []
     for i in range(total_days):
         with row_cols[i]:
             day_data = flat_days[i][1]
@@ -366,25 +367,24 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
             day_complete = len(focus_items_i) > 0 and all(x["mode_key"] in _comp_set for x in focus_items_i)
             past = day_date < today_date if hasattr(day_date, "__lt__") else False
             missed = past and not day_complete
+            missed_per_day.append(missed)
             if day_complete:
                 st.markdown('<div class="plan-day-complete" aria-hidden="true"></div>', unsafe_allow_html=True)
             elif missed:
                 st.markdown('<div class="plan-day-missed-marker" aria-hidden="true"></div>', unsafe_allow_html=True)
-            # Number (button) + date below; selected date in white pill; "Missed day" below date when missed
             is_sel = i == sel_idx
             btn_type = "primary" if is_sel else "secondary"
             if st.button(str(i + 1), key=f"plan_day_{i}", type=btn_type):
                 st.session_state.plan_selected_day = i
                 st.rerun()
             _pill_cls = " plan-day-date-pill" if is_sel else ""
-            if missed:
-                st.markdown(
-                    f'<div class="plan-day-date-block"><p class="plan-day-date{_pill_cls}">{date_str}</p>'
-                    '<p class="plan-day-missed">Missed day</p></div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
+    st.markdown('<div id="plan-day-labels-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+    label_cols = st.columns(total_days)
+    for i in range(total_days):
+        with label_cols[i]:
+            if missed_per_day[i]:
+                st.markdown('<p class="plan-day-missed">Missed day</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -1361,15 +1361,15 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
-    /* Card: dark grey unselected, white selected (match Faith That Endures), 5 visible + scroll */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
+    /* Card: dark grey unselected, white selected — only columns with button (day cards), not label row */
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.stButton),
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.stButton),
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.stButton),
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-edit-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #admin-edit-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
+    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.stButton),
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
         min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
@@ -1633,9 +1633,20 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
         color: #ffffff !important;
     }
-    /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
+    /* Day missed: no red — labels row below day cards, same column width, no grey box */
     .plan-day-missed-marker { display: none; }
-    /* Missed day: text below date, outside the card content area, within column width */
+    div:has(#plan-day-labels-row) + [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#plan-day-labels-row) + [data-testid="stHorizontalBlock"] {
+        margin-top: 0.35rem !important;
+    }
+    div:has(#plan-day-labels-row) + [data-testid="stHorizontalBlock"] > *,
+    [data-testid="stMarkdown"]:has(#plan-day-labels-row) + [data-testid="stHorizontalBlock"] > * {
+        min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
+        flex: 0 0 4.5rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        background: transparent !important; border: none !important;
+        display: flex !important; flex-direction: column !important; align-items: center !important;
+    }
+    /* Missed day: below grey box, same width as box, gap above */
     .plan-day-missed {
         font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
         padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
