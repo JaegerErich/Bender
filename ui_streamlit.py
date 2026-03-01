@@ -1704,7 +1704,9 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: 2pt spacing between Training Session, My Plan, Your Work */
+    /* Player tabs: grouped like segmented control, 12px gap, left-aligned, no full-width stretch */
+    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
+    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
@@ -1712,12 +1714,16 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 2pt !important; margin-bottom: 1rem !important;
+        display: flex !important; gap: 12px !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
+        width: fit-content !important; max-width: 100% !important;
+        align-self: flex-start !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
+    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
+    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
@@ -1725,7 +1731,8 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div {
-        flex: 0 0 auto !important; min-width: min-content !important; margin: 0 !important; padding: 0 !important;
+        flex: 0 0 auto !important; flex-grow: 0 !important; flex-shrink: 0 !important;
+        min-width: min-content !important; width: auto !important; margin: 0 !important; padding: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
@@ -1756,10 +1763,11 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
             gap: 8px !important;
         }
+        [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
-            gap: 2pt !important;
+            gap: 12px !important;
         }
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
