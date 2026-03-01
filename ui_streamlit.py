@@ -1614,7 +1614,7 @@ st.markdown("""
         margin: 0.2rem 0 0 !important; padding: 0 !important; overflow: hidden !important;
     }
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
-    .plan-day-date-block .plan-day-missed { margin-top: 0.35rem !important; }
+    .plan-day-date-block .plan-day-missed { margin-top: 0 !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0 !important; }
     /* Green/red cards: white text for contrast */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
@@ -1635,9 +1635,9 @@ st.markdown("""
     }
     /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
     .plan-day-missed-marker { display: none; }
-    /* Missed day: text below grey box, with space so it doesn't touch */
+    /* Missed day: text below date, outside the card content area, within column width */
     .plan-day-missed {
-        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.35rem 0 0 !important;
+        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
         padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
         display: block !important; font-weight: 500 !important;
         max-width: 4.5rem !important; overflow: hidden !important; text-overflow: ellipsis !important;
