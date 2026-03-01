@@ -2829,51 +2829,29 @@ def _render_training_session():
                     "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
                     height=0,
                 )
-            _clear_col, _spacer = st.columns([1, 4])
-            with _clear_col:
-                if st.button("Clear workout", key="clear_workout_top"):
-                    clear_last_output()
-                    st.rerun()
+            if st.button("Clear workout", type="secondary", key="clear_workout_top"):
+                clear_last_output()
+                st.rerun()
             st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-            tab_workout, tab_download = st.tabs(["Workout", "Download / Copy"])
-
-            with tab_workout:
-                if effective_mode == "performance" and location == "no_gym":
-                    render_no_gym_strength_circuits_only(st.session_state.last_output_text)
-                else:
-                    render_workout_readable(st.session_state.last_output_text)
-                st.divider()
-                st.caption("Finished? Log your completion to Your Work.")
-                _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
-                if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
-                    prof = st.session_state.get("current_profile") or {}
-                    if prof and _meta:
-                        prof = _add_completion_to_profile(prof, _meta)
-                        st.session_state.current_profile = prof
-                        save_profile(prof)
-                    clear_last_output()
-                    st.success("Workout logged to Your Work!")
-                    st.rerun()
-                if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
-                    clear_last_output()
-                    st.rerun()
-
-            with tab_download:
-                safe_name = re.sub(r"[^\w\-]", "_", athlete_id.strip())[:30] or "workout"
-                date_str = datetime.now().strftime("%Y-%m-%d")
-                download_filename = f"bender_workout_{safe_name}_{date_str}.txt"
-                st.download_button(
-                    label="Download workout (.txt)",
-                    data=st.session_state.last_output_text or "",
-                    file_name=download_filename,
-                    mime="text/plain",
-                )
-                st.caption("Your browser will download the file when you click above.")
-                st.write("")
-                if not (effective_mode == "performance" and location == "no_gym"):
-                    with st.expander("Copy workout (raw text)"):
-                        st.code(st.session_state.last_output_text)
-                        st.caption("Select the text above and copy (Ctrl+C / Cmd+C).")
+            if effective_mode == "performance" and location == "no_gym":
+                render_no_gym_strength_circuits_only(st.session_state.last_output_text)
+            else:
+                render_workout_readable(st.session_state.last_output_text)
+            st.divider()
+            st.caption("Finished? Log your completion to Your Work.")
+            _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
+            if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
+                prof = st.session_state.get("current_profile") or {}
+                if prof and _meta:
+                    prof = _add_completion_to_profile(prof, _meta)
+                    st.session_state.current_profile = prof
+                    save_profile(prof)
+                clear_last_output()
+                st.success("Workout logged to Your Work!")
+                st.rerun()
+            if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
+                clear_last_output()
+                st.rerun()
 
     _training_session_fragment()
 
