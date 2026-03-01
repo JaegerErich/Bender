@@ -1704,10 +1704,8 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: grouped like segmented control, 12px gap, left-aligned, no full-width stretch */
-    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
-    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
-    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
+    /* Player tabs: grouped like segmented control, 12px gap, left-aligned (exclude plan-day-grid) */
+    div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"],
@@ -1722,9 +1720,7 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
-    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
-    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
-    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div,
@@ -1763,8 +1759,7 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
             gap: 8px !important;
         }
-        [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
-        div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
+        div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
             gap: 12px !important;
