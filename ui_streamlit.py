@@ -377,14 +377,9 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                 st.session_state.plan_selected_day = i
                 st.rerun()
             _pill_cls = " plan-day-date-pill" if is_sel else ""
+            st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
             if missed:
-                st.markdown(
-                    f'<div class="plan-day-date-block"><p class="plan-day-date{_pill_cls}">{date_str}</p>'
-                    '<p class="plan-day-missed">Missed day</p></div>',
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(f'<p class="plan-day-date{_pill_cls}">{date_str}</p>', unsafe_allow_html=True)
+                st.markdown('<p class="plan-day-missed">Missed day</p>', unsafe_allow_html=True)
     st.divider()
 
     _, day_data = flat_days[sel_idx]
@@ -1633,11 +1628,30 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
         color: #ffffff !important;
     }
-    /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
+    /* Day missed: no red — grey box same size, "Missed day" below it */
     .plan-day-missed-marker { display: none; }
-    /* Missed day: text below date, outside the card content area, within column width */
+    /* When missed: grey box via ::before (fixed height), Missed day flows below */
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) {
+        background: transparent !important; border: none !important; position: relative !important;
+        justify-content: flex-start !important;
+    }
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before {
+        content: "" !important; position: absolute !important; top: 0 !important; left: 0 !important;
+        width: 100% !important; height: 4.2rem !important; background: #4a4a4a !important;
+        border: 2px solid #3a3a3a !important; border-radius: 12px !important; z-index: -1 !important;
+    }
+    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
+    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
+    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before {
+        border-color: #ffffff !important;
+    }
+    /* Missed day: below grey box */
     .plan-day-missed {
-        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
+        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.35rem 0 0 !important;
         padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
         display: block !important; font-weight: 500 !important;
         max-width: 4.5rem !important; overflow: hidden !important; text-overflow: ellipsis !important;
