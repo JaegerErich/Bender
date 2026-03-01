@@ -637,29 +637,29 @@ def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
 
 
 def _render_your_work_stats():
-    """Show all mode hours and shots, including 0 values."""
+    """Show all mode minutes and shots, including 0 values."""
     prof = st.session_state.get("current_profile") or {}
     stats = prof.get("private_victory_stats") or {}
-    gym_h = float(stats.get("gym_hours", 0) or 0)
-    skating_h = float(stats.get("skating_hours", 0) or 0)
-    cond_h = float(stats.get("conditioning_hours", 0) or 0)
-    stick_h = float(stats.get("stickhandling_hours", 0) or 0)
-    mob_h = float(stats.get("mobility_hours", 0) or 0)
+    gym_min = int(round(60 * float(stats.get("gym_hours", 0) or 0)))
+    skating_min = int(round(60 * float(stats.get("skating_hours", 0) or 0)))
+    cond_min = int(round(60 * float(stats.get("conditioning_hours", 0) or 0)))
+    stick_min = int(round(60 * float(stats.get("stickhandling_hours", 0) or 0)))
+    mob_min = int(round(60 * float(stats.get("mobility_hours", 0) or 0)))
     shots = int(stats.get("shots", 0) or 0)
-    total_hours = gym_h + skating_h + cond_h + stick_h + mob_h
+    total_min = gym_min + skating_min + cond_min + stick_min + mob_min
 
     st.markdown(
         '<div class="your-work-stats-card">'
         '<div class="your-work-section"><span class="your-work-label">Total Shots</span><span class="your-work-value">{:,}</span></div>'
         '<div class="your-work-divider"></div>'
-        '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:.1f} h</span></div>'
-        '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:.1f} h</span></div>'
-        '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:.1f} h</span></div>'
-        '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:.1f} h</span></div>'
-        '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:.1f} h</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Gym</span><span class="your-work-num">{:,} min</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Skating mechanics</span><span class="your-work-num">{:,} min</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Conditioning</span><span class="your-work-num">{:,} min</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Stickhandling</span><span class="your-work-num">{:,} min</span></div>'
+        '<div class="your-work-row"><span class="your-work-cat">Mobility / recovery</span><span class="your-work-num">{:,} min</span></div>'
         '<div class="your-work-divider"></div>'
-        '<div class="your-work-section"><span class="your-work-label">Total Hours</span><span class="your-work-value">{:.1f} h</span></div>'
-        '</div>'.format(shots, gym_h, skating_h, cond_h, stick_h, mob_h, total_hours),
+        '<div class="your-work-section"><span class="your-work-label">Total</span><span class="your-work-value">{:,} min</span></div>'
+        '</div>'.format(shots, gym_min, skating_min, cond_min, stick_min, mob_min, total_min),
         unsafe_allow_html=True,
     )
 
@@ -2284,8 +2284,6 @@ if "last_output_text" not in st.session_state:
     st.session_state.last_output_text = None
 if "last_output_metadata" not in st.session_state:
     st.session_state.last_output_metadata = None
-if "last_inputs_fingerprint" not in st.session_state:
-    st.session_state.last_inputs_fingerprint = None
 if "scroll_to_workout" not in st.session_state:
     st.session_state.scroll_to_workout = False
 if "current_user_id" not in st.session_state:
@@ -2753,31 +2751,9 @@ def _render_training_session():
                 else:
                     conditioning_type = None
     
-            # Auto-clear old output if key inputs change
-            inputs_fingerprint = (
-                athlete_id.strip().lower(),
-                int(age),
-                int(minutes),
-                effective_mode,
-                location,
-                focus,
-                strength_day_type,
-                strength_emphasis,
-                skate_within_24h,
-                conditioning,
-                conditioning_type,
-                conditioning_mode,
-                conditioning_effort,
-            )
-    
-            if st.session_state.last_inputs_fingerprint is None:
-                st.session_state.last_inputs_fingerprint = inputs_fingerprint
-            else:
-                if inputs_fingerprint != st.session_state.last_inputs_fingerprint:
-                    if st.session_state.last_session_id or st.session_state.last_output_text:
-                        clear_last_output()
-                    st.session_state.last_inputs_fingerprint = inputs_fingerprint
-    
+            # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
+            # "Clear workout" or "Workout Complete".
+
             # Generate action + Request Custom Plan — side by side
             st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
             col_gen, col_req = st.columns(2)
