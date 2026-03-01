@@ -1704,9 +1704,7 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: 2 spaces between Training Session, My Plan, Your Work */
-    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
-    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
+    /* Player tabs: 2pt spacing between Training Session, My Plan, Your Work */
     div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
@@ -1714,14 +1712,12 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 0.5em !important; margin-bottom: 1rem !important;
+        display: flex !important; gap: 2pt !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
-    [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
-    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
@@ -1760,11 +1756,10 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
             gap: 8px !important;
         }
-        [data-testid="block-container"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
-            gap: 0.5em !important;
+            gap: 2pt !important;
         }
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
