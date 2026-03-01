@@ -1751,37 +1751,31 @@ st.markdown("""
         }
     }
 
-    /* Player tab bar: underline style (text + base line + white underline for selected) */
-    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"],
-    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 0 !important; margin-bottom: 1.25rem !important;
-        padding-bottom: 0 !important; flex-wrap: wrap !important;
-    }
-    /* Grey base line for underline style (default) */
+    /* Player tab bar: underline style (only when data-tab-style="underline" — otherwise Classic applies) */
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] {
+        display: flex !important; gap: 0 !important; margin-bottom: 1.25rem !important;
+        padding-bottom: 0 !important; flex-wrap: wrap !important;
         border-bottom: 1px solid #444444 !important;
     }
-    /* Default: underline style — inactive = grey text, active = white + white underline on grey base */
-    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
-    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button {
         background: transparent !important; border: none !important; border-radius: 0 !important;
         border-bottom: 3px solid transparent !important; margin-bottom: -1px !important;
         color: #999999 !important; font-weight: 500 !important; font-size: 0.95rem !important;
         padding: 0.7rem 1rem !important; box-shadow: none !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
-    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
         color: #cccccc !important; background: transparent !important;
     }
-    [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         color: #ffffff !important; font-weight: 600 !important; border-bottom-color: #ffffff !important;
     }
-    /* Responsive: mobile — slightly smaller taps, same layout */
     @media (max-width: 640px) {
-        [data-testid="stMarkdown"]:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
-        div:has(#player-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button {
+        [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#player-tab-bar[data-tab-style="underline"]) + div [data-testid="stHorizontalBlock"] .stButton button {
             padding: 0.6rem 0.75rem !important; font-size: 0.9rem !important;
         }
     }
