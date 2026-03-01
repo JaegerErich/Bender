@@ -1704,8 +1704,13 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
+    /* Player tabs: minimal gap between boxes — multiple selectors for Streamlit DOM */
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
-    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
+    div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 2px !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
@@ -1713,8 +1718,12 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
-    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div {
-        flex: 0 0 auto !important; min-width: min-content !important;
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
+    [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div {
+        flex: 0 0 auto !important; min-width: min-content !important; margin: 0 !important; padding: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
