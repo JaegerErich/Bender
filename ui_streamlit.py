@@ -1704,19 +1704,21 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: minimal gap between boxes — multiple selectors for Streamlit DOM */
+    /* Player tabs: tight gap like admin — container wrapper ensures selector matches */
+    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
-        display: flex !important; gap: 2px !important; margin-bottom: 1rem !important;
+        display: flex !important; gap: 8px !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div,
@@ -1754,9 +1756,10 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
             gap: 8px !important;
         }
+        div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
-            gap: 2px !important;
+            gap: 8px !important;
         }
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
@@ -2913,9 +2916,9 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
-    st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
-
-    _tab_cols = st.columns(len(_tab_opts))
+    with st.container():
+        st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
+        _tab_cols = st.columns(len(_tab_opts))
     _sel = st.session_state.player_tab
     for _i, _opt in enumerate(_tab_opts):
         with _tab_cols[_i]:
