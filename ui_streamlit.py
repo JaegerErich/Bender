@@ -2063,50 +2063,6 @@ st.markdown("""
         padding: 0.5rem 1rem !important;
     }
 
-    /* Generate workout + Request Custom Plan — side by side */
-    /* Buttons: full text visible, no truncation. Marker ensures Chrome targets correctly. */
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        gap: 0.75rem !important;
-        width: 100% !important;
-        min-width: 0 !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] [data-testid="column"] {
-        flex: 1 1 0 !important;
-        min-width: 140px !important;
-        max-width: 50% !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton {
-        width: 100% !important;
-        min-width: 0 !important;
-        overflow: visible !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button,
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button {
-        width: 100% !important;
-        min-width: 10rem !important;
-        max-width: none !important;
-        white-space: nowrap !important;
-        overflow: visible !important;
-        text-overflow: clip !important;
-        padding: 0.75rem 1.5rem !important;
-        box-sizing: border-box !important;
-        font-size: 1rem !important;
-        background: #ffffff !important;
-        color: #000000 !important;
-        border: 1px solid #666666 !important;
-    }
-    [data-testid="stMarkdown"]:has(#generate-request-buttons) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
-    div:has(#generate-request-buttons) ~ div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
-        background: #ffffff !important;
-        color: #000000 !important;
-        font-weight: 600 !important;
-    }
-
     /* Custom plan intake: Submit & Cancel — side-by-side, enough space for buttons */
     [data-testid="stMarkdown"]:has(#intake-submit-cancel-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 1.5rem !important;
@@ -2754,13 +2710,9 @@ def _render_training_session():
             # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
             # "Clear workout" or "Workout Complete".
 
-            # Generate action + Request Custom Plan — side by side
-            st.markdown('<div id="generate-request-buttons" aria-hidden="true"></div>', unsafe_allow_html=True)
-            col_gen, col_req = st.columns(2)
-            with col_gen:
-                generate_clicked = st.button("Generate session", type="primary", use_container_width=True)
-            with col_req:
-                request_plan_clicked = st.button("Request Custom Plan", type="secondary", use_container_width=True)
+            # Generate session + Request Custom Plan — both buttons
+            generate_clicked = st.button("Generate session", type="primary", key="generate_session_btn")
+            request_plan_clicked = st.button("Request Custom Plan", type="secondary", key="request_custom_plan_btn")
             if request_plan_clicked:
                 st.session_state.custom_plan_intake_open = True
                 st.rerun()
