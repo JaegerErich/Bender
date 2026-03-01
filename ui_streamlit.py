@@ -1229,10 +1229,14 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-# Collapse sidebar after Save equipment (one-time flag)
-_sidebar_state = "collapsed" if st.session_state.get("collapse_sidebar_after_save") else "expanded"
+# Collapse sidebar after Save equipment or after login (one-time flags)
+_sidebar_state = "collapsed" if (
+    st.session_state.get("collapse_sidebar_after_save") or st.session_state.get("collapse_sidebar_after_login")
+) else "expanded"
 if st.session_state.get("collapse_sidebar_after_save"):
     st.session_state.collapse_sidebar_after_save = False
+if st.session_state.get("collapse_sidebar_after_login"):
+    st.session_state.collapse_sidebar_after_login = False
 _page_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "b_logo.png")
 if not os.path.isfile(_page_icon):
     _page_icon = None
@@ -1704,8 +1708,9 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: tight gap like admin — container wrapper ensures selector matches */
-    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
+    /* Player tabs: tight gap — shrink row to content, pack buttons together */
+    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"]:first-of-type,
+    [data-testid="stAppViewContainer"] div:has(#player-tab-bar) [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"],
@@ -1713,19 +1718,21 @@ st.markdown("""
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 8px !important; margin-bottom: 1rem !important;
-        border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
+        border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: nowrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
+        width: fit-content !important; max-width: 100% !important; flex: 0 0 auto !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > div,
+    div:has(#player-tab-bar) [data-testid="stHorizontalBlock"] > [data-testid="stVerticalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div {
-        flex: 0 0 auto !important; min-width: min-content !important; margin: 0 !important; padding: 0 !important;
+        flex: 0 0 auto !important; min-width: 0 !important; width: auto !important; margin: 0 !important; padding: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
@@ -2306,6 +2313,7 @@ if st.session_state.current_user_id is None:
         if _prof:
             st.session_state.current_user_id = _uid
             st.session_state.current_profile = _prof
+            st.session_state.collapse_sidebar_after_login = True  # sidebar closed on login
             if not _equipment_setup_done(_prof):
                 st.session_state.page = "equipment_onboarding"
             else:
@@ -2348,6 +2356,7 @@ if st.session_state.current_user_id is None:
                 else:
                     st.session_state.current_user_id = uid
                     st.session_state.current_profile = prof
+                    st.session_state.collapse_sidebar_after_login = True  # sidebar closed on login
                     st.query_params["uid"] = uid  # persist in URL so refresh keeps user logged in
                     if not _equipment_setup_done(prof):
                         st.session_state.page = "equipment_onboarding"
