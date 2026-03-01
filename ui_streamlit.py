@@ -2472,11 +2472,6 @@ with st.sidebar:
             _h = st.text_input("Height", value=_prof.get("height") or "", placeholder="e.g. 5'10\"", key="sidebar_height")
         with _row_hw[1]:
             _w = st.text_input("Weight", value=_prof.get("weight") or "", placeholder="e.g. 175 lbs", key="sidebar_weight")
-        st.caption("Tab headers")
-        _tab_style = st.session_state.get("player_tab_style") or "Classic"
-        _tab_opts_all = ["Classic", "Underline", "Bordered", "Segmented", "Pill", "Floating"]
-        _tab_style_idx = _tab_opts_all.index(_tab_style) if _tab_style in _tab_opts_all else 0
-        st.selectbox("Tab header style", options=_tab_opts_all, index=_tab_style_idx, key="player_tab_style")
     _equip_just_saved = st.session_state.pop("equipment_expander_collapse_after_save", False)
     _equip_label = "Equipment" + ("\u200b" if _equip_just_saved else "")  # Change identity when just saved so expander resets to collapsed
     with st.expander(_equip_label, expanded=False):
@@ -2909,8 +2904,7 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
-    _tab_style_val = (st.session_state.get("player_tab_style") or "Classic").lower().replace(" ", "-")
-    st.markdown(f'<div id="player-tab-bar" data-tab-style="{_tab_style_val}" aria-hidden="true"></div>', unsafe_allow_html=True)
+    st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
 
     _tab_cols = st.columns(len(_tab_opts))
     _sel = st.session_state.player_tab
