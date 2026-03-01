@@ -1633,29 +1633,9 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
         color: #ffffff !important;
     }
-    /* Day missed: grey box unchanged, "Missed day" below with gap, same width as box */
+    /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
     .plan-day-missed-marker { display: none; }
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) {
-        background: transparent !important; border: none !important; position: relative !important;
-    }
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before {
-        content: "" !important; position: absolute !important; top: 0 !important; left: 0 !important;
-        width: 100% !important; height: 4rem !important; background: #4a4a4a !important;
-        border: 2px solid #3a3a3a !important; border-radius: 12px !important; z-index: -1 !important;
-        box-sizing: border-box !important;
-    }
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before {
-        border-color: #ffffff !important;
-    }
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) .plan-day-missed {
-        margin-top: 0.4rem !important;
-    }
+    /* Missed day: text below date, outside the card content area, within column width */
     .plan-day-missed {
         font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
         padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
