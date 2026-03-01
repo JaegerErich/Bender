@@ -1361,7 +1361,7 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
         background: #888888 !important; border-radius: 3px !important;
     }
-    /* Card: dark grey unselected, white selected — smaller box, number+date fit inside */
+    /* Card: dark grey unselected, white selected (match Faith That Endures), 5 visible + scroll */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
     #admin-plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
@@ -1372,22 +1372,13 @@ st.markdown("""
     div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *,
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 3.5rem !important; width: 3.5rem !important; max-width: 3.5rem !important;
-        flex: 0 0 3.5rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
-        gap: 0.15rem !important; box-sizing: border-box !important;
-        padding: 0.35rem 0.25rem !important; border-radius: 10px !important;
+        min-width: 4.5rem !important; width: 4.5rem !important; max-width: 4.5rem !important;
+        flex: 0 0 4.5rem !important; flex-shrink: 0 !important; flex-grow: 0 !important;
+        gap: 0.25rem !important; box-sizing: border-box !important;
+        padding: 0.55rem 0.35rem !important; border-radius: 12px !important;
         background: #4a4a4a !important; border: 2px solid #3a3a3a !important;
-        overflow: visible !important; min-height: 3.25rem !important;
+        overflow: visible !important; min-height: 4rem !important;
         display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important;
-    }
-    /* My Plan only: smaller day boxes, number + date fit inside */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > * {
-        min-width: 3.25rem !important; width: 3.25rem !important; max-width: 3.25rem !important;
-        flex: 0 0 3.25rem !important; min-height: 2.9rem !important;
-        padding: 0.35rem 0.25rem !important; gap: 0.12rem !important;
     }
     /* Selected day: dark gray card + white border; date in white pill */
     #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(button[kind="primary"]),
@@ -1613,11 +1604,6 @@ st.markdown("""
         margin: 0.15rem auto 0 !important; padding: 0 !important; line-height: 1.2 !important; width: 100% !important;
         display: block !important; overflow: visible !important;
     }
-    /* My Plan: smaller date font to fit in box */
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .plan-day-date,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] .plan-day-date {
-        font-size: 0.58rem !important; margin: 0.08rem auto 0 !important;
-    }
     .plan-day-date-selected {
         background: transparent !important; color: #1a1a1a !important; padding: 0 !important;
     }
@@ -1627,10 +1613,8 @@ st.markdown("""
         width: 100% !important; max-width: 4.5rem !important; gap: 0.1rem !important;
         margin: 0.2rem 0 0 !important; padding: 0 !important; overflow: hidden !important;
     }
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] .plan-day-date-block {
-        max-width: 3.25rem !important; margin: 0.1rem 0 0 !important;
-    }
     .plan-day-date-block .plan-day-date { margin-bottom: 0 !important; }
+    .plan-day-date-block .plan-day-missed { margin-top: 0 !important; }
     .plan-day-date-block .plan-day-complete-label { margin-top: 0 !important; }
     /* Green/red cards: white text for contrast */
     #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-complete) .stButton button,
@@ -1649,44 +1633,14 @@ st.markdown("""
     div:has(#admin-edit-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.admin-day-missed-marker) .stButton button {
         color: #ffffff !important;
     }
-    /* Day missed: grey box same size as others, "Missed day" completely below it */
+    /* Day missed: no red — keep dark grey card, show "Missed day" text below date */
     .plan-day-missed-marker { display: none; }
-    /* Missed day column: transparent, grey box via ::before (number+date only) */
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed),
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) {
-        background: transparent !important; border: none !important; position: relative !important;
-        justify-content: flex-start !important; padding-bottom: 0.5rem !important;
-    }
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
-    [data-testid="stMarkdown"]:has(#plan-day-grid) ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed)::before {
-        content: "" !important; position: absolute !important; top: 0 !important; left: 0 !important;
-        width: 100% !important; height: 2.9rem !important; background: #4a4a4a !important;
-        border: 2px solid #3a3a3a !important; border-radius: 10px !important; z-index: -1 !important;
-        box-sizing: border-box !important;
-    }
-    #plan-day-grid ~ [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
-    #plan-day-grid ~ * [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before,
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed):has(button[kind="primary"])::before {
-        border-color: #ffffff !important;
-    }
-    /* plan-day-date-block: date inside box, missed below — use flex so date stays up */
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) .plan-day-date-block {
-        display: flex !important; flex-direction: column !important; align-items: center !important;
-        margin-top: 0.1rem !important; gap: 0 !important;
-    }
-    div:has(#plan-day-grid) ~ div [data-testid="stHorizontalBlock"] > *:has(.plan-day-missed) .plan-day-date-block .plan-day-date {
-        margin: 0 !important;
-    }
-    /* Missed day: below the grey box */
+    /* Missed day: text below date, outside the card content area, within column width */
     .plan-day-missed {
-        font-size: 0.5rem !important; color: #b0b0b0 !important; margin: 0.35rem 0 0 !important;
+        font-size: 0.55rem !important; color: #b0b0b0 !important; margin: 0.15rem 0 0 !important;
         padding: 0 !important; line-height: 1.2 !important; text-align: center !important;
         display: block !important; font-weight: 500 !important;
-        max-width: 3.25rem !important; overflow: hidden !important; text-overflow: ellipsis !important;
+        max-width: 4.5rem !important; overflow: hidden !important; text-overflow: ellipsis !important;
         white-space: nowrap !important;
     }
     /* Day complete: text under date (white on green card) */
