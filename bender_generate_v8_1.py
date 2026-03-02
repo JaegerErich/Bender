@@ -1341,17 +1341,31 @@ def pick_stickhandling_mixed(
 
 # Equipment keywords that warrant "Equipment required" for stickhandling (BOSU, band, extra sticks, etc.)
 STICKHANDLING_SPECIAL_EQUIP_KEYWORDS = ("bosu", "band", "resistance", "extra stick", "2 stick", "2 extra", "partner", "plate", "flat marker")
+# Parts to omit from display (everyone has stick/puck)
+def _is_baseline_equip_part(pl: str) -> bool:
+    """True if this part is just stick/puck (omit from Equipment required)."""
+    pl = pl.strip().lower()
+    if pl in ("stick", "puck", "pucks", "stick & puck", "stick & ball", "hockey stick"):
+        return True
+    if pl.startswith("wood stick") and "metal" not in pl and "plate" not in pl:
+        return True
+    return False
 
 
 def _stickhandling_special_equipment(d: Dict[str, Any]) -> Optional[str]:
-    """Return equipment string if drill needs non-standard gear (BOSU, band, multiple sticks, etc.); else None."""
+    """Return only the extra equipment needed (exclude stick/puck); None if nothing special."""
     eq = norm(get(d, "equipment", "")).strip()
     if not eq:
         return None
     low = eq.lower()
-    if any(kw in low for kw in STICKHANDLING_SPECIAL_EQUIP_KEYWORDS):
-        return eq
-    return None
+    if not any(kw in low for kw in STICKHANDLING_SPECIAL_EQUIP_KEYWORDS):
+        return None
+    # Strip stick/puck — keep only what else is needed
+    parts = [p.strip() for p in eq.split(",") if p.strip()]
+    extra = [p for p in parts if not _is_baseline_equip_part(p)]
+    if not extra:
+        return None
+    return ", ".join(extra)
 
 
 def _stickhandling_equipment_ok(d: Dict[str, Any], available_equipment: Optional[List[str]]) -> bool:
