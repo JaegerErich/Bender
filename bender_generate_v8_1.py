@@ -847,6 +847,19 @@ def weighted_choice(items: List[Dict[str, Any]], weights: List[float], rnd: rand
     return items[-1]
 
 
+# Drills that must not appear together in the same workout (e.g. Dead Bug and Weighted Dead Bug)
+MUTUALLY_EXCLUSIVE_DRILL_GROUPS: tuple = ({"BW_011", "LS_021"},)  # Dead Bug, Weighted Dead Bug
+
+
+def _mutual_exclusion_siblings(drill_id: str) -> set:
+    """Return all other drill IDs in the same mutual-exclusion group as drill_id."""
+    did = norm(drill_id).upper()
+    for group in MUTUALLY_EXCLUSIVE_DRILL_GROUPS:
+        if did in group:
+            return {x for x in group if x != did}
+    return set()
+
+
 def pick_n(
     drills: List[Dict[str, Any]],
     n: int,
@@ -861,14 +874,14 @@ def pick_n(
 
     pool = drills[:]
     picked: List[Dict[str, Any]] = []
-    seen_ids = {norm(x) for x in (avoid_ids or set()) if norm(x)}
+    seen_ids = {norm(x).upper() for x in (avoid_ids or set()) if norm(x)}
 
     if recent_ids is None:
         recent_ids = _CURRENT_RECENT_IDS
     recent_ids_norm = {norm(x) for x in (recent_ids or set()) if norm(x)}
 
     for _ in range(n):
-        candidates = [d for d in pool if norm(get(d, "id", "")) not in seen_ids]
+        candidates = [d for d in pool if norm(get(d, "id", "")).lower() not in seen_ids]
         if not candidates:
             candidates = pool
 
@@ -886,9 +899,10 @@ def pick_n(
         chosen = weighted_choice(candidates, weights, rnd)
         picked.append(chosen)
 
-        did = norm(get(chosen, "id", default=""))
+        did = norm(get(chosen, "id", default="")).upper()
         if did:
             seen_ids.add(did)
+            seen_ids.update(_mutual_exclusion_siblings(did))
 
     return picked
 
@@ -4217,7 +4231,9 @@ def build_hockey_strength_session(
     # Pick resilience A + B (and mark used so we don't repeat)
     res_a: List[Dict[str, Any]] = _pick_by_filter(res_pool, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
     if res_a:
-        used_ids.add(norm(get(res_a[0], "id", "")))
+        did = norm(get(res_a[0], "id", ""))
+        used_ids.add(did)
+        used_ids.update(_mutual_exclusion_siblings(did))
 
     res_b: List[Dict[str, Any]] = []
 
@@ -4225,7 +4241,9 @@ def build_hockey_strength_session(
         res_pool_b = [d for d in res_pool if norm(get(d, "id", "")) not in used_ids]
         res_b = _pick_by_filter(res_pool_b, rnd, 1, focus_rule=focus_rule, avoid_ids=used_ids)
         if res_b:
-            used_ids.add(norm(get(res_b[0], "id", "")))
+            did = norm(get(res_b[0], "id", ""))
+            used_ids.add(did)
+            used_ids.update(_mutual_exclusion_siblings(did))
 
     sec_a: List[Dict[str, Any]] = []
     sec_b: List[Dict[str, Any]] = []
