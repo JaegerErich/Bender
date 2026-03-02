@@ -2220,21 +2220,8 @@ def build_conditioning_single_block(
         work_min = max(1, work_min)
         lines.append(f"  1 x {work_min} min steady")
     elif _is_hill_or_stairs_conditioning(drill):
-        # Hill/stairs: prescribe reps x sets (not time), derived from block time
-        work = to_int(get(drill, "default_duration_sec", 30), 30)
-        work = clamp(work, 10, 120)
-        rest = 3 * work  # walk down recovery
-        sec_per_rep = work + rest
-        total_reps = max(3, min(24, int(block_sec / max(1, sec_per_rep))))
-        sets = min(5, max(2, (total_reps + 2) // 4))
-        reps = total_reps // sets
-        if reps < 2:
-            reps = 2
-            sets = total_reps // reps
-        sets = max(1, sets)
-        s_label = "set" if sets == 1 else "sets"
-        r_label = "rep" if reps == 1 else "reps"
-        lines.append(f"  {sets} {s_label} x {reps} {r_label} (walk down = rest)")
+        # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
+        lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
     else:
         work = to_int(get(drill, "default_duration_sec", 60), 60)
         work = clamp(work, 10, 600)
