@@ -42,10 +42,16 @@ def _render_equipment_dropdowns(equipment_by_mode: dict, current_equip: set, key
             sel_all_key = f"{key_prefix}_{mode_name}_Select All"
             select_all_default = all(opt in current_equip for opt in opts_real)
             sel_all = st.checkbox("Select All", value=select_all_default, key=sel_all_key)
-            # When Select All is checked, sync all individual checkboxes to checked
+            # When Select All is checked, sync all individual checkboxes to checked and rerun once
             if sel_all:
+                any_changed = False
                 for opt in opts_real:
-                    st.session_state[f"{key_prefix}_{mode_name}_{opt}"] = True
+                    key = f"{key_prefix}_{mode_name}_{opt}"
+                    if not st.session_state.get(key, False):
+                        st.session_state[key] = True
+                        any_changed = True
+                if any_changed:
+                    st.rerun()
             for opt in opts_real:
                 if opt in _equip_tooltips and not sel_all:
                     st.caption(_equip_tooltips[opt])
@@ -1229,8 +1235,10 @@ def _generate_via_api(payload: dict) -> dict:
 # -----------------------------
 # UI
 # -----------------------------
-# Collapse sidebar after Save equipment (one-time flag)
-_sidebar_state = "collapsed" if st.session_state.get("collapse_sidebar_after_save") else "expanded"
+# Collapse sidebar after login or Save equipment (one-time flags)
+_sidebar_state = "collapsed" if st.session_state.get("collapse_sidebar_after_login") or st.session_state.get("collapse_sidebar_after_save") else "expanded"
+if st.session_state.get("collapse_sidebar_after_login"):
+    st.session_state.collapse_sidebar_after_login = False
 if st.session_state.get("collapse_sidebar_after_save"):
     st.session_state.collapse_sidebar_after_save = False
 _page_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "b_logo.png")
@@ -2263,6 +2271,7 @@ if st.session_state.current_user_id is None:
         if _prof:
             st.session_state.current_user_id = _uid
             st.session_state.current_profile = _prof
+            st.session_state.collapse_sidebar_after_login = True
             if not _equipment_setup_done(_prof):
                 st.session_state.page = "equipment_onboarding"
             else:
@@ -2305,6 +2314,7 @@ if st.session_state.current_user_id is None:
                 else:
                     st.session_state.current_user_id = uid
                     st.session_state.current_profile = prof
+                    st.session_state.collapse_sidebar_after_login = True
                     st.query_params["uid"] = uid  # persist in URL so refresh keeps user logged in
                     if not _equipment_setup_done(prof):
                         st.session_state.page = "equipment_onboarding"

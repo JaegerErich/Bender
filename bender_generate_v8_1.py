@@ -562,7 +562,7 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "Wall": ["Wall"],
 }
 # Everyone is assumed to have these (hockey stick, puck, chair, stick obstacle, stick & puck).
-EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Pucks", "Chair", "Stick obstacle", "Wood stick", "Wood stick (optional)"]
+EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Pucks", "Chair", "Stick obstacle", "Wood stick", "Wood stick (optional)", "Wall"]
 
 CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
     "Performance": [
@@ -602,6 +602,7 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "Hill",
         "Stairs",
         "Box",
+        "Sled",
     ],
     "Skating Mechanics": [
         "None",
@@ -612,12 +613,15 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "Line/Tape",
         "Reaction ball",
         "Partner",
+        "Bands",
+        "BOSU ball",
+        "Box",
+        "Hill",
     ],
     "Mobility": [
         "None",
         "Foam roller",
         "Bench",
-        "Wall",
     ],
 }
 
@@ -1173,10 +1177,15 @@ def _opposing_push_pull(mp: str) -> Optional[str]:
 # Formatting (display names only — no drill IDs in output)
 # ------------------------------
 def _display_name(d: Dict[str, Any]) -> str:
-    """Name for user-facing output; strips any leading drill ID (e.g. SH_010, WU_005) if present."""
+    """Name for user-facing output; strips any leading drill ID (e.g. SH_010, WU_005) if present.
+    When inspired_by is a player (not 'self'), appends full name in parentheses."""
     name = norm(get(d, "name", default="(unnamed)"))
     # Strip leading ID pattern: 2–4 letters, underscore, digits, optional space
-    return re.sub(r"^[A-Z]{2,4}_\d+\s+", "", name).strip() or name
+    base = re.sub(r"^[A-Z]{2,4}_\d+\s+", "", name).strip() or name
+    inspired = norm(get(d, "inspired_by", ""))
+    if inspired and inspired.lower() != "self":
+        return f"{base} ({inspired})"
+    return base
 
 
 def format_drill(d: Dict[str, Any]) -> str:
