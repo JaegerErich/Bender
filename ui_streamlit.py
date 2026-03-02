@@ -2682,9 +2682,6 @@ def _render_training_session():
                 mode_values = [v for v, _ in cond_modes]
                 mode_idx = st.selectbox("Conditioning Mode", range(len(mode_options)), format_func=lambda i: mode_options[i], key="cond_mode")
                 conditioning_mode = mode_values[mode_idx]
-                effort_options = ["Easy", "Hard", "Surprise me"]
-                effort_idx = st.selectbox("Effort", range(len(effort_options)), format_func=lambda i: effort_options[i], key="cond_effort")
-                conditioning_effort = ["easy", "hard", "surprise"][effort_idx]
                 if minutes > 25:
                     st.caption("Conditioning capped at 25 min for quality.")
     
@@ -2738,7 +2735,7 @@ def _render_training_session():
                     "user_equipment": user_equipment,
                     "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
                     "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
-                    "conditioning_effort": conditioning_effort if effective_mode == "energy_systems" else None,
+                    "conditioning_effort": None,
                 }
     
                 try:

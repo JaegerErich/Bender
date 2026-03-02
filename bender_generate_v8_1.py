@@ -2205,14 +2205,13 @@ def build_conditioning_single_block(
     drill = rnd.choice(best) if len(best) > 1 else best[0]
 
     mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
-    effort_label = "Easy" if effort == "easy" else "Hard"
 
     name = _display_name(drill)
     cue = norm(get(drill, "coaching_cues", ""))
     wrp = norm(get(drill, "work_rest_profile", "")).lower()
 
     lines: List[str] = []
-    lines.append(f"Conditioning ({minutes} min) | {mode_label} | {effort_label}")
+    lines.append(f"Conditioning ({minutes} min) | {mode_label}")
     lines.append(f"- {name}")
 
     if wrp == "continuous":
