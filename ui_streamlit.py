@@ -2477,13 +2477,6 @@ with st.sidebar:
             st.success("Saved")
             st.rerun()
     st.divider()
-    if st.button("Sign out", key="sidebar_logout"):
-        st.session_state.current_user_id = None
-        st.session_state.current_profile = None
-        st.session_state.page = "main"
-        if "uid" in st.query_params:
-            del st.query_params["uid"]
-        st.rerun()  # Shows landing (Log in page)
     _sidebar_athlete = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
     _sidebar_meta = st.session_state.get("last_output_metadata") or {}
     _sidebar_prefill = build_prefilled_feedback_url(
@@ -2494,8 +2487,14 @@ with st.sidebar:
         rating=4,
         notes="",
     )
-    st.link_button("Leave Feedback (auto-filled)", _sidebar_prefill)
-    st.link_button("Open Feedback Form (blank)", FORM_BASE)
+    st.link_button("Leave Feedback", _sidebar_prefill)
+    if st.button("Sign out", key="sidebar_logout"):
+        st.session_state.current_user_id = None
+        st.session_state.current_profile = None
+        st.session_state.page = "main"
+        if "uid" in st.query_params:
+            del st.query_params["uid"]
+        st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
 # Signed-in line (Sign out is only in the sidebar Equipment section)

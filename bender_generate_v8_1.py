@@ -554,6 +554,7 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "Line/Tape": ["Line/Tape"],
     "Reaction ball": ["Reaction ball"],
     "Partner": ["Partner", "partner"],
+    "Training partner": ["Partner", "partner", "Training partner"],
     "Stationary bike": ["Stationary bike"],
     "Treadmill": ["Treadmill", "Curved treadmill"],
     "Hill": ["Hill"],
@@ -565,6 +566,9 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
 EQUIPMENT_ASSUMED: List[str] = ["Stick & puck", "Hockey stick", "Puck", "Pucks", "Chair", "Stick obstacle", "Wood stick", "Wood stick (optional)", "Wall"]
 
 CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
+    "Training partner": [
+        "Training partner",
+    ],
     "Performance": [
         "None",
         "Barbell",
@@ -612,7 +616,6 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "Mini hurdles",
         "Line/Tape",
         "Reaction ball",
-        "Partner",
         "Bands",
         "BOSU ball",
         "Box",
@@ -1202,39 +1205,55 @@ def format_drill(d: Dict[str, Any]) -> str:
     return line
 
 
+# Rest after each rep for skating mechanics (seconds); stated as 30–45s in prescription.
+SKATING_MECHANICS_REST_AFTER_REP_SEC = 37  # midpoint of 30–45
+
 def build_skating_mechanics_sequential(
     chosen: List[Dict[str, Any]], block_seconds: int
 ) -> List[str]:
     """
-    Skating mechanics with sets and reps (duration), like stickhandling.
-    Uses default_duration_sec per drill; allocates block_seconds across drills with sensible caps.
-    Total time estimate matches block; no single drill gets excessive time.
+    Skating mechanics: sets × reps with 30–45s rest after each rep.
+    Uses default_duration_sec as assumed time per rep; allocates block_seconds across drills
+    so total time (work + rest) is close to the block.
     """
     lines: List[str] = []
     if not chosen:
         return lines
     n = len(chosen)
-    work_sec = max(60, int(block_seconds * 0.85))  # ~15% for rest between sets
+    work_sec = max(60, int(block_seconds * 0.9))  # most of block for work + rest
     base_per_drill = work_sec // n
 
-    result: List[Tuple[Dict[str, Any], int, int]] = []  # drill, sets, duration_sec
+    result: List[Tuple[Dict[str, Any], int, int, int]] = []  # drill, sets, reps, rep_dur_sec
     for d in chosen:
-        dur = max(30, min(60, to_int(get(d, "default_duration_sec", 45), 45)))
-        sets = max(2, min(6, round(base_per_drill / dur)))
-        result.append((d, sets, dur))
+        rep_dur = max(15, min(60, to_int(get(d, "default_duration_sec", 30), 30)))
+        cycle = rep_dur + SKATING_MECHANICS_REST_AFTER_REP_SEC
+        # sets * reps * cycle ≈ base_per_drill  =>  sets * reps = base_per_drill / cycle
+        target_reps = base_per_drill / cycle
+        sets = 3
+        reps = max(3, min(8, round(target_reps / sets)))
+        if reps < 3:
+            sets = 2
+            reps = max(3, min(8, round(target_reps / sets)))
+        if reps > 8:
+            reps = 8
+            sets = max(2, min(4, round(target_reps / reps)))
+        result.append((d, sets, reps, rep_dur))
 
-    total_work = sum(s * d for _, s, d in result)
-    lines.append("Do each in order. Rest 15–30s between sets; then move to the next drill.")
-    for d, sets, dur in result:
+    total_sec = sum(
+        s * r * (rd + SKATING_MECHANICS_REST_AFTER_REP_SEC)
+        for _, s, r, rd in result
+    )
+    total_min = max(1, int(round(total_sec / 60)))
+    lines.append("Do each in order. Rest 30–45s after each rep; then next drill.")
+    for d, sets, reps, rep_dur in result:
         name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} | {sets} x {dur}s")
+        lines.append(f"- {name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
             lines.append(f"  Steps: {steps}")
-    total_min = max(1, (total_work + int(total_work * 0.2)) // 60)  # work + ~20% rest
     lines.append(f"Total: ~{total_min} min")
     return lines
 
@@ -2054,6 +2073,12 @@ def _is_hill_or_stairs_conditioning(d: Dict[str, Any]) -> bool:
     return "hill" in s or "stair" in s
 
 
+def _is_shuttle_run_conditioning(d: Dict[str, Any]) -> bool:
+    """True if drill is shuttle run (cones/field)."""
+    s = _conditioning_blob(d)
+    return "shuttle" in s
+
+
 def filter_conditioning_pool_by_modality(
     conditioning_drills: List[Dict[str, Any]],
     *,
@@ -2214,13 +2239,15 @@ def build_conditioning_single_block(
     lines.append(f"Conditioning ({minutes} min) | {mode_label}")
     lines.append(f"- {name}")
 
-    if wrp == "continuous":
+    if _is_hill_or_stairs_conditioning(drill):
+        # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
+        lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
+    elif _is_shuttle_run_conditioning(drill):
+        lines.append(f"  1 shuttle run, 30s rest — repeat for {minutes} min")
+    elif wrp == "continuous":
         work_min = round(block_sec / 60)
         work_min = max(1, work_min)
         lines.append(f"  1 x {work_min} min steady")
-    elif _is_hill_or_stairs_conditioning(drill):
-        # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
-        lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
     else:
         work = to_int(get(drill, "default_duration_sec", 60), 60)
         work = clamp(work, 10, 600)
