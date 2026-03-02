@@ -2661,7 +2661,7 @@ def _render_training_session():
                 effective_mode = mode
     
             if effective_mode == "performance":
-                location = st.selectbox("Location", ["gym", "no_gym"], help="Choose 'gym' for strength day, skate-within-24h, and post-lift conditioning options.")
+                location = "gym"  # Performance always uses full gym flow (strength day, post-lift conditioning)
             else:
                 location = "no_gym"
     
@@ -2689,19 +2689,13 @@ def _render_training_session():
                     st.caption("Conditioning capped at 25 min for quality.")
     
             elif effective_mode == "performance":
-                if location == "gym":
-                    # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
-                    STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
-                    STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
-                    day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
-                    strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                    em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
-                    strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-                else:
-                    st.caption("No-gym: you'll get a premade circuit + mobility. For strength day and post-lift conditioning, set Location to **gym**.")
-                    strength_day_type = "heavy_explosive"
-                    strength_emphasis = "strength"
-                    skate_within_24h = False
+                # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
+                STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
+                STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
+                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
+                strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
+                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+                strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
     
             elif effective_mode == "mobility":
                 focus = "mobility"
@@ -2710,7 +2704,7 @@ def _render_training_session():
     
             conditioning = False
             conditioning_type = None
-            if effective_mode == "performance" and location == "gym":
+            if effective_mode == "performance":
                 conditioning = st.checkbox("Post-lift conditioning?", value=False)
                 if conditioning:
                     conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
