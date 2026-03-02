@@ -1339,6 +1339,21 @@ def pick_stickhandling_mixed(
     return chosen
 
 
+# Equipment keywords that warrant "Equipment required" for stickhandling (BOSU, band, extra sticks, etc.)
+STICKHANDLING_SPECIAL_EQUIP_KEYWORDS = ("bosu", "band", "resistance", "extra stick", "2 stick", "2 extra", "partner", "plate", "flat marker")
+
+
+def _stickhandling_special_equipment(d: Dict[str, Any]) -> Optional[str]:
+    """Return equipment string if drill needs non-standard gear (BOSU, band, multiple sticks, etc.); else None."""
+    eq = norm(get(d, "equipment", "")).strip()
+    if not eq:
+        return None
+    low = eq.lower()
+    if any(kw in low for kw in STICKHANDLING_SPECIAL_EQUIP_KEYWORDS):
+        return eq
+    return None
+
+
 def _stickhandling_equipment_ok(d: Dict[str, Any], available_equipment: Optional[List[str]]) -> bool:
     """True if drill equipment is satisfied by available_equipment. Uses equipment_ok_for_user with expanded list."""
     if not available_equipment:
@@ -1579,8 +1594,14 @@ def build_stickhandling_blocks_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
+        parts = []
         if cue:
-            lines.append(f"  Cue: {cue}")
+            parts.append(f"Cue: {cue}")
+        eq = _stickhandling_special_equipment(d)
+        if eq:
+            parts.append(f"Equipment required: {eq}")
+        if parts:
+            lines.append(f"  {' | '.join(parts)}")
 
     # Difficulty rating
     total_time = sum(per for _, _, _, per in result)
@@ -1599,6 +1620,25 @@ def build_stickhandling_blocks_session(
     return lines
 
 
+def format_stickhandling_drill(d: Dict[str, Any]) -> str:
+    """Format stickhandling drill with Cue and Equipment required (when special) on same line."""
+    name = _display_name(d)
+    cues = norm(get(d, "coaching_cues", default=""))
+    steps = norm(get(d, "step_by_step", default=""))
+    line = f"- {name}".strip()
+    parts = []
+    if cues:
+        parts.append(f"Cue: {cues}")
+    eq = _stickhandling_special_equipment(d)
+    if eq:
+        parts.append(f"Equipment required: {eq}")
+    if parts:
+        line += f"\n  {' | '.join(parts)}"
+    if steps:
+        line += f"\n  Steps: {steps}"
+    return line
+
+
 def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
     work, rest = STICKHANDLING_WORK_SEC, STICKHANDLING_REST_SEC
     per_drill = work + rest
@@ -1613,7 +1653,7 @@ def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int
     lines.append(f"Format: {work}s work / {rest}s rest | {rounds} rounds (~{format_seconds_short(total_est)})")
     lines.append("Run as a loop — repeat the same drills each round.")
     for d in drills:
-        lines.append(format_drill(d))
+        lines.append(format_stickhandling_drill(d))
     return lines
 
 
