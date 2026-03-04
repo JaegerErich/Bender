@@ -688,22 +688,11 @@ def _parse_video_url(line: str) -> str | None:
 
 
 def _render_drill_video(url: str) -> None:
-    """Embed video on the right: YouTube, Cloudflare Stream, or direct URLs. Always shows fallback link."""
+    """Embed video on the right: Cloudflare Stream only (no YouTube). Always shows fallback link."""
     url = url.strip()
 
-    # YouTube: watch or short links
-    yt_match = re.search(r"(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", url)
-    if yt_match:
-        vid_id = yt_match.group(1)
-        embed_url = f"https://www.youtube.com/embed/{vid_id}"
-        try:
-            st.components.v1.iframe(embed_url, height=220)
-        except Exception:
-            st.components.v1.html(
-                f'<iframe width="100%" height="200" src="{embed_url}" frameborder="0" allowfullscreen></iframe>',
-                height=220,
-            )
-        st.caption(f"[Watch on YouTube]({url})")
+    # Skip YouTube - only Cloudflare is allowed
+    if "youtube.com" in url.lower() or "youtu.be" in url.lower():
         return
 
     # Cloudflare Stream: HLS manifest or any cloudflarestream URL -> convert to iframe embed
@@ -765,6 +754,9 @@ def _build_drill_video_lookup() -> dict[str, str]:
             name = (d.get("name") or "").strip()
             url = d.get("video_url") or ""
             if name and url and isinstance(url, str) and url.startswith("http"):
+                # Only include Cloudflare Stream URLs (no YouTube)
+                if "cloudflarestream.com" not in url.lower():
+                    continue
                 key = re.sub(r"\s+", " ", name).lower().strip()
                 if key and key not in lookup:
                     lookup[key] = url.strip()
@@ -794,6 +786,10 @@ def _render_drill_block(
         ln for ln in block_lines
         if ln.strip() and _parse_video_url(ln) is None
     ]
+    # Only show Cloudflare videos (no YouTube)
+    if video_url and ("youtube.com" in video_url.lower() or "youtu.be" in video_url.lower()):
+        video_url = None
+
     # Fallback: look up video_url from drill data by name (exact or partial match)
     if not video_url and drill_video_lookup:
         for ln in drill_lines:
