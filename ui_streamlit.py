@@ -2646,32 +2646,32 @@ def _render_training_session():
         form_container = st.container()
         with form_container:
             st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
-st.markdown("#### Session options")
-minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
+            st.markdown("#### Session options")
+            minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
             minutes = int(minutes)
 
-mode_label = st.selectbox("Mode", DISPLAY_MODES)
-mode = LABEL_TO_MODE[mode_label]
+            mode_label = st.selectbox("Mode", DISPLAY_MODES)
+            mode = LABEL_TO_MODE[mode_label]
 
-if mode == "puck_mastery":
-    skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-    effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
-else:
-    effective_mode = mode
+            if mode == "puck_mastery":
+                skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
+                effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
+            else:
+                effective_mode = mode
 
             if effective_mode == "performance":
                 location = "gym"  # Performance always uses full gym flow (strength day, post-lift conditioning)
-else:
-    location = "no_gym"
+            else:
+                location = "no_gym"
 
-focus = None
-strength_day_type = None
-strength_emphasis = "strength"
-skate_within_24h = False
-conditioning_focus = None
+            focus = None
+            strength_day_type = None
+            strength_emphasis = "strength"
+            skate_within_24h = False
+            conditioning_focus = None
             conditioning_mode = None
             conditioning_effort = None
-    
+
             if effective_mode == "energy_systems":
                 prof_equip = (st.session_state.current_profile or {}).get("equipment") or []
                 _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
@@ -2690,22 +2690,21 @@ conditioning_focus = None
                 STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
                 day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-        em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
-        strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-
-elif effective_mode == "mobility":
-    focus = "mobility"
+                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+                strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+            elif effective_mode == "mobility":
+                focus = "mobility"
 
             available_space = None  # Assume user has necessary space
-    
-conditioning = False
-conditioning_type = None
+
+            conditioning = False
+            conditioning_type = None
             if effective_mode == "performance":
-    conditioning = st.checkbox("Post-lift conditioning?", value=False)
-    if conditioning:
-        conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
-    else:
-        conditioning_type = None
+                conditioning = st.checkbox("Post-lift conditioning?", value=False)
+                if conditioning:
+                    conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+                else:
+                    conditioning_type = None
 
             # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
             # "Clear workout" or "Workout Complete".
@@ -2716,35 +2715,35 @@ conditioning_type = None
             if request_plan_clicked:
                 st.session_state.custom_plan_intake_open = True
                 st.rerun()
-if generate_clicked:
+            if generate_clicked:
                 profile = st.session_state.get("current_profile") or {}
                 user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
-        payload = {
+                payload = {
                     "athlete_id": athlete_id,
-            "age": int(age),
-            "minutes": int(minutes),
-            "mode": effective_mode,
+                    "age": int(age),
+                    "minutes": int(minutes),
+                    "mode": effective_mode,
                     "focus": focus,
-            "location": location,
-            "strength_day_type": strength_day_type,
-            "strength_emphasis": strength_emphasis,
-            "skate_within_24h": skate_within_24h,
-            "conditioning": conditioning,
-            "conditioning_type": conditioning_type,
+                    "location": location,
+                    "strength_day_type": strength_day_type,
+                    "strength_emphasis": strength_emphasis,
+                    "skate_within_24h": skate_within_24h,
+                    "conditioning": conditioning,
+                    "conditioning_type": conditioning_type,
                     "user_equipment": user_equipment,
                     "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
                     "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
                     "conditioning_effort": None,
-        }
+                }
 
-        try:
-            with st.spinner("Generating workout..."):
-                if USE_API:
-                    resp = _generate_via_api(payload)
-                else:
-                    resp = _generate_via_engine(payload)
+                try:
+                    with st.spinner("Generating workout..."):
+                        if USE_API:
+                            resp = _generate_via_api(payload)
+                        else:
+                            resp = _generate_via_engine(payload)
 
-            st.session_state.last_session_id = resp.get("session_id")
+                    st.session_state.last_session_id = resp.get("session_id")
                     out_text = resp.get("output_text")
                     if out_text and out_text.strip():
                         st.session_state.last_output_text = out_text
@@ -2756,7 +2755,7 @@ if generate_clicked:
                             "conditioning_type": conditioning_type,
                         }
                         st.session_state.scroll_to_workout = True
-            st.success("Generated")
+                        st.success("Generated")
                     else:
                         st.session_state.last_output_text = (
                             "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
@@ -2767,43 +2766,43 @@ if generate_clicked:
                         )
                         st.warning("Generated but no exercises were returned — see message below.")
                         st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
-        except Exception as e:
-            st.error(str(e))
+                except Exception as e:
+                    st.error(str(e))
 
-        # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Your Work tabs
-if st.session_state.last_output_text:
-    st.divider()
-            st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
-            st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
-            if st.session_state.get("scroll_to_workout"):
-                st.session_state.scroll_to_workout = False
-                st.components.v1.html(
-                    "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
-                    height=0,
-                )
-            if st.button("Clear workout", type="secondary", key="clear_workout_top"):
-                clear_last_output()
-                st.rerun()
-            st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
-        if effective_mode == "performance" and location == "no_gym":
-            render_no_gym_strength_circuits_only(st.session_state.last_output_text)
-        else:
-            render_workout_readable(st.session_state.last_output_text)
-            st.divider()
-            st.caption("Finished? Log your completion to Your Work.")
-            _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
-            if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
-                prof = st.session_state.get("current_profile") or {}
-                if prof and _meta:
-                    prof = _add_completion_to_profile(prof, _meta)
-                    st.session_state.current_profile = prof
-                    save_profile(prof)
-                clear_last_output()
-                st.success("Workout logged to Your Work!")
-                st.rerun()
-            if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
-                clear_last_output()
-                st.rerun()
+            # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Your Work tabs
+            if st.session_state.last_output_text:
+                st.divider()
+                st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
+                st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
+                if st.session_state.get("scroll_to_workout"):
+                    st.session_state.scroll_to_workout = False
+                    st.components.v1.html(
+                        "<script>var el = (window.parent && window.parent.document) ? window.parent.document.getElementById('workout-result') : document.getElementById('workout-result'); if (el) el.scrollIntoView({behavior: 'smooth'});</script>",
+                        height=0,
+                    )
+                if st.button("Clear workout", type="secondary", key="clear_workout_top"):
+                    clear_last_output()
+                    st.rerun()
+                st.markdown('<div id="workout-tabs-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+                if effective_mode == "performance" and location == "no_gym":
+                    render_no_gym_strength_circuits_only(st.session_state.last_output_text)
+                else:
+                    render_workout_readable(st.session_state.last_output_text)
+                st.divider()
+                st.caption("Finished? Log your completion to Your Work.")
+                _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
+                if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
+                    prof = st.session_state.get("current_profile") or {}
+                    if prof and _meta:
+                        prof = _add_completion_to_profile(prof, _meta)
+                        st.session_state.current_profile = prof
+                        save_profile(prof)
+                    clear_last_output()
+                    st.success("Workout logged to Your Work!")
+                    st.rerun()
+                if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
+                    clear_last_output()
+                    st.rerun()
 
     _training_session_fragment()
 
