@@ -738,22 +738,36 @@ def _render_drill_video(url: str) -> None:
         st.caption(f"[Watch video]({url})")
 
 
+@st.cache_data(ttl=120)
 def _build_drill_video_lookup() -> dict[str, str]:
-    """Build drill name -> video_url lookup from engine data. Used when engine doesn't emit [VIDEO:url]."""
+    """Build drill name -> video_url lookup. Loads JSON directly so it works even before engine cache."""
     lookup: dict[str, str] = {}
-    try:
-        data = _load_engine_data()
-        for category in ("performance", "warmup", "movement", "speed_agility", "skating_mechanics",
-                         "energy_systems", "stickhandling", "shooting", "mobility"):
-            for d in data.get(category) or []:
-                name = (d.get("name") or "").strip()
-                url = d.get("video_url") or ""
-                if name and url and isinstance(url, str) and url.startswith("http"):
-                    key = re.sub(r"\s+", " ", name).lower().strip()
-                    if key and key not in lookup:
-                        lookup[key] = url.strip()
-    except Exception:
-        pass
+    data_dir = Path(BASE_DIR) / "data"
+    json_files = [
+        "performance.json", "warmup.json", "movement.json", "speed_agility.json",
+        "skating_mechanics.json", "energy_systems.json", "stickhandling.json",
+        "shooting.json", "mobility.json",
+    ]
+    for fname in json_files:
+        path = data_dir / fname
+        if not path.exists():
+            continue
+        try:
+            with open(path, encoding="utf-8") as f:
+                items = json.load(f)
+        except Exception:
+            continue
+        if not isinstance(items, list):
+            continue
+        for d in items:
+            if not isinstance(d, dict):
+                continue
+            name = (d.get("name") or "").strip()
+            url = d.get("video_url") or ""
+            if name and url and isinstance(url, str) and url.startswith("http"):
+                key = re.sub(r"\s+", " ", name).lower().strip()
+                if key and key not in lookup:
+                    lookup[key] = url.strip()
     return lookup
 
 
@@ -780,12 +794,22 @@ def _render_drill_block(
         ln for ln in block_lines
         if ln.strip() and _parse_video_url(ln) is None
     ]
-    # Fallback: look up video_url from drill data by name
+    # Fallback: look up video_url from drill data by name (exact or partial match)
     if not video_url and drill_video_lookup:
         for ln in drill_lines:
             key = _extract_drill_name_from_line(ln)
-            if key and key in drill_video_lookup:
+            if not key:
+                continue
+            if key in drill_video_lookup:
                 video_url = drill_video_lookup[key]
+                break
+            # Partial match when key has 2+ words: e.g. "curtsey lunge" matches "skater curtsey lunge"
+            if " " in key and len(key) >= 8:
+                for lookup_key, lookup_url in drill_video_lookup.items():
+                    if key in lookup_key:
+                        video_url = lookup_url
+                        break
+            if video_url:
                 break
     if not drill_lines and not video_url:
         return
