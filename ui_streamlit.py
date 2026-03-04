@@ -697,8 +697,8 @@ def _render_drill_video(url: str) -> None:
 
     # Cloudflare Stream: HLS manifest or any cloudflarestream URL -> convert to iframe embed
     if "cloudflarestream.com" in url.lower():
-        # Extract base: https://customer-xxx.cloudflarestream.com/VIDEO_UID (strip /manifest/..., /hls/..., etc.)
-        base = re.sub(r"/(manifest|downloads|thumbnails|hls|play)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
+        # Extract base: https://customer-xxx.cloudflarestream.com/VIDEO_UID (strip /manifest, /watch, etc.)
+        base = re.sub(r"/(manifest|downloads|thumbnails|hls|play|watch)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
         if not base.lower().endswith("/iframe"):
             base = f"{base}/iframe"
         embed_url = base
@@ -727,7 +727,7 @@ def _render_drill_video(url: str) -> None:
         st.caption(f"[Watch video]({url})")
 
 
-@st.cache_data(ttl=120)
+@st.cache_data(ttl=30)
 def _build_drill_video_lookup() -> dict[str, str]:
     """Build drill name -> video_url lookup. Loads JSON directly so it works even before engine cache."""
     lookup: dict[str, str] = {}
