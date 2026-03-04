@@ -738,12 +738,55 @@ def _render_drill_video(url: str) -> None:
         st.caption(f"[Watch video]({url})")
 
 
-def _render_drill_block(block_lines: list[str], video_url: str | None) -> None:
-    """Render one drill block: left = drill text, right = video (if present). Shared by all workout renderers."""
+def _build_drill_video_lookup() -> dict[str, str]:
+    """Build drill name -> video_url lookup from engine data. Used when engine doesn't emit [VIDEO:url]."""
+    lookup: dict[str, str] = {}
+    try:
+        data = _load_engine_data()
+        for category in ("performance", "warmup", "movement", "speed_agility", "skating_mechanics",
+                         "energy_systems", "stickhandling", "shooting", "mobility"):
+            for d in data.get(category) or []:
+                name = (d.get("name") or "").strip()
+                url = d.get("video_url") or ""
+                if name and url and isinstance(url, str) and url.startswith("http"):
+                    key = re.sub(r"\s+", " ", name).lower().strip()
+                    if key and key not in lookup:
+                        lookup[key] = url.strip()
+    except Exception:
+        pass
+    return lookup
+
+
+def _extract_drill_name_from_line(line: str) -> str | None:
+    """Extract drill name from '- Name | ...' or '- Name (Player)' or '- Name'. Returns normalized key for lookup."""
+    s = (line or "").strip()
+    if not s.startswith("-"):
+        return None
+    name_part = s[1:].strip()
+    # Strip "| sets x reps" or "(Player)" suffix
+    for sep in (" |", " ("):
+        if sep in name_part:
+            name_part = name_part.split(sep)[0].strip()
+    return re.sub(r"\s+", " ", name_part).lower().strip() if name_part else None
+
+
+def _render_drill_block(
+    block_lines: list[str],
+    video_url: str | None,
+    drill_video_lookup: dict[str, str] | None = None,
+) -> None:
+    """Render one drill block: left = drill text, right = video (if present). Uses lookup when [VIDEO:url] missing."""
     drill_lines = [
         ln for ln in block_lines
         if ln.strip() and _parse_video_url(ln) is None
     ]
+    # Fallback: look up video_url from drill data by name
+    if not video_url and drill_video_lookup:
+        for ln in drill_lines:
+            key = _extract_drill_name_from_line(ln)
+            if key and key in drill_video_lookup:
+                video_url = drill_video_lookup[key]
+                break
     if not drill_lines and not video_url:
         return
     if video_url and drill_lines:
@@ -869,6 +912,7 @@ def render_workout_readable(text: str) -> None:
     Renders engine text into clean sections.
     Only the warm-up section uses a dropdown (expander); all other sections are always visible.
     Hides the BENDER SINGLE WORKOUT | mode=... header line from display.
+    Uses drill_video_lookup to show videos even when engine doesn't emit [VIDEO:url].
     """
     if not text:
         return
@@ -883,6 +927,7 @@ def render_workout_readable(text: str) -> None:
             break
     current_title = None
     buffer: list[str] = []
+    drill_video_lookup = _build_drill_video_lookup()
 
     def is_warmup_header(title: str) -> bool:
         t = (title or "").strip().upper()
@@ -900,14 +945,14 @@ def render_workout_readable(text: str) -> None:
             expander_label = f"{warmup_display} — {tag}" if (tag and tag != "Section") else warmup_display
             with st.expander(expander_label):
                 for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url)
+                    _render_drill_block(block_lines, video_url, drill_video_lookup)
         else:
             with st.container(border=True):
                 st.subheader(label)
                 if tag and tag != "Section":
                     st.caption(tag)
                 for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url)
+                    _render_drill_block(block_lines, video_url, drill_video_lookup)
 
     for ln in lines:
         s = ln.strip()
@@ -1187,18 +1232,20 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
                 out.append(lines[j])
         return out
 
+    drill_video_lookup = _build_drill_video_lookup()
+
     def render_section(label: str, tag: str, body: list[str], as_dropdown: bool = False) -> None:
         blocks = _group_body_lines_into_blocks(body)
         if as_dropdown:
             with st.expander(f"{label} — {tag}"):
                 for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url)
+                    _render_drill_block(block_lines, video_url, drill_video_lookup)
         else:
             with st.container(border=True):
                 st.subheader(label)
                 st.caption(tag)
                 for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url)
+                    _render_drill_block(block_lines, video_url, drill_video_lookup)
 
     # ---- headers we care about ----
     CIRCUIT_HEADERS = {"CIRCUIT A", "CIRCUIT B"}
