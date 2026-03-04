@@ -3187,7 +3187,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
                         _workout_text = fi_wv.get("workout") or "(No workout)"
                         if _workout_text != "(No workout)":
                             render_workout_readable(_workout_text)
-        else:
+                        else:
                             st.caption(_workout_text)
                         st.divider()
                         if st.button("Workout Complete", key="admin_workout_complete"):
