@@ -673,6 +673,69 @@ def _render_your_work_stats():
 # -----------------------------
 # Pretty workout renderer (UI only)
 # -----------------------------
+_VIDEO_MARKER_RE = re.compile(r"^\[VIDEO:(.+)\]$", re.IGNORECASE)
+
+
+def _parse_video_url(line: str) -> str | None:
+    """Extract video URL from [VIDEO:url] marker. Returns None if not a video marker."""
+    s = (line or "").strip()
+    m = _VIDEO_MARKER_RE.match(s)
+    if m:
+        url = m.group(1).strip()
+        if url.startswith("http"):
+            return url
+    return None
+
+
+def _render_drill_video(url: str) -> None:
+    """Embed video on the right: YouTube via iframe, direct URLs via st.video."""
+    url = url.strip()
+    # YouTube: watch or short links
+    yt_match = re.search(r"(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", url)
+    if yt_match:
+        vid_id = yt_match.group(1)
+        embed_url = f"https://www.youtube.com/embed/{vid_id}"
+        st.components.v1.html(
+            f'<iframe width="100%" height="200" src="{embed_url}" frameborder="0" allowfullscreen></iframe>',
+            height=220,
+        )
+        return
+    # Direct video (Cloudflare Stream, mp4, etc.)
+    try:
+        st.video(url)
+    except Exception:
+        st.caption(f"[Video: {url[:50]}...]")
+
+
+def _group_body_lines_into_blocks(body_lines: list[str]) -> list[tuple[list[str], str | None]]:
+    """
+    Group body lines into drill blocks. Returns list of (lines, video_url).
+    When a block ends with [VIDEO:url], video_url is set and that line is not in lines.
+    """
+    blocks: list[tuple[list[str], str | None]] = []
+    i = 0
+    while i < len(body_lines):
+        ln = body_lines[i]
+        block_lines: list[str] = [ln]
+        video_url: str | None = None
+        i += 1
+        while i < len(body_lines):
+            next_ln = body_lines[i]
+            next_stripped = next_ln.strip()
+            # New drill starts with "- " (but not [VIDEO:...])
+            if next_stripped.startswith("-"):
+                break
+            vid = _parse_video_url(next_ln)
+            if vid is not None:
+                video_url = vid
+                i += 1
+                break
+            block_lines.append(next_ln)
+            i += 1
+        blocks.append((block_lines, video_url))
+    return blocks
+
+
 _SECTION_RE = re.compile(
     r"^(warmup|speed|power|high fatigue|block a|block b|strength circuits|circuit a|circuit b|shooting|stickhandling|conditioning|energy systems|speed agility|skating mechanics|mobility|post-lift|youth|"
     r"primary bilateral|primary press|primary pull|heavy unilateral|posterior chain|frontal-plane|^iso\b|scap\s|core anti-rotation|controlled rotation|carry finisher|elastic cns|contrast block|strength)\b",
@@ -762,37 +825,57 @@ def render_workout_readable(text: str) -> None:
         t = (title or "").strip().upper()
         return t.startswith("WARMUP")
 
+    def _render_block(block_lines: list[str], video_url: str | None) -> None:
+        """Render one drill block: left = drill text, right = video (if present)."""
+        drill_lines = [
+            ln for ln in block_lines
+            if ln.strip() and _parse_video_url(ln) is None
+        ]
+        if not drill_lines and not video_url:
+            return
+        if video_url and drill_lines:
+            col_left, col_right = st.columns([1, 1])
+            with col_left:
+                for ln in drill_lines:
+                    s = ln.strip()
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
+            with col_right:
+                st.caption("Demo")
+                _render_drill_video(video_url)
+        elif video_url:
+            st.caption("Demo")
+            _render_drill_video(video_url)
+        else:
+            for ln in drill_lines:
+                s = ln.strip()
+                if s.startswith("-"):
+                    st.markdown(s)
+                else:
+                    st.caption(s)
+
     def flush_section(title: str, body_lines: list[str]) -> None:
         if not title and not body_lines:
             return
         label = (title.strip() or "Section")
         tag = _header_style(title) if title else ""
+        blocks = _group_body_lines_into_blocks(body_lines)
         # Only warm-up gets a dropdown; rest of workout is always visible. Bold "WARMUP", same size.
         if is_warmup_header(title):
             warmup_display = "**WARMUP**" + (label[6:] if label.upper().startswith("WARMUP") else "")
             expander_label = f"{warmup_display} — {tag}" if (tag and tag != "Section") else warmup_display
             with st.expander(expander_label):
-                for ln in body_lines:
-                    s = ln.strip()
-                    if not s:
-                        continue
-                    if s.startswith("-"):
-                        st.markdown(s)
-                    else:
-                        st.caption(s)
+                for block_lines, video_url in blocks:
+                    _render_block(block_lines, video_url)
         else:
             with st.container(border=True):
                 st.subheader(label)
                 if tag and tag != "Section":
                     st.caption(tag)
-                for ln in body_lines:
-                    s = ln.strip()
-                    if not s:
-                        continue
-                    if s.startswith("-"):
-                        st.markdown(s)
-                    else:
-                        st.caption(s)
+                for block_lines, video_url in blocks:
+                    _render_block(block_lines, video_url)
 
     for ln in lines:
         s = ln.strip()
