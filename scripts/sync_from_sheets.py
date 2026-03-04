@@ -20,8 +20,12 @@ from pathlib import Path
 # ----- CONFIG: Edit to match your Google Sheet -----
 SHEET_ID = "1zrEcAnd-Yhc6lhEse0f1Q4ZXSHANxZuwmmw68lmLHUE"
 
+# Tabs that must NEVER be synced (reference only, e.g. "Potential Drill Additions").
+EXCLUDED_SHEET_TABS = {"Potential Drill Additions"}
+
 # Map: sheet tab name (as shown in Google Sheets) -> output CSV filename (without .csv)
 # Get tab names from your sheet. Use exact names (case-sensitive).
+# Do NOT add any tab listed in EXCLUDED_SHEET_TABS.
 SHEET_MAP = {
     "performance": "performance",
     "shooting": "shooting",
@@ -69,6 +73,9 @@ def fetch_all_and_save(sheet_id: str, sheet_map: dict) -> bool:
     CSV_DIR.mkdir(parents=True, exist_ok=True)
     ok = 0
     for sheet_name, csv_stem in sheet_map.items():
+        if sheet_name in EXCLUDED_SHEET_TABS:
+            print(f"  Skip (excluded): {sheet_name}")
+            continue
         content = fetch_sheet_as_csv(sheet_id, sheet_name)
         if content:
             path = CSV_DIR / f"{csv_stem}.csv"

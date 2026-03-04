@@ -1205,6 +1205,17 @@ def _display_name(d: Dict[str, Any]) -> str:
     return base
 
 
+# Marker line for UI to show drill video; only added when drill has video_url
+def _video_marker_line(d: Dict[str, Any]) -> str:
+    url = get(d, "video_url") or ""
+    if not url or not isinstance(url, str):
+        return ""
+    url = url.strip()
+    if not url.startswith("http"):
+        return ""
+    return "\n[VIDEO:" + url + "]"
+
+
 def format_drill(d: Dict[str, Any]) -> str:
     name = _display_name(d)
     cues = norm(get(d, "coaching_cues", default=""))
@@ -1216,7 +1227,7 @@ def format_drill(d: Dict[str, Any]) -> str:
         line += f"\n  Steps: {steps}"
     if strength_focus(d) == "power":
         line += "\n  Intent: Max intent each rep. Full reset between reps."
-    return line
+    return line + _video_marker_line(d)
 
 
 # Rest after each rep for skating mechanics (seconds); stated as 30–45s in prescription.
@@ -1268,6 +1279,9 @@ def build_skating_mechanics_sequential(
             lines.append(f"  Cues: {cues}")
         if steps:
             lines.append(f"  Steps: {steps}")
+        vm = _video_marker_line(d).strip()
+        if vm:
+            lines.append(vm)
     lines.append(f"Total: ~{total_min} min")
     return lines
 
@@ -1279,7 +1293,7 @@ LEG_WARMUP_SEQUENCE = [f"WU_{i:03d}" for i in range(1, 16)]
 
 def format_warmup_drill_compact(d: Dict[str, Any]) -> str:
     """One-line warmup entry (no cues/steps) to keep the block short and less daunting."""
-    return f"- {_display_name(d)}".strip()
+    return f"- {_display_name(d)}".strip() + _video_marker_line(d)
 
 
 def build_strength_warmup(
@@ -1664,7 +1678,7 @@ def format_stickhandling_drill(d: Dict[str, Any]) -> str:
         line += f"\n  {' | '.join(parts)}"
     if steps:
         line += f"\n  Steps: {steps}"
-    return line
+    return line + _video_marker_line(d)
 
 
 def build_stickhandling_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
@@ -2918,7 +2932,7 @@ def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: 
         line += f"\n  Cues: {cues}"
     if steps:
         line += f"\n  Steps: {steps}"
-    return line
+    return line + _video_marker_line(d)
 
 
 # ------------------------------
@@ -3618,7 +3632,7 @@ def build_heavy_leg_session(
     hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
     d_pick = _pick_one(hinge, used_ids)
     if d_pick:
-        reps_d = get(d_pick, "default_reps", "6-10")
+        reps_d = get(d_pick, "default_reps") or "6-10"
         d_sec = _heavy_leg_est_sec(d_pick, 3, reps_d, 120)
         if total_strength_sec + d_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(d_pick, "id", "")))
@@ -3630,7 +3644,7 @@ def build_heavy_leg_session(
     frontal = [d for d in pool if _tags_contain(d, "adductor", "adductors", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
     e_pick = _pick_one(frontal, used_ids)
     if e_pick:
-        reps_e = get(e_pick, "default_reps", "6-10/side")
+        reps_e = get(e_pick, "default_reps") or "6-10/side"
         e_sec = _heavy_leg_est_sec(e_pick, 3, reps_e, 90)
         if total_strength_sec + e_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(e_pick, "id", "")))
@@ -3660,7 +3674,7 @@ def build_heavy_leg_session(
         fallback_pick = _pick_one(remaining, used_ids) if remaining else None
         if fallback_pick:
             lines.append("\nSTRENGTH")
-            reps_f = get(fallback_pick, "default_reps", "6-10")
+            reps_f = get(fallback_pick, "default_reps") or "6-10"
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
     total_est_sec = HEAVY_LEG_WARMUP_SEC + total_strength_sec
@@ -3752,7 +3766,7 @@ def build_upper_core_stability_session(
     uni_press = [d for d in press_pool if _unilateral(d)]
     b_pick = _pick_one(uni_press or press_pool, used_ids)
     if b_pick:
-        reps_b = get(b_pick, "default_reps", "8-10")
+        reps_b = get(b_pick, "default_reps") or "8-10"
         b_sec = _est_upper(b_pick, 3, reps_b, 90)
         if total_strength_sec + b_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(b_pick, "id", "")))
@@ -3764,7 +3778,7 @@ def build_upper_core_stability_session(
     pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids and not norm(get(d, "id", "")).upper().startswith("SC_")]
     c_pick = _pick_one(pull_pool, used_ids)
     if c_pick:
-        reps_c = get(c_pick, "default_reps", "8-10")
+        reps_c = get(c_pick, "default_reps") or "8-10"
         c_sec = _est_upper(c_pick, 3, reps_c, 90)
         if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(c_pick, "id", "")))
@@ -3810,7 +3824,7 @@ def build_upper_core_stability_session(
         fallback_pick = _pick_one(remaining, used_ids) if remaining else None
         if fallback_pick:
             lines.append("\nSTRENGTH")
-            reps_f = get(fallback_pick, "default_reps", "8-10")
+            reps_f = get(fallback_pick, "default_reps") or "8-10"
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=str(reps_f), rest_sec=90))
 
     total_est_sec = UPPER_CORE_WARMUP_SEC + total_strength_sec
