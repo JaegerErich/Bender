@@ -781,18 +781,18 @@ def render_workout_readable(text: str) -> None:
                     else:
                         st.caption(s)
         else:
-        with st.container(border=True):
+            with st.container(border=True):
                 st.subheader(label)
                 if tag and tag != "Section":
                     st.caption(tag)
-            for ln in body_lines:
-                s = ln.strip()
-                if not s:
-                    continue
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
+                for ln in body_lines:
+                    s = ln.strip()
+                    if not s:
+                        continue
+                    if s.startswith("-"):
+                        st.markdown(s)
+                    else:
+                        st.caption(s)
 
     for ln in lines:
         s = ln.strip()
