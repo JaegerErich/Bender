@@ -20,6 +20,14 @@ INT_COLUMNS = {
     "coach_preference", "rounds", "work_sec", "rest_sec",
 }
 
+# Map alternate CSV column headers to canonical JSON keys (so sheet "Video URL" -> video_url)
+COLUMN_ALIASES = {
+    "Video URL": "video_url",
+    "Video_URL": "video_url",
+    "video url": "video_url",
+    "VideoUrl": "video_url",
+}
+
 # CSV stem -> output path (default: data/{stem}.json)
 CSV_TO_JSON = {
     "movement": "movement.json",
@@ -90,7 +98,8 @@ def import_csv_to_json(csv_path: Path, json_path: Path) -> int:
             for k, v in row.items():
                 if not k:
                     continue
-                out[k] = _parse_value(k, v)
+                key = COLUMN_ALIASES.get(k.strip(), k.strip())
+                out[key] = _parse_value(key, v)
             rows.append(out)
     json_path.parent.mkdir(parents=True, exist_ok=True)
     with open(json_path, "w", encoding="utf-8") as f:
