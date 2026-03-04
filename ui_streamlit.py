@@ -688,33 +688,54 @@ def _parse_video_url(line: str) -> str | None:
 
 
 def _render_drill_video(url: str) -> None:
-    """Embed video on the right: YouTube via iframe, Cloudflare Stream via iframe, direct URLs via st.video."""
+    """Embed video on the right: YouTube, Cloudflare Stream, or direct URLs. Always shows fallback link."""
     url = url.strip()
+
     # YouTube: watch or short links
     yt_match = re.search(r"(?:youtube\.com/watch\?v=|youtu\.be/)([a-zA-Z0-9_-]+)", url)
     if yt_match:
         vid_id = yt_match.group(1)
         embed_url = f"https://www.youtube.com/embed/{vid_id}"
-        st.components.v1.html(
-            f'<iframe width="100%" height="200" src="{embed_url}" frameborder="0" allowfullscreen></iframe>',
-            height=220,
-        )
+        try:
+            st.components.v1.iframe(embed_url, height=220)
+        except Exception:
+            st.components.v1.html(
+                f'<iframe width="100%" height="200" src="{embed_url}" frameborder="0" allowfullscreen></iframe>',
+                height=220,
+            )
+        st.caption(f"[Watch on YouTube]({url})")
         return
-    # Cloudflare Stream: use iframe embed
+
+    # Cloudflare Stream: HLS manifest or any cloudflarestream URL -> convert to iframe embed
     if "cloudflarestream.com" in url.lower():
-        base = re.sub(r"/(manifest|downloads|thumbnails)/[^?]*", "", url.split("?")[0], flags=re.I).rstrip("/")
-        embed_url = base if base.lower().endswith("/iframe") else f"{base}/iframe"
-        st.components.v1.html(
-            f'<iframe width="100%" height="200" src="{embed_url}" style="border:none" '
-            'allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>',
-            height=220,
-        )
+        # Extract base: https://customer-xxx.cloudflarestream.com/VIDEO_UID (strip /manifest/..., /hls/..., etc.)
+        base = re.sub(r"/(manifest|downloads|thumbnails|hls|play)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
+        if not base.lower().endswith("/iframe"):
+            base = f"{base}/iframe"
+        embed_url = base
+        try:
+            st.components.v1.iframe(embed_url, height=220)
+            embed_success = True
+        except Exception:
+            try:
+                st.components.v1.html(
+                    f'<iframe width="100%" height="200" src="{embed_url}" style="border:none" '
+                    'allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>',
+                    height=220,
+                )
+                embed_success = True
+            except Exception:
+                pass
+        # Fallback: show clickable link (works even when embed is blocked by CSP)
+        st.caption(f"[Watch video]({embed_url})")
         return
-    # Direct video (mp4, webm, etc.)
+
+    # Direct video (mp4, webm, HLS, etc.)
     try:
         st.video(url)
+        st.caption(f"[Open video]({url})")
     except Exception:
-        st.caption(f"[Video: {url[:50]}...]")
+        st.caption(f"[Watch video]({url})")
 
 
 def _render_drill_block(block_lines: list[str], video_url: str | None) -> None:
