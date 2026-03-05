@@ -2963,6 +2963,9 @@ def _render_training_session():
                         }
                         st.session_state.scroll_to_workout = True
                         st.success("Generated")
+                        # Force full rerun so next "Generate" tap is a fresh click (fixes mobile
+                        # fragment rerun sometimes reusing state and returning same workout).
+                        st.rerun()
                     else:
                         st.session_state.last_output_text = (
                             "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
