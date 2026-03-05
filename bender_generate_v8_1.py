@@ -3610,8 +3610,15 @@ HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.25  # 25% of the time
 # Superset 2: LS_008 needs Slider/TRX; LS_114 needs TRX. LS_008 with DB/KB needs Slider/TRX + Dumbbells/Kettlebells
 
 
-def _user_has_equipment_for_superset(superset_idx: int, user_equipment: Optional[List[str]]) -> bool:
-    """True if user has equipment for the given special superset. Superset 0: DB/KB+Bench. Superset 1: TRX+DB/KB."""
+def _user_has_equipment_for_superset(
+    superset_idx: int,
+    user_equipment: Optional[List[str]],
+    full_gym: bool = False,
+) -> bool:
+    """True if user has equipment for the given special superset. Superset 0: DB/KB+Bench. Superset 1: TRX+DB/KB.
+    When full_gym=True (Performance gym session), assume full equipment and allow both supersets."""
+    if full_gym:
+        return True
     if not user_equipment:
         return True
     expanded = expand_user_equipment(user_equipment)
@@ -3711,7 +3718,7 @@ def build_heavy_leg_session(
         drill_by_id = {norm(get(d, "id", "")): d for d in perf if get(d, "id")}
         available_supersets: List[int] = []
         for idx in range(len(HEAVY_UNILATERAL_SPECIAL_SUPERSETS)):
-            if not _user_has_equipment_for_superset(idx, user_equipment):
+            if not _user_has_equipment_for_superset(idx, user_equipment, full_gym=full_gym):
                 continue
             sid, eid = HEAVY_UNILATERAL_SPECIAL_SUPERSETS[idx]
             if sid not in drill_by_id or eid not in drill_by_id:
