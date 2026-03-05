@@ -3737,10 +3737,10 @@ def build_heavy_leg_session(
             sid, eid = HEAVY_UNILATERAL_SPECIAL_SUPERSETS[idx]
             strength_d = drill_by_id[sid]
             explosive_d = drill_by_id[eid]
-            used_ids.add(norm(sid))
-            used_ids.add(norm(eid))
             c_sec = _heavy_leg_est_sec(strength_d, 3, "6-8", 90) + 120  # +2 min for explosive
             if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+                used_ids.add(norm(sid))
+                used_ids.add(norm(eid))
                 total_strength_sec += c_sec
                 strength_name = _display_name(strength_d)
                 explosive_name = _display_name(explosive_d)
