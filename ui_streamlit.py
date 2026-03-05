@@ -689,7 +689,8 @@ def _parse_video_url(line: str) -> str | None:
 
 
 def _video_url_to_embed(url: str) -> str | None:
-    """Convert video URL to iframe embed URL (Cloudflare) or return as-is for direct video. Returns None for YouTube."""
+    """Convert video URL to iframe embed URL (Cloudflare) or return as-is for direct video. Returns None for YouTube.
+    Cloudflare embeds get muted=true so the video does not take audio focus from the user's music."""
     url = (url or "").strip()
     if "youtube.com" in url.lower() or "youtu.be" in url.lower():
         return None
@@ -697,6 +698,7 @@ def _video_url_to_embed(url: str) -> str | None:
         base = re.sub(r"/(manifest|downloads|thumbnails|hls|play|watch)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
         if not base.lower().endswith("/iframe"):
             base = f"{base}/iframe"
+        base += "&muted=true" if "?" in base else "?muted=true"
         return base
     return url
 
@@ -3053,7 +3055,7 @@ def _render_training_session():
                         o.style.cssText = 'position:fixed;inset:0;background:#000;z-index:2147483647;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);min-height:100vh;min-height:100dvh;';
                         var close = doc.createElement('a');
                         close.href = '#';
-                        close.innerHTML = '&#215; Close';
+                        close.innerHTML = '&#215;';
                         close.style.cssText = 'position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:2147483648;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:1.1rem;font-weight:600;text-decoration:none;border-radius:50%;-webkit-tap-highlight-color:transparent;';
                         close.onclick = function(e){{
                             e.preventDefault();
