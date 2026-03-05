@@ -529,8 +529,8 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "Bands": ["Bands", "Band", "Band or cable", "Cable or band", "BOSU + band", "BOSU + Band", "Resistance band + stick"],
     "Resistance band": ["Resistance band", "resistance band"],
     "Kettlebells": ["Kettlebells", "Kettlebell", "Dumbbell or kettlebell", "Kettlebell or dumbbell"],
-    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or trap bar", "Dumbbells + Bench", "Dumbbells + box", "Dumbbells + incline bench", "Dumbbells or barbell + bench", "Light dumbbell", "Light dumbbells", "BOSU + Dumbbells"],
-    "Trap bar": ["Trap bar", "Hex Bar"],
+    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or hex bar", "Dumbbells or trap bar", "Dumbbells + Bench", "Dumbbells + box", "Dumbbells + incline bench", "Dumbbells or barbell + bench", "Light dumbbell", "Light dumbbells", "BOSU + Dumbbells"],
+    "Hex Bar": ["Hex Bar", "Hex bar", "Trap bar", "Trap Bar"],
     "Bar or rings": ["Bar or rings"],
     "Cable machine": ["Cable machine"],
     "Pull-up bar": ["Pull-up bar"],
@@ -576,7 +576,7 @@ CANONICAL_EQUIPMENT_BY_MODE: Dict[str, List[str]] = {
         "Squat Rack",
         "Dumbbells",
         "Kettlebells",
-        "Trap bar",
+        "Hex Bar",
         "Bands",
         "Resistance band",
         "Bar or rings",
@@ -2823,7 +2823,7 @@ def estimate_strength_time_sec(
     work_per_set_sec: Optional[int] = None,
     work_per_set_cap: Optional[int] = None,
 ) -> int:
-    """Estimated time: work + rest between sets only. For heavy barbell (trap bar, deadlift):
+    """Estimated time: work + rest between sets only. For heavy barbell (hex bar, deadlift):
     work is ~20–30 sec per set (setup, brace, reps) regardless of rep count; rest dominates."""
     if sets <= 0:
         return 0
@@ -3451,7 +3451,7 @@ def _is_foundation_safe_strength(d: Dict[str, Any]) -> bool:
     if not eq or eq in ("none", "no", "bodyweight"):
         return True
     eq_lower = eq.lower()
-    if "barbell" in eq_lower or "squat rack" in eq_lower or "trap bar" in eq_lower:
+    if "barbell" in eq_lower or "squat rack" in eq_lower or "trap bar" in eq_lower or "hex bar" in eq_lower:
         return False
     if strength_focus(d) == "max_strength":
         return False
@@ -3636,7 +3636,7 @@ def _heavy_leg_est_sec(
     d: Dict[str, Any], sets: int, reps: Any, rest_sec: int, is_timed: bool = False,
 ) -> int:
     """Estimated time for one heavy leg exercise. Uses work + rest between sets.
-    Heavy barbell (trap bar, deadlift): work ~20–30s per set, rest dominates."""
+    Heavy barbell (hex bar, deadlift): work ~20–30s per set, rest dominates."""
     if is_timed:
         dur = _parse_timed_sec(reps)
         work = dur if dur else 30
@@ -5453,7 +5453,7 @@ def run_age_stage_tests() -> None:
     """Print one example performance session for each stage (age 11, 14, 17) and assert stage rules."""
     data = load_all_data()
     seed = 42
-    forbidden_age11 = ("barbell", "squat rack", "trap bar deadlift", "clean", "snatch", "power clean", "hang clean")
+    forbidden_age11 = ("barbell", "squat rack", "trap bar deadlift", "hex bar deadlift", "clean", "snatch", "power clean", "hang clean")
     for age, day_type in [(11, None), (14, None), (17, "heavy_explosive")]:
         stage = determine_stage(age)
         print(f"\n{'='*60}\nAGE {age} | STAGE {stage} | program_day_type={day_type or 'leg'}\n{'='*60}")

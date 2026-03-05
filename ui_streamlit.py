@@ -790,7 +790,6 @@ def _render_bender_board() -> None:
     st.caption("Monthly and lifetime leaders across all accounts. Complete workouts to climb the board.")
     _today = date.today()
 
-    # Category labels (potential Bender Board categories)
     _bb_categories = [
         "Shots",
         "Stickhandling time",
@@ -799,33 +798,33 @@ def _render_bender_board() -> None:
         "Gym time",
         "Mobility / recovery time",
     ]
-    st.markdown("**Categories:** " + ", ".join(_bb_categories))
-    st.markdown("")
+    _monthly_map = {cat: (name, val) for cat, name, val in _bender_board_monthly_leaders(_today.year, _today.month)}
+    _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
 
-    # Monthly leaders
+    # Monthly leaders — categories in the box, "Nothing yet this month" when empty
     st.markdown("**Monthly leaders**")
     st.caption(f"{_today.strftime('%B %Y')}")
-    _monthly_rows = _bender_board_monthly_leaders(_today.year, _today.month)
-    if not _monthly_rows:
-        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No activity this month yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
-    else:
-        _lines = ['<div class="your-work-stats-card">']
-        for cat_label, leader_name, value in _monthly_rows:
-            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
-        _lines.append("</div>")
-        st.markdown("\n".join(_lines), unsafe_allow_html=True)
+    _lines = ['<div class="your-work-stats-card">']
+    for cat in _bb_categories:
+        if cat in _monthly_map:
+            name, val = _monthly_map[cat]
+            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
+        else:
+            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
+    _lines.append("</div>")
+    st.markdown("\n".join(_lines), unsafe_allow_html=True)
 
     st.markdown("")
     st.markdown("**Lifetime highscores**")
-    _lifetime_rows = _bender_board_lifetime_leaders()
-    if not _lifetime_rows:
-        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No completions yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
-    else:
-        _lines = ['<div class="your-work-stats-card">']
-        for cat_label, leader_name, value in _lifetime_rows:
-            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
-        _lines.append("</div>")
-        st.markdown("\n".join(_lines), unsafe_allow_html=True)
+    _lines2 = ['<div class="your-work-stats-card">']
+    for cat in _bb_categories:
+        if cat in _lifetime_map:
+            name, val = _lifetime_map[cat]
+            _lines2.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
+        else:
+            _lines2.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet</span></div>')
+    _lines2.append("</div>")
+    st.markdown("\n".join(_lines2), unsafe_allow_html=True)
 
 
 def _render_your_work_stats():
@@ -1213,7 +1212,9 @@ def render_workout_readable(text: str) -> None:
         else:
             with st.container(border=True):
                 st.subheader(label)
-                if tag and tag not in ("Section", "Strength"):
+                # Skip redundant captions (already in section title): Posterior Chain, Frontal/Adductor, Iso/Decel, Mobility
+                _redundant_tags = ("Section", "Strength", "Posterior Chain", "Frontal / Adductor", "Iso / Decel", "Mobility")
+                if tag and tag not in _redundant_tags:
                     st.caption(tag)
                 for i, (block_lines, video_url) in enumerate(blocks):
                     _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{title}_{i}")
