@@ -529,8 +529,8 @@ EQUIPMENT_EXPAND: Dict[str, List[str]] = {
     "Bands": ["Bands", "Band", "Band or cable", "Cable or band", "BOSU + band", "BOSU + Band", "Resistance band + stick"],
     "Resistance band": ["Resistance band", "resistance band"],
     "Kettlebells": ["Kettlebells", "Kettlebell", "Dumbbell or kettlebell", "Kettlebell or dumbbell"],
-    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or hex bar", "Dumbbells or trap bar", "Dumbbells + Bench", "Dumbbells + box", "Dumbbells + incline bench", "Dumbbells or barbell + bench", "Light dumbbell", "Light dumbbells", "BOSU + Dumbbells"],
-    "Hex Bar": ["Hex Bar", "Hex bar", "Trap bar", "Trap Bar"],
+    "Dumbbells": ["Dumbbells", "Dumbbell", "Dumbbells & bench", "Dumbbell & bench", "Dumbbells & box", "Dumbbells & incline bench", "Dumbbells or barbell", "Dumbbells or hex bar", "Dumbbells + Bench", "Dumbbells + box", "Dumbbells + incline bench", "Dumbbells or barbell + bench", "Light dumbbell", "Light dumbbells", "BOSU + Dumbbells"],
+    "Hex Bar": ["Hex Bar", "Hex bar"],
     "Bar or rings": ["Bar or rings"],
     "Cable machine": ["Cable machine"],
     "Pull-up bar": ["Pull-up bar"],
@@ -3451,7 +3451,7 @@ def _is_foundation_safe_strength(d: Dict[str, Any]) -> bool:
     if not eq or eq in ("none", "no", "bodyweight"):
         return True
     eq_lower = eq.lower()
-    if "barbell" in eq_lower or "squat rack" in eq_lower or "trap bar" in eq_lower or "hex bar" in eq_lower:
+    if "barbell" in eq_lower or "squat rack" in eq_lower or "hex bar" in eq_lower:
         return False
     if strength_focus(d) == "max_strength":
         return False
@@ -5453,7 +5453,7 @@ def run_age_stage_tests() -> None:
     """Print one example performance session for each stage (age 11, 14, 17) and assert stage rules."""
     data = load_all_data()
     seed = 42
-    forbidden_age11 = ("barbell", "squat rack", "trap bar deadlift", "hex bar deadlift", "clean", "snatch", "power clean", "hang clean")
+    forbidden_age11 = ("barbell", "squat rack", "hex bar deadlift", "clean", "snatch", "power clean", "hang clean")
     for age, day_type in [(11, None), (14, None), (17, "heavy_explosive")]:
         stage = determine_stage(age)
         print(f"\n{'='*60}\nAGE {age} | STAGE {stage} | program_day_type={day_type or 'leg'}\n{'='*60}")

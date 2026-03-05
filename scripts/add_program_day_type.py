@@ -53,7 +53,7 @@ def assign_program_day_type(drill):
             out.add("heavy_leg")
         if tags_contain(drill, "posterior_chain", "RDL", "hip_thrust", "glutes", "hamstrings"):
             out.add("heavy_leg")
-        if tags_contain(drill, "barbell_squat", "front_squat", "trap_bar", "hex_bar", "bulgarian_split", "step_up", "single_leg"):
+        if tags_contain(drill, "barbell_squat", "front_squat", "hex_bar", "hex_bar_deadlift", "bulgarian_split", "step_up", "single_leg"):
             out.add("heavy_leg")
         if tags_contain(drill, "wall sit", "knee_stability") or "single_leg" in norm(get(drill, "name", "")) and "wall" in norm(get(drill, "name", "")):
             out.add("heavy_leg")
@@ -85,7 +85,7 @@ def assign_program_day_type(drill):
         out.add("heavy_explosive")
     if tags_contain(drill, "elastic", "reactive") and load == "bodyweight" and fc != "high":
         out.add("heavy_explosive")
-    if tags_contain(drill, "box_jump", "trap_bar_jump", "hex_bar_jump", "push_press", "triple_extension"):
+    if tags_contain(drill, "box_jump", "hex_bar_jump", "push_press", "triple_extension"):
         out.add("heavy_explosive")
     if tags_contain(drill, "rotational", "med_ball", "scoop", "slam") and sf == "power":
         out.add("heavy_explosive")
