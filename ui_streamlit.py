@@ -618,9 +618,9 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
     return out
 
 
-def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
+def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "training_session") -> dict:
     """Add workout completion volumes to profile's private_victory_stats (Performance Dashboard).
-    Also appends to completion_history for monthly Bender Board."""
+    Also appends to completion_history for monthly Bender Board and accountability audit."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -643,10 +643,16 @@ def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
     stats["mobility_hours"] = stats["mobility_hours"] + deltas["mobility_hours"]
     stats["completions_count"] = stats["completions_count"] + 1
     prof["private_victory_stats"] = stats
-    # Append to completion_history for monthly Bender Board
+    # Append to completion_history for monthly Bender Board and admin accountability audit
     hist = list(prof.get("completion_history") or [])
+    mode = (metadata.get("mode") or "").lower() or "unknown"
+    minutes = int(metadata.get("minutes") or metadata.get("len_min") or 0)
     hist.append({
         "date": date.today().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+        "mode": mode,
+        "minutes": minutes,
+        "source": source,
         "stickhandling_hours": deltas["stickhandling_hours"],
         "shots": deltas["shots"],
         "gym_hours": deltas["gym_hours"],
@@ -678,6 +684,51 @@ def _monthly_totals_from_history(completion_history: list, year: int, month: int
     return out
 
 
+def _audit_completion_history(completion_history: list) -> tuple[list[dict], set[str]]:
+    """Parse completion_history for admin accountability audit.
+    Returns (sorted_entries, suspicious_completed_at_set).
+    suspicious_completed_at_set = set of completed_at strings for entries that are in a burst
+    of 3+ completions within 10 minutes (likely generate-and-click without doing the work)."""
+    hist = list(completion_history or [])
+    entries_with_ts: list[tuple[datetime, str, dict]] = []
+    for e in hist:
+        ts_str = e.get("completed_at") or ""
+        if ts_str:
+            try:
+                dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00")[:26])
+                if dt.tzinfo:
+                    dt = dt.replace(tzinfo=None)
+                entries_with_ts.append((dt, ts_str, e))
+            except (ValueError, TypeError):
+                pass
+    entries_with_ts.sort(key=lambda x: x[0])
+    suspicious_ts: set[str] = set()
+    i = 0
+    while i < len(entries_with_ts):
+        j = i
+        while j < len(entries_with_ts) and (entries_with_ts[j][0] - entries_with_ts[i][0]).total_seconds() <= 600:
+            j += 1
+        if j - i >= 3:
+            for k in range(i, j):
+                suspicious_ts.add(entries_with_ts[k][1])
+        i = j
+    # Sort all entries by completed_at (newest first), fallback to date
+    def _sort_key(e: dict) -> tuple:
+        ts = e.get("completed_at")
+        if ts:
+            try:
+                return (0, datetime.fromisoformat(ts.replace("Z", "+00:00")[:26]))
+            except (ValueError, TypeError):
+                pass
+        d = e.get("date") or ""
+        try:
+            return (1, date.fromisoformat(d[:10]) if d else date.min)
+        except (ValueError, TypeError):
+            return (2, 0)
+    sorted_entries = sorted(hist, key=_sort_key, reverse=True)
+    return sorted_entries, suspicious_ts
+
+
 def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str, str]]:
     """Returns list of (category_label, leader_name, formatted_value) for current month.
     Uses completion_history from all profiles."""
@@ -703,6 +754,78 @@ def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str,
         if best_name is not None and best_val > 0:
             rows.append((cat_label, best_name, fmt.format(best_val)))
     return rows
+
+
+def _bender_board_lifetime_leaders() -> list[tuple[str, str, str]]:
+    """Returns list of (category_label, leader_name, formatted_value) for lifetime highscores.
+    Uses private_victory_stats from all profiles."""
+    all_profs = list_profiles()
+    _cat_defs = [
+        ("Shots", lambda s: int(s.get("shots", 0) or 0), "{:,}"),
+        ("Stickhandling time", lambda s: float(s.get("stickhandling_hours", 0) or 0), "{:.1f} h"),
+        ("Skating mechanics time", lambda s: float(s.get("skating_hours", 0) or 0), "{:.1f} h"),
+        ("Conditioning time", lambda s: float(s.get("conditioning_hours", 0) or 0), "{:.1f} h"),
+        ("Gym time", lambda s: float(s.get("gym_hours", 0) or 0), "{:.1f} h"),
+        ("Mobility / recovery time", lambda s: float(s.get("mobility_hours", 0) or 0), "{:.1f} h"),
+    ]
+    rows = []
+    for cat_label, get_val, fmt in _cat_defs:
+        best_val = -1.0 if "h" in fmt else -1
+        best_name = None
+        for p in all_profs:
+            stats = p.get("private_victory_stats") or {}
+            v = get_val(stats)
+            if v > best_val:
+                best_val = v
+                best_name = p.get("display_name") or p.get("user_id") or "Unknown"
+        if best_name is not None and best_val > 0:
+            rows.append((cat_label, best_name, fmt.format(best_val)))
+    return rows
+
+
+def _render_bender_board() -> None:
+    """Bender Board tab: monthly and lifetime leaders in Shots, Stickhandling, Skating mechanics, Conditioning, Gym, Mobility.
+    Visible to all accounts (players and admins). Data from private_victory_stats and completion_history."""
+    st.subheader("Bender Board")
+    st.caption("Monthly and lifetime leaders across all accounts. Complete workouts to climb the board.")
+    _today = date.today()
+
+    # Category labels (potential Bender Board categories)
+    _bb_categories = [
+        "Shots",
+        "Stickhandling time",
+        "Skating mechanics time",
+        "Conditioning time",
+        "Gym time",
+        "Mobility / recovery time",
+    ]
+    st.markdown("**Categories:** " + ", ".join(_bb_categories))
+    st.markdown("")
+
+    # Monthly leaders
+    st.markdown("**Monthly leaders**")
+    st.caption(f"{_today.strftime('%B %Y')}")
+    _monthly_rows = _bender_board_monthly_leaders(_today.year, _today.month)
+    if not _monthly_rows:
+        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No activity this month yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
+    else:
+        _lines = ['<div class="your-work-stats-card">']
+        for cat_label, leader_name, value in _monthly_rows:
+            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
+        _lines.append("</div>")
+        st.markdown("\n".join(_lines), unsafe_allow_html=True)
+
+    st.markdown("")
+    st.markdown("**Lifetime highscores**")
+    _lifetime_rows = _bender_board_lifetime_leaders()
+    if not _lifetime_rows:
+        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No completions yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
+    else:
+        _lines = ['<div class="your-work-stats-card">']
+        for cat_label, leader_name, value in _lifetime_rows:
+            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
+        _lines.append("</div>")
+        st.markdown("\n".join(_lines), unsafe_allow_html=True)
 
 
 def _render_your_work_stats():
@@ -747,22 +870,6 @@ def _render_your_work_stats():
         '</div>'.format(shots, gym_min, skating_min, cond_min, stick_min, mob_min, total_min),
         unsafe_allow_html=True,
     )
-    # Bender Board — monthly leaders
-    _today = date.today()
-    _bb_rows = _bender_board_monthly_leaders(_today.year, _today.month)
-    st.markdown("")
-    st.markdown("**Bender Board**")
-    st.caption(f"Monthly leaders — {_today.strftime('%B %Y')}")
-    if not _bb_rows:
-        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No activity this month yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
-    else:
-        _bb_lines = ['<div class="your-work-stats-card">']
-        for cat_label, leader_name, value in _bb_rows:
-            _bb_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
-        _bb_lines.append("</div>")
-        st.markdown("\n".join(_bb_lines), unsafe_allow_html=True)
-
-
 # -----------------------------
 # Pretty workout renderer (UI only)
 # -----------------------------
@@ -2804,7 +2911,7 @@ with st.sidebar:
         st.markdown('<p style="font-size:2rem; font-weight:700; letter-spacing:0.05em; color:#ffffff; margin-bottom:0;">B</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
     with st.expander("Account Settings", expanded=False):
-        st.caption("Position, level, height & weight")
+        st.caption("Position, level, age, height & weight")
         _prof = st.session_state.current_profile or {}
         _pos_val = _prof.get("position") or "Forward"
         _pos_idx = POSITION_OPTIONS.index(_pos_val) if _pos_val in POSITION_OPTIONS else 0
@@ -2812,6 +2919,8 @@ with st.sidebar:
         _lvl_val = _prof.get("current_level") or "Youth"
         _lvl_idx = CURRENT_LEVEL_OPTIONS.index(_lvl_val) if _lvl_val in CURRENT_LEVEL_OPTIONS else 0
         st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, index=_lvl_idx, key="sidebar_level")
+        _age_val = max(6, min(99, int(_prof.get("age") or 16)))
+        st.number_input("Age", min_value=6, max_value=99, value=_age_val, step=1, key="sidebar_age")
         _row_hw = st.columns(2)
         with _row_hw[0]:
             _h = st.text_input("Height", value=_prof.get("height") or "", placeholder="e.g. 5'10\"", key="sidebar_height")
@@ -2833,6 +2942,8 @@ with st.sidebar:
             prof["equipment"] = new_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
+            _saved_age = st.session_state.get("sidebar_age")
+            prof["age"] = max(6, min(99, int(_saved_age) if _saved_age is not None else int(prof.get("age") or 16)))
             prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
             prof["weight"] = (st.session_state.get("sidebar_weight") or "").strip()
             st.session_state.current_profile = prof
@@ -2910,7 +3021,7 @@ _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", _custom_req_tab_label]
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Bender Board", "Performance Dashboard", _custom_req_tab_label]
     _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
@@ -3246,7 +3357,7 @@ else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
-    _tab_opts = ["Training Session", "My Plan", "Performance Dashboard"] if _has_valid_plan else ["Training Session", "Performance Dashboard"]
+    _tab_opts = ["Training Session", "My Plan", "Bender Board", "Performance Dashboard"] if _has_valid_plan else ["Training Session", "Bender Board", "Performance Dashboard"]
     with st.container():
         st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
         _tab_cols = st.columns(len(_tab_opts))
@@ -3274,7 +3385,7 @@ else:
             c[key] = list(set(c.get(key, [])) | {mode_key})
             prof["assigned_plan_completed"] = c
             if params_or_meta:
-                prof = _add_completion_to_profile(prof, params_or_meta)
+                prof = _add_completion_to_profile(prof, params_or_meta, source="plan")
             st.session_state.current_profile = prof
             save_profile(prof)
             st.rerun()
@@ -3282,6 +3393,8 @@ else:
         if _plan_name:
             st.markdown(f"### {_plan_name}")
         _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
+    elif _sel == "Bender Board":
+        _render_bender_board()
     elif _sel == "Performance Dashboard":
         _render_your_work_stats()
 
@@ -3696,7 +3809,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
                 st.caption("No other profiles found. Create accounts for players first.")
 
 # Custom Plan Requester tab (admin only)
-if _admin and st.session_state.get("admin_tab_idx") == 4:
+if _admin and st.session_state.get("admin_tab_idx") == 5:
         st.subheader("Admin: Custom Plan Request")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
@@ -3727,8 +3840,12 @@ if _admin and st.session_state.get("admin_tab_idx") == 4:
                             st.rerun()
 
 
-# Performance Dashboard tab — admin only (players get it via player tabs)
+# Bender Board tab — visible to all (admin and player)
 if _admin and st.session_state.get("admin_tab_idx") == 3:
+        _render_bender_board()
+
+# Performance Dashboard tab — admin only (players get it via player tabs)
+if _admin and st.session_state.get("admin_tab_idx") == 4:
         _render_your_work_stats()
 
 
@@ -3777,6 +3894,36 @@ if _admin and st.session_state.get("admin_tab_idx") == 2:
                     '</div>'.format(total_hours, gym_h, skating_h, cond_h, stick_h, mob_h, shots, comp, "s" if comp != 1 else ""),
                     unsafe_allow_html=True,
                 )
+                # Completion history & accountability audit
+                with st.expander("Completion history & accountability audit", expanded=bool(_selected_prof.get("completion_history"))):
+                    sorted_entries, suspicious_ts = _audit_completion_history(_selected_prof.get("completion_history"))
+                    if suspicious_ts:
+                        st.warning(
+                            f"⚠️ **Suspicious pattern detected:** {len(suspicious_ts)} completion(s) occurred in bursts of 3+ within 10 minutes. "
+                            "This may indicate generate-and-click without doing the workout."
+                        )
+                    if not sorted_entries:
+                        st.caption("No completion history yet. Older completions may not have timestamps.")
+                    else:
+                        st.caption("Newest first. Entries marked ⚠️ are in a burst of 3+ within 10 min.")
+                        for e in sorted_entries[:100]:
+                            ts = e.get("completed_at") or ""
+                            d = e.get("date") or ""
+                            mode = (e.get("mode") or "?").replace("_", " ")
+                            mins = e.get("minutes") or "?"
+                            src = e.get("source") or "?"
+                            flag = " ⚠️" if ts and ts in suspicious_ts else ""
+                            if ts:
+                                try:
+                                    dt = datetime.fromisoformat(ts.replace("Z", "+00:00")[:26])
+                                    ts_display = dt.strftime("%Y-%m-%d %H:%M")
+                                except (ValueError, TypeError):
+                                    ts_display = d or ts[:16]
+                            else:
+                                ts_display = d or "—"
+                            st.markdown(f"- **{ts_display}** — {mode} ({mins} min) • {src}{flag}")
+                        if len(sorted_entries) > 100:
+                            st.caption(f"… and {len(sorted_entries) - 100} older entries")
             st.divider()
             st.caption("Category leaders (who leads each category)")
             # For each category, find the account with the highest value
