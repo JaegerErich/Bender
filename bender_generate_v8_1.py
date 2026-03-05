@@ -3604,7 +3604,7 @@ HEAVY_UNILATERAL_SPECIAL_SUPERSETS: List[Tuple[str, str]] = [
     ("LS_007", "LS_118"),  # Bulgarian Split Squat (DB/KB) → Explosive Bulgarian (bodyweight)
     ("LS_008", "LS_114"),  # TRX Rear-Foot Split Squat (DB/KB) → TRX Explosive Split Squat (bodyweight)
 ]
-HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.25  # 25% of the time
+HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 1.0  # Always use superset when available (set <1 for probability)
 # Equipment needed per superset: (strength_drill needs), (explosive needs). Both must be satisfied.
 # Superset 1: LS_007 needs Dumbbells/Barbell + Bench; LS_118 needs Dumbbells+Bench (we do bodyweight for explosive)
 # Superset 2: LS_008 needs Slider/TRX; LS_114 needs TRX. LS_008 with DB/KB needs Slider/TRX + Dumbbells/Kettlebells

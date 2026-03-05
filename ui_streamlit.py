@@ -2965,7 +2965,7 @@ def _render_training_session():
                 # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
                 STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
                 STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
-                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS)
+                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS, index=0)  # Default Lower (has special superset)
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
                 em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
