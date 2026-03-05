@@ -703,14 +703,14 @@ def _render_drill_video(url: str) -> None:
             base = f"{base}/iframe"
         embed_url = base
         try:
-            st.components.v1.iframe(embed_url, height=220)
+            st.components.v1.iframe(embed_url, height=360)
             embed_success = True
         except Exception:
             try:
                 st.components.v1.html(
-                    f'<iframe width="100%" height="200" src="{embed_url}" style="border:none" '
+                    f'<iframe width="100%" height="360" src="{embed_url}" style="border:none" '
                     'allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>',
-                    height=220,
+                    height=370,
                 )
                 embed_success = True
             except Exception:
@@ -819,10 +819,8 @@ def _render_drill_block(
                 else:
                     st.caption(s)
         with col_right:
-            st.caption("Demo")
             _render_drill_video(video_url)
     elif video_url:
-        st.caption("Demo")
         _render_drill_video(video_url)
     else:
         for ln in drill_lines:
@@ -962,14 +960,14 @@ def render_workout_readable(text: str) -> None:
         # Only warm-up gets a dropdown; rest of workout is always visible. Bold "WARMUP", same size.
         if is_warmup_header(title):
             warmup_display = "**WARMUP**" + (label[6:] if label.upper().startswith("WARMUP") else "")
-            expander_label = f"{warmup_display} — {tag}" if (tag and tag != "Section") else warmup_display
+            expander_label = f"{warmup_display} — {tag}" if (tag and tag not in ("Section", "Strength")) else warmup_display
             with st.expander(expander_label):
                 for block_lines, video_url in blocks:
                     _render_drill_block(block_lines, video_url, drill_video_lookup)
         else:
             with st.container(border=True):
                 st.subheader(label)
-                if tag and tag != "Section":
+                if tag and tag not in ("Section", "Strength"):
                     st.caption(tag)
                 for block_lines, video_url in blocks:
                     _render_drill_block(block_lines, video_url, drill_video_lookup)
@@ -2228,9 +2226,27 @@ st.markdown("""
         line-height: 1.85 !important;
     }
 
-    /* Workout drill videos: improved spacing for better appeal */
+    /* Workout drill layout: left = exercise/cues/steps (~50%), right = video (~50%), even design */
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"],
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
+        gap: 1.5rem !important;
+        margin-bottom: 2rem !important;
+        align-items: stretch !important;
+    }
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] > [data-testid="column"],
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"]:last-child,
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"]:last-child {
+        margin-bottom: 0 !important;
+    }
+    /* Video: larger, fills right half of output box, rounded */
     *:has(#workout-result-section) iframe {
-        margin: 1.25rem 0 !important;
+        width: 100% !important;
+        min-height: 320px !important;
+        margin: 0 !important;
         border-radius: 10px !important;
         overflow: hidden !important;
         display: block !important;
@@ -2238,26 +2254,21 @@ st.markdown("""
     }
     *:has(#workout-result-section) [data-testid="stVideo"],
     *:has(#workout-result-section) video {
-        margin: 1.25rem 0 !important;
+        width: 100% !important;
+        min-height: 320px !important;
+        margin: 0 !important;
         border-radius: 10px !important;
         overflow: hidden !important;
         box-shadow: 0 2px 12px rgba(0,0,0,0.35) !important;
     }
-    /* Gap between text and video columns in drill blocks */
-    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"],
-    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
-        gap: 2rem !important;
-        margin-bottom: 2rem !important;
-        align-items: flex-start !important;
+    /* Left column: exercise name, cues, steps — consistent spacing */
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child .stMarkdown,
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child .stMarkdown {
+        margin-bottom: 0.35rem !important;
     }
-    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"]:last-child,
-    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"]:last-child {
-        margin-bottom: 0 !important;
-    }
-    /* Demo caption: breathing room above video */
-    *:has(#workout-result-section) [data-testid="column"]:has(iframe) .stCaption,
-    *:has(#workout-result-section) [data-testid="column"]:has(video) .stCaption {
-        margin-bottom: 0.75rem !important;
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child .stCaption,
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] [data-testid="column"]:first-child .stCaption {
+        margin-top: 0.15rem !important;
     }
 
     /* Workout tabs + Clear workout: tabs column fills width, Clear is compact */
