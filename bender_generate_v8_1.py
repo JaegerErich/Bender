@@ -2399,7 +2399,12 @@ def _append_gym_conditioning_and_mobility(
             lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
 
     m = pick_mobility_drills(mobility_drills, age, rnd, n=_GYM_MOBILITY_N, focus_rule=get_focus_rules(None, "mobility"))
-    mobility_time_sec = len(m) * _GYM_MOBILITY_SEC_PER_DRILL
+    mobility_time_sec = 0
+    for d in m:
+        if norm(get(d, "id", "")) == "SMR_023":
+            mobility_time_sec += 360  # Full Body Foam Roller Sequence: 6 min minimum
+        else:
+            mobility_time_sec += _GYM_MOBILITY_SEC_PER_DRILL
     lines.append(f"\nMOBILITY COOLDOWN CIRCUIT (~{format_seconds_short(mobility_time_sec)})")
     if not m:
         lines.append("- Perform 2 rounds of your preferred cooldown stretches.")
@@ -2409,7 +2414,8 @@ def _append_gym_conditioning_and_mobility(
             name = _display_name(d)
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
-            lines.append(f"- {name} (30–45s)")
+            dur_label = "6 min" if norm(get(d, "id", "")) == "SMR_023" else "30–45s"
+            lines.append(f"- {name} ({dur_label})")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
@@ -3598,7 +3604,7 @@ HEAVY_UNILATERAL_SPECIAL_SUPERSETS: List[Tuple[str, str]] = [
     ("LS_007", "LS_118"),  # Bulgarian Split Squat (DB/KB) → Explosive Bulgarian (bodyweight)
     ("LS_008", "LS_114"),  # TRX Rear-Foot Split Squat (DB/KB) → TRX Explosive Split Squat (bodyweight)
 ]
-HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.12  # 10-15% of the time
+HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.25  # 25% of the time
 # Equipment needed per superset: (strength_drill needs), (explosive needs). Both must be satisfied.
 # Superset 1: LS_007 needs Dumbbells/Barbell + Bench; LS_118 needs Dumbbells+Bench (we do bodyweight for explosive)
 # Superset 2: LS_008 needs Slider/TRX; LS_114 needs TRX. LS_008 with DB/KB needs Slider/TRX + Dumbbells/Kettlebells
@@ -3716,8 +3722,8 @@ def build_heavy_leg_session(
                 continue
             if norm(sid) in used_ids or norm(eid) in used_ids:
                 continue
-            if user_equipment and (not equipment_ok_for_user(strength_d, user_equipment) or not equipment_ok_for_user(explosive_d, user_equipment)):
-                continue
+            # Equipment already validated by _user_has_equipment_for_superset; skip strict drill equipment check
+            # (explosive drill is done bodyweight in superset, so its DB/bench requirement doesn't apply)
             available_supersets.append(idx)
         if available_supersets:
             idx = rnd.choice(available_supersets)

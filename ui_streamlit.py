@@ -864,6 +864,21 @@ def _render_drill_block(
             else:
                 st.caption(s)
 
+    # Full Body Foam Roller Sequence: expandable dropdown with full sequence (6 min, 30s each side)
+    block_text = " ".join(ln.lower() for ln in drill_lines)
+    if "full body foam roller sequence" in block_text:
+        _FOAM_ROLLER_SEQUENCE = [
+            "Roll calves (30s each side)",
+            "Roll hamstrings (30s each side)",
+            "Roll quads (30s each side)",
+            "Roll back (30s each side)",
+            "Roll IT bands (30s each side)",
+            "Roll hip flexors (30s each side)",
+        ]
+        with st.expander("Full sequence (6 min total)"):
+            for step in _FOAM_ROLLER_SEQUENCE:
+                st.markdown(f"- {step}")
+
 
 def _group_body_lines_into_blocks(body_lines: list[str]) -> list[tuple[list[str], str | None]]:
     """
