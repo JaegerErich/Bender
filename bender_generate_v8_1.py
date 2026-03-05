@@ -3710,12 +3710,27 @@ def build_heavy_leg_session(
             lines.append(f"\nPRIMARY BILATERAL STRENGTH (~{format_seconds_short(b_sec)})")
             lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
 
-    # C) Heavy Unilateral — 10-15% of the time use special superset: strength → explosive (drop weight, bodyweight)
+    # C) Heavy Unilateral — special superset: strength → explosive (drop weight, bodyweight)
     use_special_superset = rnd.random() < HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB
     c_pick = None
     special_superset_used = False
     if use_special_superset:
         drill_by_id = {norm(get(d, "id", "")): d for d in perf if get(d, "id")}
+        # Fallback: load superset drills from file if missing (handles filtered perf / fallback data)
+        _superset_ids = {"LS_007", "LS_008", "LS_114", "LS_118"}
+        _missing = _superset_ids - set(drill_by_id.keys())
+        if _missing:
+            try:
+                _perf_path = os.path.join(DATA_DIR, "performance.json")
+                if os.path.exists(_perf_path):
+                    _extra = load_json(_perf_path)
+                    for d in (_extra or []):
+                        i = get(d, "id")
+                        if i and norm(i) in _missing:
+                            drill_by_id[norm(i)] = d
+                            _missing.discard(norm(i))
+            except Exception:
+                pass
         available_supersets: List[int] = []
         for idx in range(len(HEAVY_UNILATERAL_SPECIAL_SUPERSETS)):
             if not _user_has_equipment_for_superset(idx, user_equipment, full_gym=full_gym):
@@ -3738,7 +3753,8 @@ def build_heavy_leg_session(
             strength_d = drill_by_id[sid]
             explosive_d = drill_by_id[eid]
             c_sec = _heavy_leg_est_sec(strength_d, 3, "6-8", 90) + 120  # +2 min for explosive
-            if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+            # Include superset even if slightly over budget (prioritize superset over regular unilateral)
+            if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC or total_strength_sec < strength_budget_sec:
                 used_ids.add(norm(sid))
                 used_ids.add(norm(eid))
                 total_strength_sec += c_sec
