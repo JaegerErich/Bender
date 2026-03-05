@@ -2791,7 +2791,7 @@ except (ImportError, KeyError, Exception):
         "energy_systems": "Conditioning",
         "mobility": "Mobility/Recovery",
     }
-    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 12, "shooting": 25, "stickhandling": 25, "energy_systems": 15, "mobility": 12}
+    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 45, "shooting": 45, "stickhandling": 45, "skills_only": 45, "energy_systems": 25, "mobility": 30}
     FREQUENCY_OPTIONS = ["As in plan", "1x/week", "2x/week", "3x/week", "4x/week", "5x/week", "6x/week", "7x/week"]
     WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -2908,9 +2908,6 @@ def _render_training_session():
         with form_container:
             st.markdown('<div class="form-card-marker"></div>', unsafe_allow_html=True)
             st.markdown("#### Session options")
-            minutes = st.slider("Session length (minutes)", 10, 120, 45, step=5)
-            minutes = int(minutes)
-
             mode_label = st.selectbox("Mode", DISPLAY_MODES)
             mode = LABEL_TO_MODE[mode_label]
 
@@ -2919,6 +2916,10 @@ def _render_training_session():
                 effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
             else:
                 effective_mode = mode
+
+            _default_min = MODE_SESSION_LEN_DEFAULTS.get(effective_mode, 45)
+            minutes = st.slider("Session length (minutes)", 10, 120, _default_min, step=5, key=f"session_len_{effective_mode}")
+            minutes = int(minutes)
 
             if effective_mode == "performance":
                 location = "gym"  # Performance always uses full gym flow (strength day, post-lift conditioning)

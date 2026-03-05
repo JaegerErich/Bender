@@ -31,11 +31,12 @@ PLAN_MODES: list[str] = [
 # Default session length (min) per mode for plan builder
 MODE_SESSION_LEN_DEFAULTS: dict[str, int] = {
     "performance": 60,
-    "skating_mechanics": 12,
-    "shooting": 25,
-    "stickhandling": 25,
-    "energy_systems": 15,
-    "mobility": 12,
+    "skating_mechanics": 45,
+    "shooting": 45,
+    "stickhandling": 45,
+    "skills_only": 45,
+    "energy_systems": 25,
+    "mobility": 30,
 }
 
 FREQUENCY_OPTIONS: list[str] = [

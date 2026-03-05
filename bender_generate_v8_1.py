@@ -951,9 +951,9 @@ def _strength_time_profile(session_len_min: int, skate_within_24h: bool) -> Dict
     elif m <= 55:
         prof.update({"speed": 1, "blocks": 2, "accessory": 0, "mobility_n": 3, "finisher_min": 0, "warmup_cap": 10})
     elif m <= 70:
-        prof.update({"speed": 2, "blocks": 2, "accessory": 1, "mobility_n": 3, "finisher_min": 6, "warmup_cap": 10})
+        prof.update({"speed": 2, "blocks": 2, "accessory": 1, "mobility_n": 3, "finisher_min": min(6, 10), "warmup_cap": 10})
     else:  # 75–90
-        prof.update({"speed": 2, "blocks": 2, "accessory": 2, "mobility_n": 4, "finisher_min": 8, "warmup_cap": 10})
+        prof.update({"speed": 2, "blocks": 2, "accessory": 2, "mobility_n": 4, "finisher_min": min(8, 10), "warmup_cap": 10})
 
     if skate_within_24h:
         prof["speed"] = min(prof["speed"], 1)
@@ -2382,7 +2382,7 @@ def _append_gym_conditioning_and_mobility(
 ) -> None:
     """Append post-lift conditioning (if requested) and ~5 min mobility cooldown to gym strength session lines."""
     if include_finisher and not skate_within_24h:
-        fin_min = 8 if session_len_min >= 60 else 6
+        fin_min = min(10, 8 if session_len_min >= 60 else 6)  # ~10 min max, not in session total
         plc_type = (post_lift_conditioning_type or "").strip().lower()
         if plc_type == "surprise":
             plc_type = rnd.choice(["bike", "treadmill"])
@@ -3341,7 +3341,7 @@ def build_bw_strength_circuits(
                 lines.append(format_drill(d))
 
     # optional post-lift conditioning (no-gym rules)
-    fin_min = prof.get("finisher_min", 0)
+    fin_min = min(10, prof.get("finisher_min", 0))  # Cap at 10 min
     if include_finisher and fin_min <= 0:
         fin_min = 6  # User explicitly checked post-lift; use 6 min minimum
 
@@ -4510,8 +4510,8 @@ def build_hockey_strength_session(
     # ---------- Time budget and trim order: Block B -> mobility -> Block A (min = warmup + speed/power) ----------
     WARMUP_SEC = 300
     MOBILITY_SEC_PER_DRILL = 90  # 2 rounds × 45s
-    finisher_sec = (prof.get("finisher_min") or 0) * 60 if include_finisher and not skate_within_24h else 0
-    session_sec = max(0, session_len_min * 60 - WARMUP_SEC - finisher_sec)
+    # Conditioning is not included in session time (it's extra); mobility is included
+    session_sec = max(0, session_len_min * 60 - WARMUP_SEC)
 
     def _est(d: Dict[str, Any], sets: int, reps: int, rest: int) -> int:
         rs = _rep_seconds_for_drill(d)
@@ -4715,9 +4715,9 @@ def build_hockey_strength_session(
                     )
                 )
 
-    # Optional Post-Lift Conditioning Finisher (Strength sessions only; gym = bike or treadmill only)
+    # Optional Post-Lift Conditioning Finisher (Strength sessions only; gym = bike or treadmill only) — ~10 min max, not in session total
     if include_finisher and not skate_within_24h:
-        fin_min = 8 if session_len_min >= 60 else 6
+        fin_min = min(10, 8 if session_len_min >= 60 else 6)
         plc_type = (post_lift_conditioning_type or "").strip().lower()
         if plc_type == "surprise":
             plc_type = rnd.choice(["bike", "treadmill"])
@@ -4760,7 +4760,7 @@ def build_hockey_strength_session(
         total_est_sec += block_b_sec
     if _is_upper_day(day_type):
         total_est_sec += scap_sec + (push_pull_sec if need_push_pull else 0)
-    total_est_sec += mobility_time_sec + finisher_sec
+    total_est_sec += mobility_time_sec  # Conditioning not included in total (extra ~10 min)
     total_min = max(1, total_est_sec // 60)
     lines.append(f"\nTotal estimated time: ~{total_min} min")
 
