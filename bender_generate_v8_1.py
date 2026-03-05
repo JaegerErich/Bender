@@ -3604,7 +3604,7 @@ HEAVY_UNILATERAL_SPECIAL_SUPERSETS: List[Tuple[str, str]] = [
     ("LS_007", "LS_118"),  # Bulgarian Split Squat (DB/KB) → Explosive Bulgarian (bodyweight)
     ("LS_008", "LS_114"),  # TRX Rear-Foot Split Squat (DB/KB) → TRX Explosive Split Squat (bodyweight)
 ]
-HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 1.0  # Always use superset when available (set <1 for probability)
+HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.25  # 25% of the time use special superset
 # Equipment needed per superset: (strength_drill needs), (explosive needs). Both must be satisfied.
 # Superset 1: LS_007 needs Dumbbells/Barbell + Bench; LS_118 needs Dumbbells+Bench (we do bodyweight for explosive)
 # Superset 2: LS_008 needs Slider/TRX; LS_114 needs TRX. LS_008 with DB/KB needs Slider/TRX + Dumbbells/Kettlebells
@@ -3760,9 +3760,9 @@ def build_heavy_leg_session(
                 total_strength_sec += c_sec
                 strength_name = _display_name(strength_d)
                 explosive_name = _display_name(explosive_d)
-                lines.append(f"\nHEAVY UNILATERAL STRENGTH — Superset (~{format_seconds_short(c_sec)})")
-                lines.append(f"- {strength_name} (DB or KB) | 3 x 6-8 | Rest 90s")
-                lines.append(f"  Then immediately: {explosive_name} (bodyweight) | 6 reps — drop the weight after each set")
+                lines.append(f"\nHEAVY UNILATERAL STRENGTH — SUPERSET (~{format_seconds_short(c_sec)})")
+                lines.append(f"- **{strength_name}** (DB or KB) | 3 x 6-8 | Rest 90s")
+                lines.append(f"- **{explosive_name}** (bodyweight) | 6 reps — drop the weight after each set, do immediately after strength set")
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
                 steps_s = norm(get(strength_d, "step_by_step", ""))
                 if cues_s:

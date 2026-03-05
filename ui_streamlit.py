@@ -650,12 +650,21 @@ def _render_your_work_stats():
     prof = st.session_state.get("current_profile") or {}
     pt = prof.get("performance_tests") or {}
 
-    # Performance tests table (shown first)
-    _pt_cols = ["Vertical Jump", "5-10-5 Agility", "Shooting Tests", "Stickhandling Tests", "Conditioning Test"]
-    _pt_keys = ["vertical_jump", "agility_5_10_5", "shooting_tests", "stickhandling_tests", "conditioning_test"]
-    _pt_vals = [str(pt.get(k, "") or "—").strip() or "—" for k in _pt_keys]
+    # Performance tests — card grid
+    _pt_items = [
+        ("Vertical Jump", "vertical_jump"),
+        ("5-10-5 Agility", "agility_5_10_5"),
+        ("Shooting Tests", "shooting_tests"),
+        ("Stickhandling Tests", "stickhandling_tests"),
+        ("Conditioning Test", "conditioning_test"),
+    ]
+    _pt_html = ['<div class="perf-tests-grid">']
+    for label, key in _pt_items:
+        val = str(pt.get(key, "") or "").strip() or "—"
+        _pt_html.append(f'<div class="perf-test-item"><div class="perf-test-label">{html.escape(label)}</div><div class="perf-test-value">{html.escape(val)}</div></div>')
+    _pt_html.append("</div>")
     st.markdown("**Performance Tests**")
-    st.table([_pt_cols, _pt_vals])
+    st.markdown("\n".join(_pt_html), unsafe_allow_html=True)
     st.markdown("")
     st.markdown("**Workout Records**")
     stats = prof.get("private_victory_stats") or {}
@@ -1024,7 +1033,11 @@ def render_workout_readable(text: str) -> None:
                 for i, (block_lines, video_url) in enumerate(blocks):
                     _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{title}_{i}")
         else:
-            with st.container(border=True):
+            is_superset = "superset" in (title or "").lower()
+            wrapper = st.info if is_superset else (lambda: st.container(border=True))
+            with (st.container(border=True) if not is_superset else st.container()):
+                if is_superset:
+                    st.info("Perform both exercises back-to-back (superset)")
                 st.subheader(label)
                 if tag and tag not in ("Section", "Strength"):
                     st.caption(tag)
