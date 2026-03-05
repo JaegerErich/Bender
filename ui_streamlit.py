@@ -3036,27 +3036,32 @@ def _render_training_session():
                 # Video overlay: pop-up when user clicks play; Close returns to workout
                 _overlay_url = st.session_state.get("video_overlay_embed_url")
                 if _overlay_url:
-                    # Full-screen video overlay: inject into parent; Close uses real link so navigation works
+                    # Hidden Streamlit button: overlay X triggers this via JS (no full reload, stay on workout)
+                    if st.button("BENDER_CLOSE_VIDEO", key="bender_close_video"):
+                        st.session_state.video_overlay_embed_url = None
+                        st.rerun()
+                    # Full-screen overlay: X removes overlay and programmatically clicks the hidden button
                     _safe_url = html.escape(_overlay_url, quote=True)
-                    _close_params = dict(st.query_params)
-                    _close_params["close_video"] = "1"
-                    _close_href = "?" + urllib.parse.urlencode(_close_params)
-                    _close_href_safe = html.escape(_close_href, quote=True)
                     _overlay_html = f"""
                     <script>
                     (function(){{
-                        var w = window.top;
+                        var w = window.parent;
                         var doc = w.document;
                         if (doc.getElementById('bender-video-overlay')) return;
                         var o = doc.createElement('div');
                         o.id = 'bender-video-overlay';
                         o.style.cssText = 'position:fixed;inset:0;background:#000;z-index:2147483647;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);min-height:100vh;min-height:100dvh;';
                         var close = doc.createElement('a');
-                        close.href = "{_close_href_safe}";
+                        close.href = '#';
                         close.innerHTML = '&#215; Close';
                         close.style.cssText = 'position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:2147483648;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:1.1rem;font-weight:600;text-decoration:none;border-radius:50%;-webkit-tap-highlight-color:transparent;';
                         close.onclick = function(e){{
-                            try{{ var s = w.scrollY || doc.documentElement.scrollTop || 0; w.sessionStorage.setItem('bender_scroll_restore', String(s)); }}catch(x){{}}
+                            e.preventDefault();
+                            o.remove();
+                            var btns = doc.querySelectorAll('button');
+                            for (var i = 0; i < btns.length; i++) {{
+                                if (btns[i].textContent.indexOf('BENDER_CLOSE_VIDEO') >= 0) {{ btns[i].click(); break; }}
+                            }}
                         }};
                         var ifr = doc.createElement('iframe');
                         ifr.src = "{_safe_url}";
@@ -3067,6 +3072,10 @@ def _render_training_session():
                         o.appendChild(close);
                         o.appendChild(ifr);
                         doc.body.appendChild(o);
+                        var hide = doc.querySelectorAll('button');
+                        for (var j = 0; j < hide.length; j++) {{
+                            if (hide[j].textContent.indexOf('BENDER_CLOSE_VIDEO') >= 0) {{ hide[j].style.cssText = 'position:absolute;left:-9999px;'; break; }}
+                        }}
                     }})();
                     </script>
                     """
