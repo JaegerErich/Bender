@@ -619,7 +619,8 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
 
 
 def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
-    """Add workout completion volumes to profile's private_victory_stats (Performance Dashboard)."""
+    """Add workout completion volumes to profile's private_victory_stats (Performance Dashboard).
+    Also appends to completion_history for monthly Bender Board."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -642,7 +643,66 @@ def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
     stats["mobility_hours"] = stats["mobility_hours"] + deltas["mobility_hours"]
     stats["completions_count"] = stats["completions_count"] + 1
     prof["private_victory_stats"] = stats
+    # Append to completion_history for monthly Bender Board
+    hist = list(prof.get("completion_history") or [])
+    hist.append({
+        "date": date.today().isoformat(),
+        "stickhandling_hours": deltas["stickhandling_hours"],
+        "shots": deltas["shots"],
+        "gym_hours": deltas["gym_hours"],
+        "skating_hours": deltas["skating_hours"],
+        "conditioning_hours": deltas["conditioning_hours"],
+        "mobility_hours": deltas["mobility_hours"],
+    })
+    prof["completion_history"] = hist
     return prof
+
+
+def _monthly_totals_from_history(completion_history: list, year: int, month: int) -> dict:
+    """Sum volumes from completion_history for a given year/month.
+    Returns {shots, stickhandling_hours, skating_hours, conditioning_hours, gym_hours, mobility_hours}."""
+    out = {"shots": 0, "stickhandling_hours": 0.0, "skating_hours": 0.0, "conditioning_hours": 0.0, "gym_hours": 0.0, "mobility_hours": 0.0}
+    for entry in completion_history or []:
+        d = entry.get("date") or ""
+        try:
+            dt = date.fromisoformat(d[:10]) if d else None
+        except (ValueError, TypeError):
+            continue
+        if dt and dt.year == year and dt.month == month:
+            out["shots"] += int(entry.get("shots", 0) or 0)
+            out["stickhandling_hours"] += float(entry.get("stickhandling_hours", 0) or 0)
+            out["skating_hours"] += float(entry.get("skating_hours", 0) or 0)
+            out["conditioning_hours"] += float(entry.get("conditioning_hours", 0) or 0)
+            out["gym_hours"] += float(entry.get("gym_hours", 0) or 0)
+            out["mobility_hours"] += float(entry.get("mobility_hours", 0) or 0)
+    return out
+
+
+def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str, str]]:
+    """Returns list of (category_label, leader_name, formatted_value) for current month.
+    Uses completion_history from all profiles."""
+    all_profs = list_profiles()
+    _cat_defs = [
+        ("Shots", lambda h: h["shots"], "{:,}"),
+        ("Stickhandling time", lambda h: h["stickhandling_hours"], "{:.1f} h"),
+        ("Skating mechanics time", lambda h: h["skating_hours"], "{:.1f} h"),
+        ("Conditioning time", lambda h: h["conditioning_hours"], "{:.1f} h"),
+        ("Gym time", lambda h: h["gym_hours"], "{:.1f} h"),
+        ("Mobility / recovery time", lambda h: h["mobility_hours"], "{:.1f} h"),
+    ]
+    rows = []
+    for cat_label, get_val, fmt in _cat_defs:
+        best_val = -1.0 if "h" in fmt else -1
+        best_name = None
+        for p in all_profs:
+            mt = _monthly_totals_from_history(p.get("completion_history"), year, month)
+            v = get_val(mt)
+            if v > best_val:
+                best_val = v
+                best_name = p.get("display_name") or p.get("user_id") or "Unknown"
+        if best_name is not None and best_val > 0:
+            rows.append((cat_label, best_name, fmt.format(best_val)))
+    return rows
 
 
 def _render_your_work_stats():
@@ -650,7 +710,7 @@ def _render_your_work_stats():
     prof = st.session_state.get("current_profile") or {}
     pt = prof.get("performance_tests") or {}
 
-    # Performance tests — card grid
+    # Performance tests — same box format as Workout Records
     _pt_items = [
         ("Vertical Jump", "vertical_jump"),
         ("5-10-5 Agility", "agility_5_10_5"),
@@ -658,13 +718,10 @@ def _render_your_work_stats():
         ("Stickhandling Tests", "stickhandling_tests"),
         ("Conditioning Test", "conditioning_test"),
     ]
-    _pt_html = ['<div class="perf-tests-grid">']
-    for label, key in _pt_items:
-        val = str(pt.get(key, "") or "").strip() or "—"
-        _pt_html.append(f'<div class="perf-test-item"><div class="perf-test-label">{html.escape(label)}</div><div class="perf-test-value">{html.escape(val)}</div></div>')
-    _pt_html.append("</div>")
+    _pt_rows = [f'<div class="your-work-row"><span class="your-work-cat">{html.escape(label)}</span><span class="your-work-num">{html.escape(str(pt.get(key, "") or "").strip() or "—")}</span></div>' for label, key in _pt_items]
+    _pt_html = '<div class="your-work-stats-card">' + "".join(_pt_rows) + "</div>"
     st.markdown("**Performance Tests**")
-    st.markdown("\n".join(_pt_html), unsafe_allow_html=True)
+    st.markdown(_pt_html, unsafe_allow_html=True)
     st.markdown("")
     st.markdown("**Workout Records**")
     stats = prof.get("private_victory_stats") or {}
@@ -1033,11 +1090,7 @@ def render_workout_readable(text: str) -> None:
                 for i, (block_lines, video_url) in enumerate(blocks):
                     _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{title}_{i}")
         else:
-            is_superset = "superset" in (title or "").lower()
-            wrapper = st.info if is_superset else (lambda: st.container(border=True))
-            with (st.container(border=True) if not is_superset else st.container()):
-                if is_superset:
-                    st.info("Perform both exercises back-to-back (superset)")
+            with st.container(border=True):
                 st.subheader(label)
                 if tag and tag not in ("Section", "Strength"):
                     st.caption(tag)

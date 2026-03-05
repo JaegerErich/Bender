@@ -3761,8 +3761,9 @@ def build_heavy_leg_session(
                 strength_name = _display_name(strength_d)
                 explosive_name = _display_name(explosive_d)
                 lines.append(f"\nHEAVY UNILATERAL STRENGTH — SUPERSET (~{format_seconds_short(c_sec)})")
-                lines.append(f"- **{strength_name}** (DB or KB) | 3 x 6-8 | Rest 90s")
-                lines.append(f"- **{explosive_name}** (bodyweight) | 6 reps — drop the weight after each set, do immediately after strength set")
+                # Block 1: strength exercise with bracket, directions before cues, video
+                lines.append(f"- ├ {strength_name} (DB or KB) | 3 x 6-8 | Rest 90s")
+                lines.append("  Drop the weight after each set, do immediately after strength set.")
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
                 steps_s = norm(get(strength_d, "step_by_step", ""))
                 if cues_s:
@@ -3772,9 +3773,12 @@ def build_heavy_leg_session(
                 vm_s = _video_marker_line(strength_d)
                 if vm_s:
                     lines.append(vm_s.strip())
+                # Block 2: explosive exercise with bracket, directions before cues, video
+                lines.append(f"- └ {explosive_name} (bodyweight) | 6 reps")
+                lines.append("  Drop the weight after each set, do immediately after strength set.")
                 cues_e = norm(get(explosive_d, "coaching_cues", ""))
                 if cues_e:
-                    lines.append(f"  {explosive_name}: {cues_e}")
+                    lines.append(f"  Cues: {cues_e}")
                 vm_e = _video_marker_line(explosive_d)
                 if vm_e:
                     lines.append(vm_e.strip())
