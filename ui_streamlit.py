@@ -2228,6 +2228,38 @@ st.markdown("""
         line-height: 1.85 !important;
     }
 
+    /* Workout drill videos: improved spacing for better appeal */
+    *:has(#workout-result-section) iframe {
+        margin: 1.25rem 0 !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        display: block !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.35) !important;
+    }
+    *:has(#workout-result-section) [data-testid="stVideo"],
+    *:has(#workout-result-section) video {
+        margin: 1.25rem 0 !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.35) !important;
+    }
+    /* Gap between text and video columns in drill blocks */
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"],
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"] {
+        gap: 2rem !important;
+        margin-bottom: 2rem !important;
+        align-items: flex-start !important;
+    }
+    *:has(#workout-result-section) [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"]:last-child,
+    *:has(#workout-result-section) [data-testid="stExpander"] [data-testid="stHorizontalBlock"]:last-child {
+        margin-bottom: 0 !important;
+    }
+    /* Demo caption: breathing room above video */
+    *:has(#workout-result-section) [data-testid="column"]:has(iframe) .stCaption,
+    *:has(#workout-result-section) [data-testid="column"]:has(video) .stCaption {
+        margin-bottom: 0.75rem !important;
+    }
+
     /* Workout tabs + Clear workout: tabs column fills width, Clear is compact */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 0.5rem !important;
