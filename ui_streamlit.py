@@ -1,5 +1,6 @@
 # ui_streamlit.py
 import hashlib
+import html
 import json
 import os
 import random
@@ -687,6 +688,19 @@ def _parse_video_url(line: str) -> str | None:
     return None
 
 
+def _video_url_to_embed(url: str) -> str | None:
+    """Convert video URL to iframe embed URL (Cloudflare) or return as-is for direct video. Returns None for YouTube."""
+    url = (url or "").strip()
+    if "youtube.com" in url.lower() or "youtu.be" in url.lower():
+        return None
+    if "cloudflarestream.com" in url.lower():
+        base = re.sub(r"/(manifest|downloads|thumbnails|hls|play|watch)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
+        if not base.lower().endswith("/iframe"):
+            base = f"{base}/iframe"
+        return base
+    return url
+
+
 def _render_drill_video(url: str) -> None:
     """Embed video on the right: Cloudflare Stream only (no YouTube). Always shows fallback link."""
     url = url.strip()
@@ -697,11 +711,9 @@ def _render_drill_video(url: str) -> None:
 
     # Cloudflare Stream: HLS manifest or any cloudflarestream URL -> convert to iframe embed
     if "cloudflarestream.com" in url.lower():
-        # Extract base: https://customer-xxx.cloudflarestream.com/VIDEO_UID (strip /manifest, /watch, etc.)
-        base = re.sub(r"/(manifest|downloads|thumbnails|hls|play|watch)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
-        if not base.lower().endswith("/iframe"):
-            base = f"{base}/iframe"
-        embed_url = base
+        embed_url = _video_url_to_embed(url)
+        if not embed_url:
+            return
         try:
             st.components.v1.iframe(embed_url, height=360)
             embed_success = True
@@ -780,8 +792,9 @@ def _render_drill_block(
     block_lines: list[str],
     video_url: str | None,
     drill_video_lookup: dict[str, str] | None = None,
+    block_id: str = "",
 ) -> None:
-    """Render one drill block: left = drill text, right = video (if present). Uses lookup when [VIDEO:url] missing."""
+    """Render one drill block: exercise, cues, steps; play button next to exercise when video available. Video opens in overlay on click."""
     drill_lines = [
         ln for ln in block_lines
         if ln.strip() and _parse_video_url(ln) is None
@@ -809,19 +822,36 @@ def _render_drill_block(
                 break
     if not drill_lines and not video_url:
         return
+
+    embed_url = _video_url_to_embed(video_url) if video_url else None
+    play_key = f"play_video_{hashlib.md5((block_id + (video_url or '') + (drill_lines[0] if drill_lines else '')).encode()).hexdigest()[:12]}"
+
     if video_url and drill_lines:
-        col_left, col_right = st.columns([1, 1])
-        with col_left:
-            for ln in drill_lines:
-                s = ln.strip()
-                if s.startswith("-"):
-                    st.markdown(s)
-                else:
-                    st.caption(s)
-        with col_right:
-            _render_drill_video(video_url)
-    elif video_url:
-        _render_drill_video(video_url)
+        # Single column: exercise name + play button on first row, then cues/steps
+        first_line = drill_lines[0].strip()
+        rest_lines = drill_lines[1:]
+        col_text, col_btn = st.columns([5, 1])
+        with col_text:
+            if first_line.startswith("-"):
+                st.markdown(first_line)
+            else:
+                st.caption(first_line)
+        with col_btn:
+            if st.button("▶", key=play_key, help="Play video"):
+                if embed_url:
+                    st.session_state.video_overlay_embed_url = embed_url
+                    st.rerun()
+        for ln in rest_lines:
+            s = ln.strip()
+            if s.startswith("-"):
+                st.markdown(s)
+            else:
+                st.caption(s)
+    elif video_url and embed_url:
+        # Video only (no drill text): show play button
+        if st.button("▶ Play video", key=play_key):
+            st.session_state.video_overlay_embed_url = embed_url
+            st.rerun()
     else:
         for ln in drill_lines:
             s = ln.strip()
@@ -962,15 +992,15 @@ def render_workout_readable(text: str) -> None:
             warmup_display = "**WARMUP**" + (label[6:] if label.upper().startswith("WARMUP") else "")
             expander_label = f"{warmup_display} — {tag}" if (tag and tag not in ("Section", "Strength")) else warmup_display
             with st.expander(expander_label):
-                for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url, drill_video_lookup)
+                for i, (block_lines, video_url) in enumerate(blocks):
+                    _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{title}_{i}")
         else:
             with st.container(border=True):
                 st.subheader(label)
                 if tag and tag not in ("Section", "Strength"):
                     st.caption(tag)
-                for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url, drill_video_lookup)
+                for i, (block_lines, video_url) in enumerate(blocks):
+                    _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{title}_{i}")
 
     for ln in lines:
         s = ln.strip()
@@ -1256,14 +1286,14 @@ def render_no_gym_strength_circuits_only(text: str) -> None:
         blocks = _group_body_lines_into_blocks(body)
         if as_dropdown:
             with st.expander(f"{label} — {tag}"):
-                for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url, drill_video_lookup)
+                for i, (block_lines, video_url) in enumerate(blocks):
+                    _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{label}_{i}")
         else:
             with st.container(border=True):
                 st.subheader(label)
                 st.caption(tag)
-                for block_lines, video_url in blocks:
-                    _render_drill_block(block_lines, video_url, drill_video_lookup)
+                for i, (block_lines, video_url) in enumerate(blocks):
+                    _render_drill_block(block_lines, video_url, drill_video_lookup, block_id=f"{label}_{i}")
 
     # ---- headers we care about ----
     CIRCUIT_HEADERS = {"CIRCUIT A", "CIRCUIT B"}
@@ -2480,6 +2510,15 @@ if "admin_plan" not in st.session_state:
     st.session_state.admin_plan = None
 if "admin_pending_integration" not in st.session_state:
     st.session_state.admin_pending_integration = None
+if "video_overlay_embed_url" not in st.session_state:
+    st.session_state.video_overlay_embed_url = None
+
+# Close video overlay: URL param triggers close and rerun
+if st.query_params.get("close_video"):
+    st.query_params.pop("close_video", None)
+    if "video_overlay_embed_url" in st.session_state:
+        st.session_state.video_overlay_embed_url = None
+    st.rerun()
 
 # Restore login from URL (e.g. after page refresh) — keep user logged in unless they sign out
 if st.session_state.current_user_id is None:
@@ -2994,6 +3033,20 @@ def _render_training_session():
             if st.session_state.last_output_text:
                 st.divider()
                 st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
+                # Video overlay: pop-up when user clicks play; Close returns to workout
+                _overlay_url = st.session_state.get("video_overlay_embed_url")
+                if _overlay_url:
+                    # Use parent location so close works when Streamlit is in an iframe
+                    _safe_url = html.escape(_overlay_url, quote=True)
+                    _overlay_html = f"""
+                    <div id="bender-video-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem;">
+                        <div style="position:relative;max-width:90vw;max-height:90vh;width:800px;">
+                            <a href="#" onclick="var u=new URL(window.parent.location.href);u.searchParams.set('close_video','1');window.parent.location.href=u.toString();return false;" style="position:absolute;top:-2.5rem;right:0;color:#fff;font-size:1.1rem;text-decoration:none;font-weight:600;">✕ Close</a>
+                            <iframe width="100%" height="450" src="{_safe_url}" style="border:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    """
+                    st.components.v1.html(_overlay_html, height=520)
                 st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
                 if st.session_state.get("scroll_to_workout"):
                     st.session_state.scroll_to_workout = False
