@@ -747,6 +747,20 @@ def _render_your_work_stats():
         '</div>'.format(shots, gym_min, skating_min, cond_min, stick_min, mob_min, total_min),
         unsafe_allow_html=True,
     )
+    # Bender Board — monthly leaders
+    _today = date.today()
+    _bb_rows = _bender_board_monthly_leaders(_today.year, _today.month)
+    st.markdown("")
+    st.markdown("**Bender Board**")
+    st.caption(f"Monthly leaders — {_today.strftime('%B %Y')}")
+    if not _bb_rows:
+        st.markdown('<div class="your-work-stats-card"><div class="your-work-row"><span class="your-work-cat">No activity this month yet</span><span class="your-work-num">—</span></div></div>', unsafe_allow_html=True)
+    else:
+        _bb_lines = ['<div class="your-work-stats-card">']
+        for cat_label, leader_name, value in _bb_rows:
+            _bb_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat_label)}</span><span class="your-work-num">{html.escape(leader_name)} — {html.escape(value)}</span></div>')
+        _bb_lines.append("</div>")
+        st.markdown("\n".join(_bb_lines), unsafe_allow_html=True)
 
 
 # -----------------------------
