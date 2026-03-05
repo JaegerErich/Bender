@@ -578,7 +578,7 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
 
 
 def _compute_volume_from_metadata(metadata: dict) -> dict:
-    """Compute volume deltas from workout metadata for Your Work stats.
+    """Compute volume deltas from workout metadata for Performance Dashboard stats.
     Returns {stickhandling_hours, shots, gym_hours, skating_hours, conditioning_hours, mobility_hours}."""
     mode = (metadata.get("mode") or "").lower()
     minutes = max(0, int(metadata.get("minutes") or 0))
@@ -619,7 +619,7 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
 
 
 def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
-    """Add workout completion volumes to profile's private_victory_stats (Your Work)."""
+    """Add workout completion volumes to profile's private_victory_stats (Performance Dashboard)."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -646,8 +646,18 @@ def _add_completion_to_profile(profile: dict, metadata: dict) -> dict:
 
 
 def _render_your_work_stats():
-    """Show all mode minutes and shots, including 0 values."""
+    """Show performance tests table + all mode minutes and shots."""
     prof = st.session_state.get("current_profile") or {}
+    pt = prof.get("performance_tests") or {}
+
+    # Performance tests table (shown first)
+    _pt_cols = ["Vertical Jump", "5-10-5 Agility", "Shooting Tests", "Stickhandling Tests", "Conditioning Test"]
+    _pt_keys = ["vertical_jump", "agility_5_10_5", "shooting_tests", "stickhandling_tests", "conditioning_test"]
+    _pt_vals = [str(pt.get(k, "") or "—").strip() or "—" for k in _pt_keys]
+    st.markdown("**Performance Tests**")
+    st.table([_pt_cols, _pt_vals])
+    st.markdown("")
+    st.markdown("**Workout Records**")
     stats = prof.get("private_victory_stats") or {}
     gym_min = int(round(60 * float(stats.get("gym_hours", 0) or 0)))
     skating_min = int(round(60 * float(stats.get("skating_hours", 0) or 0)))
@@ -2203,7 +2213,7 @@ st.markdown("""
     .stMarkdown p, .stMarkdown li, .stMarkdown ul { color: #e0e0e0 !important; }
     .stCaption { color: #cccccc !important; }
 
-    /* Your Work stats card */
+    /* Performance Dashboard stats card */
     .your-work-stats-card {
         background: #1a1a1a; border: 1px solid #333333; border-radius: 12px; padding: 1.25rem 1.5rem;
         max-width: 24rem; margin-top: 0.5rem; font-family: 'DM Sans', sans-serif;
@@ -2820,7 +2830,7 @@ _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Your Work", _custom_req_tab_label]
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", _custom_req_tab_label]
     _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
@@ -3049,7 +3059,7 @@ def _render_training_session():
                 except Exception as e:
                     st.error(str(e))
 
-            # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Your Work tabs
+            # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Performance Dashboard tabs
             if st.session_state.last_output_text:
                 st.divider()
                 st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
@@ -3122,7 +3132,7 @@ def _render_training_session():
                 if(!isNaN(n))w.requestAnimationFrame(function(){w.scrollTo(0,n);});}}catch(e){}})();</script>
                 """, height=0)
                 st.divider()
-                st.caption("Finished? Log your completion to Your Work.")
+                st.caption("Finished? Log your completion to Performance Dashboard.")
                 _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
                 if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
                     prof = st.session_state.get("current_profile") or {}
@@ -3131,7 +3141,7 @@ def _render_training_session():
                         st.session_state.current_profile = prof
                         save_profile(prof)
                     clear_last_output()
-                    st.success("Workout logged to Your Work!")
+                    st.success("Workout logged to Performance Dashboard!")
                     st.rerun()
                 if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                     clear_last_output()
@@ -3156,7 +3166,7 @@ else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
-    _tab_opts = ["Training Session", "My Plan", "Your Work"] if _has_valid_plan else ["Training Session", "Your Work"]
+    _tab_opts = ["Training Session", "My Plan", "Performance Dashboard"] if _has_valid_plan else ["Training Session", "Performance Dashboard"]
     with st.container():
         st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
         _tab_cols = st.columns(len(_tab_opts))
@@ -3192,7 +3202,7 @@ else:
         if _plan_name:
             st.markdown(f"### {_plan_name}")
         _render_plan_view(_plan_data, _plan_completed, st.session_state.current_profile or {}, _plan_on_complete)
-    elif _sel == "Your Work":
+    elif _sel == "Performance Dashboard":
         _render_your_work_stats()
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
@@ -3637,7 +3647,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 4:
                             st.rerun()
 
 
-# Your Work tab — admin only (players get Your Work via player tabs)
+# Performance Dashboard tab — admin only (players get it via player tabs)
 if _admin and st.session_state.get("admin_tab_idx") == 3:
         _render_your_work_stats()
 
