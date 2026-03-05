@@ -595,9 +595,11 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
     }
     if mode == "performance":
         out["gym_hours"] = hours
+        # ~5 min mobility cooldown in every performance workout
+        out["mobility_hours"] += 5 / 60.0
         if conditioning:
             # ~6–8 min typical post-lift conditioning
-            out["conditioning_hours"] += 0.1  # ~6 min
+            out["conditioning_hours"] += 7 / 60.0  # ~7 min
     elif mode == "stickhandling":
         out["stickhandling_hours"] = hours
     elif mode == "shooting":

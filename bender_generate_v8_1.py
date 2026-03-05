@@ -2363,6 +2363,59 @@ def filter_post_lift_conditioning_pool(
     )
 
 
+# ~5 min mobility cooldown (3 drills × 90s ≈ 4.5 min)
+_GYM_MOBILITY_N = 3
+_GYM_MOBILITY_SEC_PER_DRILL = 90
+
+
+def _append_gym_conditioning_and_mobility(
+    lines: List[str],
+    conditioning_drills: List[Dict[str, Any]],
+    mobility_drills: List[Dict[str, Any]],
+    age: int,
+    rnd: random.Random,
+    session_len_min: int,
+    *,
+    include_finisher: bool = False,
+    post_lift_conditioning_type: Optional[str] = None,
+    skate_within_24h: bool = False,
+) -> None:
+    """Append post-lift conditioning (if requested) and ~5 min mobility cooldown to gym strength session lines."""
+    if include_finisher and not skate_within_24h:
+        fin_min = 8 if session_len_min >= 60 else 6
+        plc_type = (post_lift_conditioning_type or "").strip().lower()
+        if plc_type == "surprise":
+            plc_type = rnd.choice(["bike", "treadmill"])
+        cond_pool = filter_post_lift_conditioning_pool(
+            conditioning_drills,
+            full_gym=True,
+            post_lift_conditioning_type=plc_type or None,
+        )
+        fin_drills = pick_conditioning_drills(cond_pool, age, rnd, fin_min, focus_rule=get_focus_rules(None, "energy_systems"))
+        lines.append(f"\nPOST-LIFT CONDITIONING (optional, ~{fin_min} min)")
+        if not fin_drills:
+            lines.append("- [No energy systems drills found]")
+        else:
+            lines.extend(build_conditioning_block(fin_drills, fin_min * 60))
+
+    m = pick_mobility_drills(mobility_drills, age, rnd, n=_GYM_MOBILITY_N, focus_rule=get_focus_rules(None, "mobility"))
+    mobility_time_sec = len(m) * _GYM_MOBILITY_SEC_PER_DRILL
+    lines.append(f"\nMOBILITY COOLDOWN CIRCUIT (~{format_seconds_short(mobility_time_sec)})")
+    if not m:
+        lines.append("- Perform 2 rounds of your preferred cooldown stretches.")
+    else:
+        lines.append("- Perform 2 rounds")
+        for d in m:
+            name = _display_name(d)
+            cues = norm(get(d, "coaching_cues", default=""))
+            steps = norm(get(d, "step_by_step", default=""))
+            lines.append(f"- {name} (30–45s)")
+            if cues:
+                lines.append(f"  Cues: {cues}")
+            if steps:
+                lines.append(f"  Steps: {steps}")
+
+
 # ------------------------------
 # Mobility
 # ------------------------------
@@ -3289,6 +3342,8 @@ def build_bw_strength_circuits(
 
     # optional post-lift conditioning (no-gym rules)
     fin_min = prof.get("finisher_min", 0)
+    if include_finisher and fin_min <= 0:
+        fin_min = 6  # User explicitly checked post-lift; use 6 min minimum
 
     if include_finisher and fin_min > 0 and not skate_within_24h:
         cond_pool = filter_post_lift_conditioning_pool(
@@ -3538,6 +3593,31 @@ def build_development_strength_session(
 HEAVY_LEG_WARMUP_SEC = 360  # ~6 min
 OVERBUILD_BUFFER_SEC = 300  # 5 min: when close to budget, include next block
 
+# Special supersets for Heavy Unilateral: used 10-15% of the time. (strength_drill_id, explosive_bodyweight_drill_id)
+HEAVY_UNILATERAL_SPECIAL_SUPERSETS: List[Tuple[str, str]] = [
+    ("LS_007", "LS_118"),  # Bulgarian Split Squat (DB/KB) → Explosive Bulgarian (bodyweight)
+    ("LS_008", "LS_114"),  # TRX Rear-Foot Split Squat (DB/KB) → TRX Explosive Split Squat (bodyweight)
+]
+HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB = 0.12  # 10-15% of the time
+# Equipment needed per superset: (strength_drill needs), (explosive needs). Both must be satisfied.
+# Superset 1: LS_007 needs Dumbbells/Barbell + Bench; LS_118 needs Dumbbells+Bench (we do bodyweight for explosive)
+# Superset 2: LS_008 needs Slider/TRX; LS_114 needs TRX. LS_008 with DB/KB needs Slider/TRX + Dumbbells/Kettlebells
+
+
+def _user_has_equipment_for_superset(superset_idx: int, user_equipment: Optional[List[str]]) -> bool:
+    """True if user has equipment for the given special superset. Superset 0: DB/KB+Bench. Superset 1: TRX+DB/KB."""
+    if not user_equipment:
+        return True
+    expanded = expand_user_equipment(user_equipment)
+    joined = " ".join(str(x).lower() for x in expanded if x)
+    if "full_gym" in joined or "full" in joined:
+        return True
+    if superset_idx == 0:
+        return ("dumbbell" in joined or "kettlebell" in joined) and "bench" in joined
+    if superset_idx == 1:
+        return ("trx" in joined or "slider" in joined) and ("dumbbell" in joined or "kettlebell" in joined)
+    return False
+
 
 def _heavy_leg_est_sec(
     d: Dict[str, Any], sets: int, reps: Any, rest_sec: int, is_timed: bool = False,
@@ -3617,16 +3697,69 @@ def build_heavy_leg_session(
             lines.append(f"\nPRIMARY BILATERAL STRENGTH (~{format_seconds_short(b_sec)})")
             lines.append(format_strength_drill_with_prescription(b_pick, sets=4, reps="3-6", rest_sec=180))
 
-    # C) Heavy Unilateral
-    unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
-    c_pick = _pick_one(unilateral_heavy, used_ids)
-    if c_pick:
-        c_sec = _heavy_leg_est_sec(c_pick, 3, "3-6", 150)
-        if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
-            used_ids.add(norm(get(c_pick, "id", "")))
-            total_strength_sec += c_sec
-            lines.append(f"\nHEAVY UNILATERAL STRENGTH (~{format_seconds_short(c_sec)})")
-            lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
+    # C) Heavy Unilateral — 10-15% of the time use special superset: strength → explosive (drop weight, bodyweight)
+    use_special_superset = rnd.random() < HEAVY_UNILATERAL_SPECIAL_SUPERSET_PROB
+    c_pick = None
+    special_superset_used = False
+    if use_special_superset:
+        drill_by_id = {norm(get(d, "id", "")): d for d in perf if get(d, "id")}
+        available_supersets: List[int] = []
+        for idx in range(len(HEAVY_UNILATERAL_SPECIAL_SUPERSETS)):
+            if not _user_has_equipment_for_superset(idx, user_equipment):
+                continue
+            sid, eid = HEAVY_UNILATERAL_SPECIAL_SUPERSETS[idx]
+            if sid not in drill_by_id or eid not in drill_by_id:
+                continue
+            strength_d = drill_by_id[sid]
+            explosive_d = drill_by_id[eid]
+            if not is_active(strength_d) or not is_active(explosive_d) or not age_ok(strength_d, age) or not age_ok(explosive_d, age):
+                continue
+            if norm(sid) in used_ids or norm(eid) in used_ids:
+                continue
+            if user_equipment and (not equipment_ok_for_user(strength_d, user_equipment) or not equipment_ok_for_user(explosive_d, user_equipment)):
+                continue
+            available_supersets.append(idx)
+        if available_supersets:
+            idx = rnd.choice(available_supersets)
+            sid, eid = HEAVY_UNILATERAL_SPECIAL_SUPERSETS[idx]
+            strength_d = drill_by_id[sid]
+            explosive_d = drill_by_id[eid]
+            used_ids.add(norm(sid))
+            used_ids.add(norm(eid))
+            c_sec = _heavy_leg_est_sec(strength_d, 3, "6-8", 90) + 120  # +2 min for explosive
+            if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+                total_strength_sec += c_sec
+                strength_name = _display_name(strength_d)
+                explosive_name = _display_name(explosive_d)
+                lines.append(f"\nHEAVY UNILATERAL STRENGTH — Superset (~{format_seconds_short(c_sec)})")
+                lines.append(f"- {strength_name} (DB or KB) | 3 x 6-8 | Rest 90s")
+                lines.append(f"  Then immediately: {explosive_name} (bodyweight) | 6 reps — drop the weight after each set")
+                cues_s = norm(get(strength_d, "coaching_cues", ""))
+                steps_s = norm(get(strength_d, "step_by_step", ""))
+                if cues_s:
+                    lines.append(f"  Cues: {cues_s}")
+                if steps_s:
+                    lines.append(f"  Steps: {steps_s}")
+                vm_s = _video_marker_line(strength_d)
+                if vm_s:
+                    lines.append(vm_s.strip())
+                cues_e = norm(get(explosive_d, "coaching_cues", ""))
+                if cues_e:
+                    lines.append(f"  {explosive_name}: {cues_e}")
+                vm_e = _video_marker_line(explosive_d)
+                if vm_e:
+                    lines.append(vm_e.strip())
+                special_superset_used = True
+    if not special_superset_used:
+        unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
+        c_pick = _pick_one(unilateral_heavy, used_ids)
+        if c_pick:
+            c_sec = _heavy_leg_est_sec(c_pick, 3, "3-6", 150)
+            if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
+                used_ids.add(norm(get(c_pick, "id", "")))
+                total_strength_sec += c_sec
+                lines.append(f"\nHEAVY UNILATERAL STRENGTH (~{format_seconds_short(c_sec)})")
+                lines.append(format_strength_drill_with_prescription(c_pick, sets=3, reps="3-6", rest_sec=150))
 
     # D) Posterior Chain / Hinge
     hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
@@ -4960,6 +5093,18 @@ def generate_session(
                     max_contrast_blocks=3,
                     include_elastic_primer=True,
                 )
+                if strength_full_gym:
+                    _append_gym_conditioning_and_mobility(
+                        strength_lines,
+                        data.get("energy_systems", []),
+                        data.get("mobility", []),
+                        age,
+                        rnd,
+                        session_len_min,
+                        include_finisher=include_finisher,
+                        post_lift_conditioning_type=post_lift_conditioning_type,
+                        skate_within_24h=skate_within_24h,
+                    )
                 return _finalize_and_return("\n".join(lines + strength_lines))
 
             if pt == "heavy_leg":
@@ -4972,6 +5117,18 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                 )
+                if strength_full_gym:
+                    _append_gym_conditioning_and_mobility(
+                        strength_lines,
+                        data.get("energy_systems", []),
+                        data.get("mobility", []),
+                        age,
+                        rnd,
+                        session_len_min,
+                        include_finisher=include_finisher,
+                        post_lift_conditioning_type=post_lift_conditioning_type,
+                        skate_within_24h=skate_within_24h,
+                    )
                 return _finalize_and_return("\n".join(lines + strength_lines))
 
             if pt == "upper_core_stability":
@@ -4984,6 +5141,18 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                 )
+                if strength_full_gym:
+                    _append_gym_conditioning_and_mobility(
+                        strength_lines,
+                        data.get("energy_systems", []),
+                        data.get("mobility", []),
+                        age,
+                        rnd,
+                        session_len_min,
+                        include_finisher=include_finisher,
+                        post_lift_conditioning_type=post_lift_conditioning_type,
+                        skate_within_24h=skate_within_24h,
+                    )
                 return _finalize_and_return("\n".join(lines + strength_lines))
 
             # Fallback: leg/upper without specific program_day_type → generic strength session
