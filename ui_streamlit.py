@@ -3036,17 +3036,39 @@ def _render_training_session():
                 # Video overlay: pop-up when user clicks play; Close returns to workout
                 _overlay_url = st.session_state.get("video_overlay_embed_url")
                 if _overlay_url:
-                    # Use parent location so close works when Streamlit is in an iframe
+                    # Full-screen video overlay, mobile-first: inject into parent so it covers entire viewport
                     _safe_url = html.escape(_overlay_url, quote=True)
                     _overlay_html = f"""
-                    <div id="bender-video-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.5rem;">
-                        <div style="position:relative;max-width:90vw;max-height:90vh;width:800px;">
-                            <a href="#" onclick="var u=new URL(window.parent.location.href);u.searchParams.set('close_video','1');window.parent.location.href=u.toString();return false;" style="position:absolute;top:-2.5rem;right:0;color:#fff;font-size:1.1rem;text-decoration:none;font-weight:600;">✕ Close</a>
-                            <iframe width="100%" height="450" src="{_safe_url}" style="border:none;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);" allow="accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture" allowfullscreen></iframe>
-                        </div>
-                    </div>
+                    <script>
+                    (function(){{
+                        var w = window.parent;
+                        var doc = w.document;
+                        if (doc.getElementById('bender-video-overlay')) return;
+                        var o = doc.createElement('div');
+                        o.id = 'bender-video-overlay';
+                        o.style.cssText = 'position:fixed;inset:0;background:#000;z-index:2147483647;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);min-height:100vh;min-height:100dvh;';
+                        var close = doc.createElement('a');
+                        close.href = '#';
+                        close.innerHTML = '✕';
+                        close.style.cssText = 'position:absolute;top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:2147483648;min-width:48px;min-height:48px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:1.35rem;font-weight:600;text-decoration:none;border-radius:50%;-webkit-tap-highlight-color:transparent;';
+                        close.onclick = function(e){{
+                            e.preventDefault();
+                            try{{ var s = w.scrollY || doc.documentElement.scrollTop || 0; w.sessionStorage.setItem('bender_scroll_restore', String(s)); }}catch(x){{}}
+                            var u = new URL(w.location.href); u.searchParams.set('close_video','1'); w.location.href = u.toString();
+                        }};
+                        var ifr = doc.createElement('iframe');
+                        ifr.src = "{_safe_url}";
+                        ifr.setAttribute('allow','accelerometer;gyroscope;autoplay;encrypted-media;picture-in-picture');
+                        ifr.setAttribute('allowfullscreen','');
+                        ifr.setAttribute('playsinline','');
+                        ifr.style.cssText = 'flex:1;width:100%;min-height:0;border:none;';
+                        o.appendChild(close);
+                        o.appendChild(ifr);
+                        doc.body.appendChild(o);
+                    }})();
+                    </script>
                     """
-                    st.components.v1.html(_overlay_html, height=520)
+                    st.components.v1.html(_overlay_html, height=0)
                 st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
                 if st.session_state.get("scroll_to_workout"):
                     st.session_state.scroll_to_workout = False
@@ -3062,6 +3084,12 @@ def _render_training_session():
                     render_no_gym_strength_circuits_only(st.session_state.last_output_text)
                 else:
                     render_workout_readable(st.session_state.last_output_text)
+                # Restore scroll position after closing video overlay (mobile: return to where you were)
+                st.components.v1.html("""
+                <script>(function(){try{var w=window.parent;var y=w.sessionStorage.getItem('bender_scroll_restore');
+                if(y!==null){w.sessionStorage.removeItem('bender_scroll_restore');var n=parseInt(y,10);
+                if(!isNaN(n))w.requestAnimationFrame(function(){w.scrollTo(0,n);});}}catch(e){}})();</script>
+                """, height=0)
                 st.divider()
                 st.caption("Finished? Log your completion to Your Work.")
                 _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
