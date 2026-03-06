@@ -3687,8 +3687,6 @@ def _render_training_session():
                     _is_explosive_day = True
                 else:
                     _is_explosive_day = False
-            else:
-                _is_explosive_day = False
             elif effective_mode == "mobility":
                 focus = "mobility"
 
@@ -3746,6 +3744,19 @@ def _render_training_session():
                         st.session_state.last_output_text = out_text
                         st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
                         _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
+                        # Build equipment_display for non-performance modes (quadrant card)
+                        _equip_display = None
+                        if effective_mode != "performance":
+                            try:
+                                equip_mode = MODE_TO_EQUIPMENT_MODE.get(effective_mode, "")
+                                if equip_mode and ENGINE:
+                                    by_mode = ENGINE.get_canonical_equipment_by_mode()
+                                    opts = set((o or "").strip().lower() for o in (by_mode.get(equip_mode) or []))
+                                    _canon = getattr(ENGINE, "canonicalize_equipment_list", lambda x: x or [])(profile.get("equipment"))
+                                    user_for_mode = [e for e in _canon if (e or "").strip().lower() in opts][:5]
+                                    _equip_display = ", ".join(user_for_mode) if user_for_mode else None
+                            except Exception:
+                                pass
                         st.session_state.last_output_metadata = {
                             "mode": effective_mode,
                             "minutes": int(minutes),
@@ -3753,6 +3764,10 @@ def _render_training_session():
                             "conditioning": conditioning,
                             "conditioning_type": conditioning_type,
                             "workout_id": _sid,
+                            "strength_emphasis": strength_emphasis if effective_mode == "performance" else None,
+                            "strength_day_type": strength_day_type if effective_mode == "performance" else None,
+                            "is_explosive_day": _is_explosive_day if effective_mode == "performance" else False,
+                            "equipment_display": _equip_display,
                         }
                         st.session_state.scroll_to_workout = True
                         st.success("Generated")
