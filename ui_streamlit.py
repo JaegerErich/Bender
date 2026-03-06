@@ -633,22 +633,26 @@ def _get_bottom_left_quadrant(metadata: dict) -> str:
             return "Explosiveness"
         emph = (metadata.get("strength_emphasis") or "strength").strip().lower()
         return STRENGTH_EMPHASIS_TO_LABEL.get(emph, "Strength")
-    # Puck Mastery, Conditioning, Skating Mechanics, Mobility -> equipment
+    # Puck Mastery, Conditioning, Skating Mechanics, Mobility -> equipment required
     equip = metadata.get("equipment_display")
+    items = []
     if equip:
-        return str(equip).strip() or "—"
-    try:
-        equip_mode = MODE_TO_EQUIPMENT_MODE.get(mode, "")
-        if not equip_mode:
-            return "—"
-        import bender_generate_v8_1 as _gen
-        by_mode = getattr(_gen, "get_canonical_equipment_by_mode", lambda: {})()
-        opts = by_mode.get(equip_mode, [])
-        filtered = [o for o in opts if (o or "").strip().lower() != "none"][:4]
-        return ", ".join(filtered) if filtered else "Minimal"
-    except Exception:
-        pass
-    return "—"
+        s = str(equip).strip()
+        if s:
+            items = [x.strip() for x in s.split(",") if x.strip()][:5]
+    if not items:
+        try:
+            equip_mode = MODE_TO_EQUIPMENT_MODE.get(mode, "")
+            if equip_mode:
+                import bender_generate_v8_1 as _gen
+                by_mode = getattr(_gen, "get_canonical_equipment_by_mode", lambda: {})()
+                opts = by_mode.get(equip_mode, [])
+                items = [o for o in opts if (o or "").strip().lower() != "none"][:5]
+        except Exception:
+            pass
+    if items:
+        return "Equipment: " + ", ".join(items)
+    return "Equipment: Minimal"
 
 
 def _get_training_focus_for_card(metadata: dict) -> str:
@@ -702,8 +706,10 @@ def _render_workout_overview_card(metadata: dict) -> None:
     _q_style_b = "border-bottom:none;"
     _q_style_rb = "border-right:none;border-bottom:none;"
     _icon_style = "font-size:1.1rem;opacity:0.9;"
+    _is_equip_quadrant = (mode or "") not in ("performance",)
+    _bl_icon = "🛠" if _is_equip_quadrant else "🎯"
     card_html = f"""
-    <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;margin:0.75rem 0;">
+    <div id="workout-quadrant-card" style="background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;margin:0.75rem 0;">
         <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;">
             <div style="{_q_style}">
                 <span style="{_icon_style}" aria-hidden="true">🏆</span>
@@ -714,7 +720,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
                 <span>Difficulty {difficulty_5}/5</span>
             </div>
             <div style="{_q_style}{_q_style_b}">
-                <span style="{_icon_style}" aria-hidden="true">🎯</span>
+                <span style="{_icon_style}" aria-hidden="true">{_bl_icon}</span>
                 <span>{bottom_left}</span>
             </div>
             <div style="{_q_style}{_q_style_r}{_q_style_b}">
@@ -1053,8 +1059,9 @@ def _render_bender_board() -> None:
     def _on_player_card_dismiss():
         if "bender_board_dialog_uid" in st.session_state:
             del st.session_state["bender_board_dialog_uid"]
+        st.session_state["bender_board_dismiss_token"] = st.session_state.get("bender_board_dismiss_token", 0) + 1
 
-    @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss, width="medium")
+    @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss, width="small")
     def _show_player_card_dialog(uid: str) -> None:
         prof = next((p for p in _overall if (p.get("user_id") or "") == uid), None)
         if prof is None:
@@ -1113,30 +1120,36 @@ def _render_bender_board() -> None:
 
     # --- Section: Overall Leaderboard ---
     _rank_visible = 15
+    _dismiss_tok = st.session_state.get("bender_board_dismiss_token", 0)
     st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
     if _overall:
-        for r, p in enumerate(_overall[:_rank_visible], 1):
-            _uid = p.get("user_id") or ""
-            _name = p.get("display_name") or _uid or "Unknown"
-            _lv = int(p.get("level") or 1)
-            _title = (p.get("level_title") or "Initiate").strip()
-            _xp = int(p.get("total_xp") or 0)
-            _bc = len(get_unlocked_badges(p))
-            _is_you = _uid == _current_uid
-            _rest = f"Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
-            _c1, _c2, _c3 = st.columns([0.4, 2.2, 4])
-            with _c1:
-                st.markdown(f"**{r}.**")
-            with _c2:
-                if _is_you:
-                    st.markdown(f":orange[**{_name}**] *(you)*")
-                else:
-                    with st.popover(_name, type="secondary"):
-                        if st.button("View player card", key=f"bender_view_card_{_uid}"):
-                            st.session_state.bender_board_dialog_uid = _uid
-                            _show_player_card_dialog(_uid)
-            with _c3:
-                st.markdown(_rest)
+
+        @st.fragment(run_every=None)
+        def _leaderboard_rows():
+            for r, p in enumerate(_overall[:_rank_visible], 1):
+                _uid = p.get("user_id") or ""
+                _name = p.get("display_name") or _uid or "Unknown"
+                _lv = int(p.get("level") or 1)
+                _title = (p.get("level_title") or "Initiate").strip()
+                _xp = int(p.get("total_xp") or 0)
+                _bc = len(get_unlocked_badges(p))
+                _is_you = _uid == _current_uid
+                _rest = f"Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
+                _c1, _c2, _c3 = st.columns([0.4, 2.2, 4])
+                with _c1:
+                    st.markdown(f"**{r}.**")
+                with _c2:
+                    if _is_you:
+                        st.markdown(f":orange[**{_name}**] *(you)*")
+                    else:
+                        with st.popover(_name, type="secondary"):
+                            if st.button("View card", key=f"bender_view_card_{_uid}_{_dismiss_tok}"):
+                                st.session_state.bender_board_dialog_uid = _uid
+                                _show_player_card_dialog(_uid)
+                with _c3:
+                    st.markdown(_rest)
+
+        _leaderboard_rows()
         _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
         if _your_rank is not None and _your_rank > _rank_visible:
             _p = next(p for p in _overall if (p.get("user_id") or "") == _current_uid)
@@ -2861,11 +2874,23 @@ st.markdown("""
     .your-work-footer {
         margin-top: 0.75rem; color: #888888; font-size: 0.8rem; text-align: center;
     }
+    /* Bender Board: compact popover for View card */
+    [data-testid="stPopover"] [data-testid="stVerticalBlock"] {
+        padding: 0.5rem !important; min-width: 0 !important;
+    }
     /* Bender Board player card */
     .bender-player-card {
         background: #1a1a1a; border: 1px solid #333333; border-radius: 12px; padding: 1.25rem 1.5rem;
         max-width: 28rem; margin-top: 0.5rem; margin-bottom: 1rem; font-family: 'DM Sans', sans-serif;
     }
+    /* Player card inside dialog: smaller overall */
+    [data-testid="stDialog"] .bender-player-card {
+        padding: 0.75rem 1rem !important; max-width: 100% !important;
+        font-size: 0.9rem;
+    }
+    [data-testid="stDialog"] .bender-player-card .player-card-title { font-size: 0.85rem !important; }
+    [data-testid="stDialog"] .bender-player-card .player-card-level { font-size: 0.9rem !important; }
+    [data-testid="stDialog"] .bender-player-card .player-card-meta { font-size: 0.75rem !important; }
     .bender-player-card .player-card-title { color: #ffffff; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; }
     .bender-player-card .player-card-name { color: #ffffff; font-weight: 600; font-size: 1.15rem; margin-bottom: 0.35rem; }
     .bender-player-card .player-card-level { color: #e0e0e0; font-size: 1rem; margin-bottom: 0.5rem; }
@@ -3848,6 +3873,12 @@ def _render_training_session():
                 st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
                 _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
                 _render_workout_overview_card(_meta)
+                if st.session_state.get("scroll_to_workout"):
+                    st.session_state.scroll_to_workout = False
+                    st.components.v1.html(
+                        "<script>(function(){var w=window.parent;var d=w.document;var el=d.getElementById('workout-quadrant-card');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}})();</script>",
+                        height=0,
+                    )
                 _workout_started = st.session_state.get("workout_started", False)
                 if not _workout_started:
                     st.markdown('<div id="workout-start-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
