@@ -3119,7 +3119,7 @@ _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Bender Board", "Performance Dashboard", _custom_req_tab_label]
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label]
     _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
@@ -3455,7 +3455,7 @@ else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
-    _tab_opts = ["Training Session", "My Plan", "Bender Board", "Performance Dashboard"] if _has_valid_plan else ["Training Session", "Bender Board", "Performance Dashboard"]
+    _tab_opts = ["Training Session", "My Plan", "Performance Dashboard", "Bender Board"] if _has_valid_plan else ["Training Session", "Performance Dashboard", "Bender Board"]
     with st.container():
         st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
         _tab_cols = st.columns(len(_tab_opts))
@@ -3939,13 +3939,13 @@ if _admin and st.session_state.get("admin_tab_idx") == 5:
                             st.rerun()
 
 
-# Bender Board tab — visible to all (admin and player)
-if _admin and st.session_state.get("admin_tab_idx") == 3:
-        _render_bender_board()
-
 # Performance Dashboard tab — admin only (players get it via player tabs)
-if _admin and st.session_state.get("admin_tab_idx") == 4:
+if _admin and st.session_state.get("admin_tab_idx") == 3:
         _render_your_work_stats()
+
+# Bender Board tab — visible to all (admin and player)
+if _admin and st.session_state.get("admin_tab_idx") == 4:
+        _render_bender_board()
 
 
 # Admin: Highscores tab (admin only)
