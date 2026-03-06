@@ -2491,8 +2491,7 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         lines.append(f"- {name} ({per // 60} min)")
-        if equip:
-            lines.append(f"  Equipment: {equip}")
+        lines.append(f"  Equipment: {equip or 'None'}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -2727,9 +2726,8 @@ def build_mobility_recovery_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} — {r} x {dur}s")
-        equip = _equipment_display(d)
-        if equip:
-            lines.append(f"  Equipment: {equip}")
+        equip = _equipment_display(d) or "None"
+        lines.append(f"  Equipment: {equip}")
         if cue:
             lines.append(f"  Cue: {cue}")
     return lines
@@ -3789,8 +3787,7 @@ def build_heavy_leg_session(
                 equip_s = _equipment_display(strength_d)
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
                 steps_s = norm(get(strength_d, "step_by_step", ""))
-                if equip_s:
-                    lines.append(f"  Equipment: {equip_s}")
+                lines.append(f"  Equipment: {equip_s or 'None'}")
                 if cues_s:
                     lines.append(f"  Cues: {cues_s}")
                 if steps_s:
@@ -3801,6 +3798,8 @@ def build_heavy_leg_session(
                 # Block 2: explosive exercise with bracket, directions before cues, video
                 lines.append(f"- └ {explosive_name} (bodyweight) | 6 reps")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
+                equip_e = _equipment_display(explosive_d) or "None"
+                lines.append(f"  Equipment: {equip_e}")
                 cues_e = norm(get(explosive_d, "coaching_cues", ""))
                 if cues_e:
                     lines.append(f"  Cues: {cues_e}")
@@ -4806,8 +4805,7 @@ def build_hockey_strength_session(
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
             lines.append(f"- {name} (30–45s)")
-            if equip:
-                lines.append(f"  Equipment: {equip}")
+            lines.append(f"  Equipment: {equip or 'None'}")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
