@@ -927,11 +927,14 @@ def _render_bender_board() -> None:
         st.markdown("\n".join(_card), unsafe_allow_html=True)
         st.markdown("---")
 
-    # --- Overall Bender leaderboard ---
-    st.markdown("**Overall leaderboard**")
-    st.caption("Sorted by Total XP → Total workouts → Longest streak")
+    _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
+
+    # --- Section: Overall Leaderboard ---
     _overall = _bender_overall_ranked()
     _rank_visible = 15
+    _overall_lines = ['<div class="bender-board-section">']
+    _overall_lines.append('<div class="bender-board-section-title">Overall Leaderboard</div>')
+    _overall_lines.append('<div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak</div>')
     if _overall:
         for r, p in enumerate(_overall[:_rank_visible], 1):
             _uid = p.get("user_id") or ""
@@ -941,38 +944,37 @@ def _render_bender_board() -> None:
             _xp = int(p.get("total_xp") or 0)
             _bc = len(get_unlocked_badges(p))
             _is_you = _uid == _current_uid
-            _row = f"**{r}. {_name}** — Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
+            _row = f'{r}. <strong>{html.escape(_name)}</strong> — Level {_lv} ({html.escape(_title)}) · {_xp:,} XP · {_bc} badge{"s" if _bc != 1 else ""}'
             if _is_you:
-                st.markdown(f":orange[{_row}] *(you)*")
+                _overall_lines.append(f'<div class="your-work-row"><span class="your-work-num" style="color:#f0a030;">{_row} <em>(you)</em></span></div>')
             else:
-                st.markdown(_row)
-        # Your rank summary if not in top N
+                _overall_lines.append(f'<div class="your-work-row"><span class="your-work-num">{_row}</span></div>')
         _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
         if _your_rank is not None and _your_rank > _rank_visible:
             _p = next(p for p in _overall if (p.get("user_id") or "") == _current_uid)
-            st.caption(f"**Your rank: {_your_rank}** — Level {_p.get('level', 1)} ({_p.get('level_title', '')}) · {int(_p.get('total_xp') or 0):,} XP")
+            _overall_lines.append(f'<div class="bender-board-section-caption" style="margin-top:0.5rem;"><strong>Your rank: {_your_rank}</strong> — Level {_p.get("level", 1)} ({html.escape(str(_p.get("level_title", "")))}) · {int(_p.get("total_xp") or 0):,} XP</div>')
     else:
-        st.caption("No players yet. Complete workouts to appear on the board.")
-    st.markdown("")
+        _overall_lines.append('<div class="bender-board-section-caption">No players yet. Complete workouts to appear on the board.</div>')
+    _overall_lines.append("</div>")
+    st.markdown("\n".join(_overall_lines), unsafe_allow_html=True)
 
-    # --- Monthly leaders (existing box: one leader per category) ---
-    _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
+    # --- Section: Monthly Leaders ---
     _monthly_map = {cat: (name, val) for cat, name, val in _bender_board_monthly_leaders(_today.year, _today.month)}
-    st.markdown("**Monthly leaders**")
-    st.caption(f"{_today.strftime('%B %Y')} — top performer per category")
-    _lines = ['<div class="your-work-stats-card">']
+    _monthly_lines = ['<div class="bender-board-section">']
+    _monthly_lines.append('<div class="bender-board-section-title">Monthly Leaders</div>')
+    _monthly_lines.append(f'<div class="bender-board-section-caption">{_today.strftime("%B %Y")} — top performer per category</div>')
+    _monthly_lines.append('<div class="your-work-stats-card" style="max-width:none; margin-top:0.5rem;">')
     for cat in _bb_categories:
         if cat in _monthly_map:
             name, val = _monthly_map[cat]
-            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
+            _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
         else:
-            _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
-    _lines.append("</div>")
-    st.markdown("\n".join(_lines), unsafe_allow_html=True)
+            _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
+    _monthly_lines.append("</div></div>")
+    st.markdown("\n".join(_monthly_lines), unsafe_allow_html=True)
 
-    # --- Monthly category rankings (upgraded: full table per category with rank title, XP, level, badges) ---
-    st.markdown("**Monthly category rankings**")
-    st.caption(f"{_today.strftime('%B %Y')} — ranked by volume in each category")
+    # --- Section: Monthly Category Rankings ---
+    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Monthly Category Rankings</div><div class="bender-board-section-caption">' + _today.strftime("%B %Y") + ' — ranked by volume in each category</div></div>', unsafe_allow_html=True)
     _monthly_ranked = _bender_monthly_ranked(_today.year, _today.month)
     for cat_label in _bb_categories:
         rows = _monthly_ranked.get(cat_label, [])
@@ -1001,20 +1003,21 @@ def _render_bender_board() -> None:
                 _xk = _category_profile_key(leveling_cat)[0] if leveling_cat else ""
                 _cat_xp = int(_p.get(_xk) or 0) if _xk else 0
                 st.caption(f"**Your rank: {_your_idx + 1}** — {rank_title_for_category(leveling_cat, rank_from_category_xp(_cat_xp))} · {_cat_xp:,} cat XP")
-    st.markdown("")
 
-    # --- Lifetime highscores (existing: one leader per category) ---
-    st.markdown("**Lifetime highscores**")
+    # --- Section: Lifetime Highscores ---
     _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
-    _lines2 = ['<div class="your-work-stats-card">']
+    _lifetime_lines = ['<div class="bender-board-section">']
+    _lifetime_lines.append('<div class="bender-board-section-title">Lifetime Highscores</div>')
+    _lifetime_lines.append('<div class="bender-board-section-caption">All-time leader per category</div>')
+    _lifetime_lines.append('<div class="your-work-stats-card" style="max-width:none; margin-top:0.5rem;">')
     for cat in _bb_categories:
         if cat in _lifetime_map:
             name, val = _lifetime_map[cat]
-            _lines2.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
+            _lifetime_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
         else:
-            _lines2.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet</span></div>')
-    _lines2.append("</div>")
-    st.markdown("\n".join(_lines2), unsafe_allow_html=True)
+            _lifetime_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet</span></div>')
+    _lifetime_lines.append("</div></div>")
+    st.markdown("\n".join(_lifetime_lines), unsafe_allow_html=True)
 
 
 def _render_your_work_stats():
@@ -2690,6 +2693,13 @@ st.markdown("""
     .bender-player-card .player-card-cat-row { color: #cccccc; font-size: 0.85rem; margin: 0.4rem 0; }
     .bender-player-card .player-card-cat-row .cat-bar { height: 6px; background: #333333; border-radius: 3px; overflow: hidden; margin-top: 0.2rem; }
     .bender-player-card .player-card-badges { color: #888888; font-size: 0.8rem; margin-top: 0.75rem; }
+    /* Bender Board section blocks */
+    .bender-board-section {
+        background: #1a1a1a; border: 1px solid #333333; border-radius: 12px; padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem; font-family: 'DM Sans', sans-serif;
+    }
+    .bender-board-section-title { color: #ffffff; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; }
+    .bender-board-section-caption { color: #888888; font-size: 0.85rem; margin-bottom: 0.75rem; }
 
     /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
