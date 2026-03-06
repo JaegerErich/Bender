@@ -589,7 +589,7 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
     return {}
 
 
-# Training focus fallback by category (workout overview card)
+# Training focus fallback by category (deprecated for bottom-left; use _get_bottom_left_quadrant)
 CATEGORY_FOCUS_FALLBACK = {
     "puck_mastery": "Technique",
     "skating_mechanics": "Speed",
@@ -599,9 +599,59 @@ CATEGORY_FOCUS_FALLBACK = {
     "mobility_recovery": "Recovery",
 }
 
+# Mode -> UI equipment mode name for canonical equipment lookup
+MODE_TO_EQUIPMENT_MODE = {
+    "stickhandling": "Puck Mastery",
+    "shooting": "Puck Mastery",
+    "skills_only": "Puck Mastery",
+    "puck_mastery": "Puck Mastery",
+    "performance": "Performance",
+    "energy_systems": "Conditioning",
+    "skating_mechanics": "Skating Mechanics",
+    "mobility": "Mobility",
+}
+
+# Strength emphasis key -> display label (Technique for performance quadrant)
+STRENGTH_EMPHASIS_TO_LABEL = {
+    "power": "Power",
+    "strength": "Strength",
+    "hypertrophy": "Hypertrophy",
+    "recovery": "Recovery",
+}
+
+
+def _get_bottom_left_quadrant(metadata: dict) -> str:
+    """
+    Bottom-left quadrant: Equipment (Puck Mastery, Conditioning, Skating, Mobility),
+    or Technique/Strength emphasis (Performance), or Explosiveness (Performance explosive day).
+    """
+    mode = (metadata.get("mode") or "").strip().lower()
+    is_explosive = metadata.get("is_explosive_day", False)
+    if mode == "performance":
+        if is_explosive:
+            return "Explosiveness"
+        emph = (metadata.get("strength_emphasis") or "strength").strip().lower()
+        return STRENGTH_EMPHASIS_TO_LABEL.get(emph, "Strength")
+    # Puck Mastery, Conditioning, Skating Mechanics, Mobility -> equipment
+    equip = metadata.get("equipment_display")
+    if equip:
+        return str(equip).strip() or "—"
+    try:
+        equip_mode = MODE_TO_EQUIPMENT_MODE.get(mode, "")
+        if not equip_mode:
+            return "—"
+        import bender_generate_v8_1 as _gen
+        by_mode = getattr(_gen, "get_canonical_equipment_by_mode", lambda: {})()
+        opts = by_mode.get(equip_mode, [])
+        filtered = [o for o in opts if (o or "").strip().lower() != "none"][:4]
+        return ", ".join(filtered) if filtered else "Minimal"
+    except Exception:
+        pass
+    return "—"
+
 
 def _get_training_focus_for_card(metadata: dict) -> str:
-    """Training focus label for workout card: explicit training_focus or category fallback."""
+    """Legacy: training focus label (kept for any non-card use)."""
     if metadata.get("training_focus"):
         return (metadata.get("training_focus") or "").strip() or "Training"
     try:
@@ -638,7 +688,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
             difficulty_5 = 3
     else:
         difficulty_5 = 3
-    focus = _get_training_focus_for_card(meta)
+    bottom_left = _get_bottom_left_quadrant(meta)
     time_label = f"~{minutes} mins" if minutes > 0 else "—"
     xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
 
@@ -2938,6 +2988,35 @@ st.markdown("""
         margin-top: 0.15rem !important;
     }
 
+    /* Start Workout + Clear workout (under 4 quadrants): side-by-side, equal width */
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+        max-width: 24rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        width: 100% !important;
+    }
+    /* Workout Complete + Clear workout (bottom): side-by-side */
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem !important;
+        max-width: 24rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+        width: 100% !important;
+    }
     /* Workout tabs + Clear workout: tabs column fills width, Clear is compact */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         gap: 0.5rem !important;
@@ -3574,6 +3653,7 @@ def _render_training_session():
             focus = None
             strength_day_type = None
             strength_emphasis = "strength"
+            _is_explosive_day = False
             skate_within_24h = False
             conditioning_focus = None
             conditioning_mode = None
@@ -3599,6 +3679,16 @@ def _render_training_session():
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
                 em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+                # 20% explosive day: override to Power + power (same logic as Workout Plan)
+                if random.random() < 0.20:
+                    day_label = "Power"
+                    strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
+                    strength_emphasis = "power"
+                    _is_explosive_day = True
+                else:
+                    _is_explosive_day = False
+            else:
+                _is_explosive_day = False
             elif effective_mode == "mobility":
                 focus = "mobility"
 
@@ -3690,13 +3780,14 @@ def _render_training_session():
                 _render_workout_overview_card(_meta)
                 _workout_started = st.session_state.get("workout_started", False)
                 if not _workout_started:
-                    _btn_col1, _btn_col2 = st.columns(2)
+                    st.markdown('<div id="workout-start-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
+                    _btn_col1, _btn_col2 = st.columns([1, 1])
                     with _btn_col1:
-                        if st.button("Start Workout", type="primary", key="start_workout_btn"):
+                        if st.button("Start Workout", type="primary", key="start_workout_btn", use_container_width=True):
                             st.session_state.workout_started = True
                             st.rerun()
                     with _btn_col2:
-                        if st.button("Clear workout", type="secondary", key="clear_workout_top"):
+                        if st.button("Clear workout", type="secondary", key="clear_workout_top", use_container_width=True):
                             clear_last_output()
                             st.rerun()
                     st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
@@ -3771,22 +3862,26 @@ def _render_training_session():
                 """, height=0)
                 st.divider()
                 st.caption("Finished? Log your completion to Performance Dashboard.")
+                st.markdown('<div id="workout-complete-clear-row" aria-hidden="true"></div>', unsafe_allow_html=True)
                 _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
-                if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
-                    prof = st.session_state.get("current_profile") or {}
-                    if prof and _meta:
-                        prof, xp_msg = _add_completion_to_profile(prof, _meta)
-                        st.session_state.current_profile = prof
-                        save_profile(prof)
-                    clear_last_output()
-                    if prof and _meta and xp_msg:
-                        st.success("Workout Complete — " + xp_msg)
-                    else:
-                        st.success("Workout logged to Performance Dashboard!")
-                    st.rerun()
-                if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
-                    clear_last_output()
-                    st.rerun()
+                _done_col1, _done_col2 = st.columns([1, 1])
+                with _done_col1:
+                    if st.button("Workout Complete", type="primary", key="workout_complete_bender", use_container_width=True):
+                        prof = st.session_state.get("current_profile") or {}
+                        if prof and _meta:
+                            prof, xp_msg = _add_completion_to_profile(prof, _meta)
+                            st.session_state.current_profile = prof
+                            save_profile(prof)
+                        clear_last_output()
+                        if prof and _meta and xp_msg:
+                            st.success("Workout Complete — " + xp_msg)
+                        else:
+                            st.success("Workout logged to Performance Dashboard!")
+                        st.rerun()
+                with _done_col2:
+                    if st.button("Clear workout", type="secondary", key="clear_workout_bottom", use_container_width=True):
+                        clear_last_output()
+                        st.rerun()
 
     _training_session_fragment()
 
