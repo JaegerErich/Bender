@@ -149,7 +149,13 @@ def load_profile(user_id: str) -> dict | None:
         return None
     try:
         with open(path, encoding="utf-8") as f:
-            return json.load(f)
+            prof = json.load(f)
+        try:
+            from bender_leveling import ensure_leveling_defaults
+            prof = ensure_leveling_defaults(prof)
+        except Exception:
+            pass
+        return prof
     except Exception:
         return None
 
@@ -169,10 +175,16 @@ def list_profiles() -> list[dict]:
     if not PROFILE_DIR.exists():
         return []
     out = []
+    try:
+        from bender_leveling import ensure_leveling_defaults
+        _ensure = ensure_leveling_defaults
+    except Exception:
+        _ensure = lambda x: x
     for p in PROFILE_DIR.glob("*.json"):
         try:
             with open(p, encoding="utf-8") as f:
-                out.append(json.load(f))
+                prof = json.load(f)
+            out.append(_ensure(prof))
         except Exception:
             continue
     return sorted(out, key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
@@ -661,6 +673,12 @@ def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "tra
         "mobility_hours": deltas["mobility_hours"],
     })
     prof["completion_history"] = hist
+    # Bender leveling: add XP, update level, ranks, streak, achievements
+    try:
+        from bender_leveling import apply_xp_and_leveling
+        prof = apply_xp_and_leveling(prof, metadata)
+    except Exception:
+        pass
     return prof
 
 
@@ -828,9 +846,66 @@ def _render_bender_board() -> None:
 
 
 def _render_your_work_stats():
-    """Show performance tests table + all mode minutes and shots."""
+    """Show performance tests table + all mode minutes and shots. Includes Bender level and category ranks."""
     prof = st.session_state.get("current_profile") or {}
     pt = prof.get("performance_tests") or {}
+
+    # --- Bender Leveling: Overall Level + Category Ranks + Badges + Achievements ---
+    try:
+        from bender_leveling import (
+            get_level_progress,
+            get_category_progress,
+            get_unlocked_badges,
+            ensure_leveling_defaults,
+            ACHIEVEMENTS,
+        )
+        prof = ensure_leveling_defaults(prof)
+        level_prog = get_level_progress(prof)
+        st.markdown("**Bender Level**")
+        st.markdown(f"Level {level_prog['level']} — {level_prog['title']}")
+        st.caption(f"XP: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
+        st.progress(level_prog["progress_pct"] / 100.0)
+        st.markdown("")
+
+        # Category ranks
+        st.markdown("**Category Ranks**")
+        categories = [
+            ("puck_mastery", "Puck Mastery"),
+            ("skating_mechanics", "Skating Mechanics"),
+            ("performance", "Performance (Strength)"),
+            ("conditioning", "Conditioning"),
+            ("mobility", "Mobility & Recovery"),
+        ]
+        for cat_key, cat_label in categories:
+            cp = get_category_progress(prof, cat_key)
+            st.markdown(f"**{cat_label}** — {cp['title']}")
+            st.caption(f"XP: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
+            st.progress(cp["progress_pct"] / 100.0)
+        st.markdown("")
+
+        # Rank 8 badges
+        badges = get_unlocked_badges(prof)
+        if badges:
+            st.markdown("**Badges**")
+            st.caption(" ".join(f"🏅 {b}" for b in badges))
+            st.markdown("")
+
+        # Achievements unlocked
+        unlocked_ids = set(prof.get("achievements_unlocked") or [])
+        if unlocked_ids:
+            st.markdown("**Achievements**")
+            for ach in ACHIEVEMENTS:
+                if ach["id"] in unlocked_ids:
+                    st.caption(f"✓ {ach['name']} (+{ach['bonus_xp']} XP)")
+            st.markdown("")
+
+        # Streak
+        streak = int(prof.get("workout_streak") or 0)
+        if streak > 0:
+            st.caption(f"Current streak: {streak} day{'s' if streak != 1 else ''}")
+        st.markdown("---")
+    except Exception:
+        pass
 
     # Performance tests — same box format as Workout Records
     _pt_items = [
@@ -2861,6 +2936,11 @@ if st.session_state.current_user_id is None:
                     "created_at": datetime.now().isoformat(),
                     "updated_at": datetime.now().isoformat(),
                 }
+                try:
+                    from bender_leveling import ensure_leveling_defaults
+                    profile = ensure_leveling_defaults(profile)
+                except Exception:
+                    pass
                 save_profile(profile)
                 st.session_state.creation_success = "Account created. Please log in."
                 st.session_state.auth_page = "login"
@@ -2981,6 +3061,19 @@ with st.sidebar:
 # ---------- Main area: form in card ----------
 # Signed-in line (Sign out is only in the sidebar Equipment section)
 st.caption(f"Signed in as **{display_name}**")
+# Bender level + badges (profile card)
+try:
+    from bender_leveling import ensure_leveling_defaults, get_unlocked_badges
+    _prof_card = ensure_leveling_defaults(st.session_state.current_profile or {})
+    _lv = _prof_card.get("level", 1)
+    _title = _prof_card.get("level_title", "Initiate")
+    _badges = get_unlocked_badges(_prof_card)
+    if _badges:
+        st.caption(f"Level {_lv} — {_title}  ·  🏅 " + "  🏅 ".join(_badges))
+    else:
+        st.caption(f"Level {_lv} — {_title}")
+except Exception:
+    pass
 
 # Athlete = logged-in user (for history, download filename, feedback)
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
