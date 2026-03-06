@@ -27,6 +27,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -58,6 +59,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -89,6 +91,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -120,6 +123,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -151,6 +155,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -182,6 +187,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -213,6 +219,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -244,6 +251,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -275,6 +283,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -306,6 +315,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -337,6 +347,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -368,6 +379,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -399,6 +411,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -430,6 +443,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -461,6 +475,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -492,6 +507,7 @@
     "session_type": "strength",
     "signal": "recovery",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -523,6 +539,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -554,6 +571,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -585,6 +603,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -616,6 +635,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -647,6 +667,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -678,6 +699,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -709,6 +731,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "heavy_lower"
   },
@@ -740,6 +763,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -771,6 +795,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -802,6 +827,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -833,6 +859,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -864,6 +891,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "Erich Jaeger",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -895,6 +923,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "heavy_lower"
   },
@@ -926,6 +955,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -957,6 +987,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -988,6 +1019,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1019,6 +1051,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1050,6 +1083,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1081,6 +1115,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1112,6 +1147,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1143,6 +1179,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1174,6 +1211,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1205,6 +1243,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1236,6 +1275,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1267,6 +1307,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1298,6 +1339,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1329,6 +1371,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1360,6 +1403,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1391,6 +1435,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1422,6 +1467,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1453,37 +1499,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
-    "coach_preference": 1,
-    "program_day_type": "heavy_explosive"
-  },
-  {
-    "id": "LS_028",
-    "name": "Hex Bar Jump",
-    "status": "active",
-    "load_type": "loaded",
-    "primary_region": "full",
-    "strength_focus": "power",
-    "lift_role": "primary",
-    "movement_pattern": "power",
-    "tags": "hex_bar_jump, loaded_jump",
-    "unilateral": false,
-    "cns_load": "high",
-    "fatigue_cost": "high",
-    "progression_level": "advanced",
-    "default_sets": 4,
-    "default_reps": "2-4",
-    "default_duration_sec": 30,
-    "intensity": "moderate",
-    "age_min": 15,
-    "age_max": 99,
-    "equipment": "Hex Bar",
-    "space": "Plyo area",
-    "step_by_step": "Jump with light load for power",
-    "coaching_cues": "Explode upward",
-    "video_url": "https://customer-ha12kk6wrp2s6ej4.cloudflarestream.com/53b5cd198f39612b61a38268769b169d/manifest/video.m3u8",
-    "session_type": "strength",
-    "signal": "power",
-    "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1515,6 +1531,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1546,6 +1563,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1577,6 +1595,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -1608,6 +1627,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -1639,6 +1659,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1670,6 +1691,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1701,6 +1723,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -1732,6 +1755,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1763,6 +1787,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1794,6 +1819,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -1825,6 +1851,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1856,6 +1883,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1887,6 +1915,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1918,6 +1947,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -1949,6 +1979,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -1980,6 +2011,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2011,6 +2043,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2042,6 +2075,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2073,6 +2107,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2104,6 +2139,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2135,6 +2171,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2166,6 +2203,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2197,6 +2235,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2228,6 +2267,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2259,6 +2299,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2290,6 +2331,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2321,6 +2363,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2352,6 +2395,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2383,6 +2427,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2414,6 +2459,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2445,6 +2491,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2476,6 +2523,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2507,6 +2555,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2538,6 +2587,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2569,6 +2619,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2600,6 +2651,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -2631,6 +2683,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 2,
     "program_day_type": "upper_core_stability"
   },
@@ -2662,6 +2715,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -2693,6 +2747,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -2724,6 +2779,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2755,6 +2811,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Matt Koch",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2786,6 +2843,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 0,
     "program_day_type": "upper_core_stability"
   },
@@ -2817,6 +2875,7 @@
     "session_type": "strength",
     "signal": "conditioning",
     "inspired_by": "Jack Hughes",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2848,6 +2907,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2879,6 +2939,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "5",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2910,6 +2971,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -2941,6 +3003,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "Jack Hughes",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -2972,6 +3035,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3003,6 +3067,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Connor Bedard",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3034,6 +3099,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": null,
+    "difficulty": "1",
     "coach_preference": 0,
     "program_day_type": "upper_core_stability"
   },
@@ -3065,6 +3131,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": null,
+    "difficulty": "1",
     "coach_preference": 0,
     "program_day_type": "upper_core_stability"
   },
@@ -3096,6 +3163,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -3127,6 +3195,7 @@
     "session_type": "strength",
     "signal": "recovery",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -3158,6 +3227,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -3189,6 +3259,7 @@
     "session_type": "strength",
     "signal": "conditioning",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_lower"
   },
@@ -3220,6 +3291,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3251,6 +3323,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3282,6 +3355,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3313,6 +3387,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3344,6 +3419,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3375,6 +3451,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3406,6 +3483,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3437,6 +3515,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3468,6 +3547,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3499,6 +3579,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3530,6 +3611,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "Jack Hughes",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3561,6 +3643,7 @@
     "session_type": "strength",
     "signal": "recovery",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -3592,6 +3675,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "Jack Hughes",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3623,6 +3707,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3654,6 +3739,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3685,6 +3771,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3716,6 +3803,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3747,6 +3835,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3778,6 +3867,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3809,6 +3899,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3840,6 +3931,7 @@
     "session_type": "strength",
     "signal": "power",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_explosive"
   },
@@ -3871,6 +3963,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -3902,6 +3995,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -3933,6 +4027,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -3964,6 +4059,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -3995,6 +4091,7 @@
     "session_type": "strength",
     "signal": "strength",
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -4026,6 +4123,7 @@
     "session_type": "strength",
     "signal": "neutral",
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core_stability"
   },
@@ -4057,6 +4155,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "heavy_leg"
   },
@@ -4088,6 +4187,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "heavy_leg"
   },
@@ -4119,6 +4219,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "heavy_leg"
   },
@@ -4150,6 +4251,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "heavy_leg"
   },
@@ -4181,6 +4283,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 3,
     "program_day_type": "explosive"
   },
@@ -4212,6 +4315,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core"
   },
@@ -4243,6 +4347,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core"
   },
@@ -4274,6 +4379,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "1",
     "coach_preference": 2,
     "program_day_type": "heavy_leg"
   },
@@ -4305,6 +4411,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 2,
     "program_day_type": "heavy_leg"
   },
@@ -4336,6 +4443,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "explosive"
   },
@@ -4367,6 +4475,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 2,
     "program_day_type": "explosive"
   },
@@ -4398,6 +4507,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 1,
     "program_day_type": "upper_core"
   },
@@ -4429,6 +4539,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "Erich Jaeger",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "upper_core"
   },
@@ -4460,6 +4571,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 3,
     "program_day_type": "explosive"
   },
@@ -4491,6 +4603,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "Coach Auz",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -4522,6 +4635,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "Coach Auz",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -4553,6 +4667,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 2,
     "program_day_type": "explosive"
   },
@@ -4584,6 +4699,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "5",
     "coach_preference": 2,
     "program_day_type": "explosive"
   },
@@ -4615,6 +4731,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core"
   },
@@ -4646,6 +4763,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 1,
     "program_day_type": "heavy_leg"
   },
@@ -4677,6 +4795,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "explosive"
   },
@@ -4708,6 +4827,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core"
   },
@@ -4739,6 +4859,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "2",
     "coach_preference": 3,
     "program_day_type": "explosive"
   },
@@ -4770,6 +4891,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "Erich Jaeger",
+    "difficulty": "1",
     "coach_preference": 2,
     "program_day_type": "explosive"
   },
@@ -4801,6 +4923,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 2,
     "program_day_type": "upper_core"
   },
@@ -4832,6 +4955,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 1,
     "program_day_type": "upper_core"
   },
@@ -4863,6 +4987,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "4",
     "coach_preference": 2,
     "program_day_type": "heavy_leg"
   },
@@ -4894,6 +5019,7 @@
     "session_type": "performance",
     "signal": null,
     "inspired_by": "self",
+    "difficulty": "3",
     "coach_preference": 3,
     "program_day_type": "explosive"
   }

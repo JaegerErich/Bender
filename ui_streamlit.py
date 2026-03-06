@@ -977,9 +977,7 @@ def _render_bender_board() -> None:
 
     # --- Section: Overall Leaderboard ---
     _rank_visible = 15
-    _overall_lines = ['<div class="bender-board-section">']
-    _overall_lines.append('<div class="bender-board-section-title">Overall Leaderboard</div>')
-    _overall_lines.append('<div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Use <strong>View player card</strong> above to see any player\'s card.</div>')
+    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a player\'s name to view their card.</div></div>', unsafe_allow_html=True)
     if _overall:
         for r, p in enumerate(_overall[:_rank_visible], 1):
             _uid = p.get("user_id") or ""
@@ -989,19 +987,27 @@ def _render_bender_board() -> None:
             _xp = int(p.get("total_xp") or 0)
             _bc = len(get_unlocked_badges(p))
             _is_you = _uid == _current_uid
-            _row = f'{r}. <strong>{html.escape(_name)}</strong> — Level {_lv} ({html.escape(_title)}) · {_xp:,} XP · {_bc} badge{"s" if _bc != 1 else ""}'
-            if _is_you:
-                _overall_lines.append(f'<div class="your-work-row"><span class="your-work-num" style="color:#f0a030;">{_row} <em>(you)</em></span></div>')
-            else:
-                _overall_lines.append(f'<div class="your-work-row"><span class="your-work-num">{_row}</span></div>')
+            _rest = f"Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
+            _c1, _c2, _c3 = st.columns([0.4, 2.2, 4])
+            with _c1:
+                st.markdown(f"**{r}.**")
+            with _c2:
+                if _is_you:
+                    st.markdown(f":orange[**{_name}**] *(you)*")
+                else:
+                    with st.popover(_name, type="tertiary"):
+                        st.caption("View this player's level, XP, and category progress.")
+                        if st.button("View player card", key=f"bender_view_card_{_uid}"):
+                            st.session_state.bender_board_view_uid = _uid
+                            st.rerun()
+            with _c3:
+                st.markdown(_rest)
         _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
         if _your_rank is not None and _your_rank > _rank_visible:
             _p = next(p for p in _overall if (p.get("user_id") or "") == _current_uid)
-            _overall_lines.append(f'<div class="bender-board-section-caption" style="margin-top:0.5rem;"><strong>Your rank: {_your_rank}</strong> — Level {_p.get("level", 1)} ({html.escape(str(_p.get("level_title", "")))}) · {int(_p.get("total_xp") or 0):,} XP</div>')
+            st.caption(f"**Your rank: {_your_rank}** — Level {_p.get('level', 1)} ({_p.get('level_title', '')}) · {int(_p.get('total_xp') or 0):,} XP")
     else:
-        _overall_lines.append('<div class="bender-board-section-caption">No players yet. Complete workouts to appear on the board.</div>')
-    _overall_lines.append("</div>")
-    st.markdown("\n".join(_overall_lines), unsafe_allow_html=True)
+        st.caption("No players yet. Complete workouts to appear on the board.")
 
     # --- Section: Monthly Leaders ---
     _monthly_map = {cat: (name, val) for cat, name, val in _bender_board_monthly_leaders(_today.year, _today.month)}
