@@ -1212,7 +1212,7 @@ def _render_bender_board() -> None:
     _monthly_lines.append('<div class="your-work-stats-card" style="max-width:none; margin-top:0.5rem;">')
     for cat in _bb_categories:
         if cat in _monthly_map:
-            name, val = _monthly_map[cat]
+            name, val, _ = _monthly_map[cat]
             _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
         else:
             _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
