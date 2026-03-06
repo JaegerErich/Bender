@@ -895,7 +895,6 @@ def _render_bender_board() -> None:
         _prof = ensure_leveling_defaults(st.session_state.get("current_profile") or {})
         _lp = get_level_progress(_prof)
         _badges = get_unlocked_badges(_prof)
-        _name = _prof.get("display_name") or _prof.get("user_id") or "Player"
         _full_xp = get_full_xp_workouts_total(_prof)
         _streak = int(_prof.get("workout_streak") or 0)
         _total_w = int(_prof.get("total_workouts") or 0)
@@ -906,16 +905,13 @@ def _render_bender_board() -> None:
             ("conditioning", "Conditioning"),
             ("mobility", "Mobility & Recovery"),
         ]
-        _cat_parts = [f"{label}: {get_category_progress(_prof, key)['title']}" for key, label in _cats]
         _pct = min(100, max(0, _lp["progress_pct"]))
         _card = ['<div class="bender-player-card">']
         _card.append('<div class="player-card-title">Your player card</div>')
-        _card.append(f'<div class="player-card-name">{html.escape(_name)}</div>')
         _card.append(f'<div class="player-card-level">Level {_lp["level"]} — {html.escape(str(_lp["title"]))}</div>')
         _card.append(f'<div class="player-card-meta">Total XP: {_lp["current_xp"]:,}  ·  Workout streak: {_streak} days  ·  Total workouts: {_total_w:,}  ·  Full XP workouts: {_full_xp:,}</div>')
         _card.append(f'<div class="player-card-meta">{_lp["current_xp"]:,} / {_lp["next_xp"]:,} XP to {html.escape(str(_lp.get("next_title", "next level")))} — {_lp["progress_pct"]}%</div>')
         _card.append('<div class="player-card-progress-wrap"><div class="player-card-progress-bar"><div class="player-card-progress-fill" style="width:' + str(_pct) + '%"></div></div></div>')
-        _card.append(f'<div class="player-card-cats">{"  ·  ".join(html.escape(p) for p in _cat_parts)}</div>')
         _card.append('<details><summary>Category progress</summary>')
         for key, label in _cats:
             cp = get_category_progress(_prof, key)
