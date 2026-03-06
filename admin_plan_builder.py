@@ -419,23 +419,50 @@ def generate_plan_with_workouts(
     Hydrate plan with full workouts for each focus slot. Uses different seeds per slot
     to reduce duplicates. generate_callback(day_idx, focus_str, params) -> workout_text.
     mode_config: per-mode overrides (session_len_min, frequency) from plan builder.
+    When conditioning and mobility occur same day as performance, they are bundled into
+    the performance workout: conditioning ~10 min after the workout, then mobility 5-10 min.
     """
     flat_day_idx = 0
     for w in plan:
         for d in w["days"]:
+            # Pre-scan: does this day have performance + conditioning + mobility?
+            day_modes: set[str] = set()
+            for f_str in d.get("focus", []):
+                p = parse_focus_to_engine_params(f_str, mode_config=mode_config)
+                if p is not None:
+                    day_modes.add(p.get("mode", ""))
+            bundle_cond_mob = (
+                "performance" in day_modes
+                and "energy_systems" in day_modes
+                and "mobility" in day_modes
+            )
+
             focus_items: list[dict[str, Any]] = []
             for f_str in d.get("focus", []):
                 params = parse_focus_to_engine_params(f_str, mode_config=mode_config)
                 if params is None:
                     continue
+                mode_key = params.get("mode", "unknown")
+
+                # When bundling: conditioning and mobility become part of performance; skip as separate items
+                if bundle_cond_mob and mode_key in ("energy_systems", "mobility"):
+                    continue
+
+                # When bundling: performance gets conditioning (~10 min) + mobility (5-10 min) appended
+                if bundle_cond_mob and mode_key == "performance":
+                    params["include_post_lift_conditioning"] = True
+                    params["bundled_conditioning_min"] = 10
+                    params["bundled_mobility_min"] = 7
+
                 seed = base_seed + flat_day_idx * 100 + len(focus_items)
                 params["seed"] = seed
                 try:
                     workout = generate_callback(flat_day_idx, f_str, params)
                 except Exception:
                     workout = "(Workout generation failed)"
-                mode_key = params.get("mode", "unknown")
                 label = MODE_DISPLAY_LABELS.get(mode_key, mode_key.replace("_", " ").title())
+                if bundle_cond_mob and mode_key == "performance":
+                    label = "Performance (with Conditioning + Mobility)"
                 focus_items.append({
                     "label": label,
                     "mode_key": mode_key,
@@ -509,6 +536,11 @@ def compute_plan_highlights(plan: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     totals["shots"] += int(shoot_min * 8)
                 elif mode == "performance":
                     totals["gym_hours"] += hours
+                    # Bundled conditioning/mobility (Admin: same-day performance+cond+mob)
+                    bcond = params.get("bundled_conditioning_min", 0) or 0
+                    bmob = params.get("bundled_mobility_min", 0) or 0
+                    totals["conditioning_hours"] += bcond / 60.0
+                    totals["mobility_hours"] += bmob / 60.0
                 elif mode == "skating_mechanics":
                     totals["skating_hours"] += hours
                 elif mode == "energy_systems":

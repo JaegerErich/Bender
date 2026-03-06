@@ -3673,6 +3673,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
                         strength_full_gym=(params.get("mode") == "performance" and params.get("location") == "gym"),
                         strength_emphasis=params.get("strength_emphasis", "strength"),
                         user_equipment=user_equipment,
+                        include_post_lift_conditioning=params.get("include_post_lift_conditioning"),
                     )
                     return resp or "(Empty)"
 
