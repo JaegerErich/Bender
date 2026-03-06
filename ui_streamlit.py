@@ -905,8 +905,8 @@ def _audit_completion_history(completion_history: list) -> tuple[list[dict], set
     return sorted_entries, suspicious_ts
 
 
-def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str, str]]:
-    """Returns list of (category_label, leader_name, formatted_value) for current month.
+def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str, str, dict | None]]:
+    """Returns list of (category_label, leader_name, formatted_value, best_profile) for current month.
     Uses completion_history from all profiles."""
     all_profs = list_profiles()
     _cat_defs = [
@@ -921,19 +921,21 @@ def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str,
     for cat_label, get_val, fmt in _cat_defs:
         best_val = -1.0 if "h" in fmt else -1
         best_name = None
+        best_prof = None
         for p in all_profs:
             mt = _monthly_totals_from_history(p.get("completion_history"), year, month)
             v = get_val(mt)
             if v > best_val:
                 best_val = v
                 best_name = p.get("display_name") or p.get("user_id") or "Unknown"
+                best_prof = p
         if best_name is not None and best_val > 0:
-            rows.append((cat_label, best_name, fmt.format(best_val)))
+            rows.append((cat_label, best_name, fmt.format(best_val), best_prof))
     return rows
 
 
-def _bender_board_lifetime_leaders() -> list[tuple[str, str, str]]:
-    """Returns list of (category_label, leader_name, formatted_value) for lifetime highscores.
+def _bender_board_lifetime_leaders() -> list[tuple[str, str, str, dict | None]]:
+    """Returns list of (category_label, leader_name, formatted_value, best_profile) for lifetime highscores.
     Uses private_victory_stats from all profiles."""
     all_profs = list_profiles()
     _cat_defs = [
@@ -948,14 +950,16 @@ def _bender_board_lifetime_leaders() -> list[tuple[str, str, str]]:
     for cat_label, get_val, fmt in _cat_defs:
         best_val = -1.0 if "h" in fmt else -1
         best_name = None
+        best_prof = None
         for p in all_profs:
             stats = p.get("private_victory_stats") or {}
             v = get_val(stats)
             if v > best_val:
                 best_val = v
                 best_name = p.get("display_name") or p.get("user_id") or "Unknown"
+                best_prof = p
         if best_name is not None and best_val > 0:
-            rows.append((cat_label, best_name, fmt.format(best_val)))
+            rows.append((cat_label, best_name, fmt.format(best_val), best_prof))
     return rows
 
 
@@ -1089,9 +1093,9 @@ def _render_bender_board() -> None:
             cp = get_category_progress(_prof, key)
             _cp_pct = min(100, max(0, cp["progress_pct"]))
             if cp["rank"] >= 8:
-                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Rank maxed — {html.escape(str(cp["title"]))}</div>')
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong> (Rank maxed)</div>')
             else:
-                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — {html.escape(str(cp["title"]))} · {cp["current_xp"]:,} / {cp["next_xp"]:,} XP to {html.escape(str(cp.get("next_title", "next")))} ({cp["progress_pct"]}%)<div class="cat-bar"><div class="player-card-progress-fill" style="width:{_cp_pct}%"></div></div></div>')
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong> · {cp["current_xp"]:,} / {cp["next_xp"]:,} XP to {html.escape(str(cp.get("next_title", "next")))} ({cp["progress_pct"]}%)<div class="cat-bar"><div class="player-card-progress-fill" style="width:{_cp_pct}%"></div></div></div>')
         _card.append('</details>')
         if _badges:
             _card.append('<div class="player-card-badges">Badges: ' + "  ".join(f"[{html.escape(b)}]" for b in _badges) + '</div>')
@@ -1148,7 +1152,7 @@ def _render_bender_board() -> None:
         st.caption("No players yet. Complete workouts to appear on the board.")
 
     # --- Section: Monthly Leaders ---
-    _monthly_map = {cat: (name, val) for cat, name, val in _bender_board_monthly_leaders(_today.year, _today.month)}
+    _monthly_map = {cat: (name, val, prof) for cat, name, val, prof in _bender_board_monthly_leaders(_today.year, _today.month)}
     _monthly_lines = ['<div class="bender-board-section">']
     _monthly_lines.append('<div class="bender-board-section-title">Monthly Leaders</div>')
     _monthly_lines.append(f'<div class="bender-board-section-caption">{_today.strftime("%B %Y")} — top performer per category</div>')
@@ -1196,7 +1200,7 @@ def _render_bender_board() -> None:
                 st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat XP")
 
     # --- Section: Lifetime Highscores ---
-    _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
+    _lifetime_map = {cat: (name, val, prof) for cat, name, val, prof in _bender_board_lifetime_leaders()}
     _lifetime_lines = ['<div class="bender-board-section">']
     _lifetime_lines.append('<div class="bender-board-section-title">Lifetime Highscores</div>')
     _lifetime_lines.append('<div class="bender-board-section-caption">All-time leader per category</div>')
@@ -1245,7 +1249,7 @@ def _render_your_work_stats():
         ]
         for cat_key, cat_label in categories:
             cp = get_category_progress(prof, cat_key)
-            st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — {html.escape(cp["title"])}</p>', unsafe_allow_html=True)
+            st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(cp["title"])}</strong></p>', unsafe_allow_html=True)
             st.caption(f"XP: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
             st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
@@ -1751,12 +1755,14 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
             steps = ""
             i += 1
             equipment = ""
-            while i < len(lines) and (lines[i].strip().startswith("Equipment:") or lines[i].strip().startswith("Cues:") or lines[i].strip().startswith("Steps:")):
+            while i < len(lines) and (lines[i].strip().startswith("Equipment:") or lines[i].strip().startswith("Cues:") or lines[i].strip().startswith("Cue:") or lines[i].strip().startswith("Steps:")):
                 sub = lines[i].strip()
                 if sub.lower().startswith("equipment:"):
                     equipment = sub[10:].strip()
                 elif sub.lower().startswith("cues:"):
                     cues = sub[5:].strip()
+                elif sub.lower().startswith("cue:"):
+                    cues = sub[4:].strip()
                 elif sub.lower().startswith("steps:"):
                     steps = sub[6:].strip()
                 i += 1
@@ -1789,7 +1795,7 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
                     duration = int(dur_s)
                 except (ValueError, TypeError):
                     duration = 30
-                items.append({"type": "timed", "name": name.strip(), "duration": duration, "cues": cues, "steps": steps, "section_key": section_key})
+                items.append({"type": "timed", "name": name.strip(), "duration": duration, "equipment": equipment, "cues": cues, "steps": steps, "section_key": section_key})
             else:
                 items.append({"type": "simple", "name": body, "cues": cues, "steps": steps, "section_key": section_key})
             continue
@@ -1825,7 +1831,7 @@ def _rebuild_workout_from_edits(items: list[dict], form_vals: dict) -> str:
             v = form_vals.get(ex_idx, {})
             name = v.get("name", it["name"])
             duration = v.get("duration", it.get("duration", 30))
-            line = f"- {name} — {duration}s"
+            line = f"- {name} — {duration}s" if " x " not in str(it.get("duration", 30)) else f"- {name} — {it.get('rounds', 1)} x {duration}s"
             out.append(line)
             if it.get("equipment"):
                 out.append(f"  Equipment: {it['equipment']}")
@@ -3060,13 +3066,13 @@ st.markdown("""
         color: #000000 !important;
     }
     .bender-workout-action-btn.bender-workout-secondary {
-        background: #333333 !important;
-        color: #ffffff !important;
-        border: 1px solid #444444 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #555555 !important;
     }
     .bender-workout-action-btn.bender-workout-secondary:hover {
-        background: #444444 !important;
-        color: #ffffff !important;
+        background: #e8e8e8 !important;
+        color: #000000 !important;
     }
     /* Row layout: side-by-side, incl. mobile */
     .bender-workout-action-row {

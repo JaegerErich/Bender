@@ -1650,14 +1650,11 @@ def build_stickhandling_blocks_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
-        parts = []
-        if cue:
-            parts.append(f"Cue: {cue}")
         eq = _stickhandling_special_equipment(d)
         if eq:
-            parts.append(f"Equipment required: {eq}")
-        if parts:
-            lines.append(f"  {' | '.join(parts)}")
+            lines.append(f"  Equipment: {eq}")
+        if cue:
+            lines.append(f"  Cue: {cue}")
 
     # Difficulty rating
     total_time = sum(per for _, _, _, per in result)
@@ -1677,19 +1674,16 @@ def build_stickhandling_blocks_session(
 
 
 def format_stickhandling_drill(d: Dict[str, Any]) -> str:
-    """Format stickhandling drill with Cue and Equipment required (when special) on same line."""
+    """Format stickhandling drill with Equipment above Cues."""
     name = _display_name(d)
+    eq = _stickhandling_special_equipment(d)
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     line = f"- {name}".strip()
-    parts = []
-    if cues:
-        parts.append(f"Cue: {cues}")
-    eq = _stickhandling_special_equipment(d)
     if eq:
-        parts.append(f"Equipment required: {eq}")
-    if parts:
-        line += f"\n  {' | '.join(parts)}"
+        line += f"\n  Equipment: {eq}"
+    if cues:
+        line += f"\n  Cue: {cues}"
     if steps:
         line += f"\n  Steps: {steps}"
     return line + _video_marker_line(d)
@@ -2741,6 +2735,9 @@ def build_mobility_recovery_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} — {r} x {dur}s")
+        equip = _equipment_display(d)
+        if equip:
+            lines.append(f"  Equipment: {equip}")
         if cue:
             lines.append(f"  Cue: {cue}")
     return lines
