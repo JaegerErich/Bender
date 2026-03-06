@@ -2759,6 +2759,8 @@ def _normalize_strength_emphasis(emphasis: Any) -> str:
     e = norm(emphasis).lower()
     if e in ("power", "strength", "hypertrophy", "recovery"):
         return e
+    if e == "explosiveness":
+        return "power"  # explosiveness = power (explosive speed) for reps/RX
     if e == "youth":
         return "hypertrophy"
     return "strength"

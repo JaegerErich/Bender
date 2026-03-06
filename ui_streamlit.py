@@ -3012,34 +3012,58 @@ st.markdown("""
         margin-top: 0.15rem !important;
     }
 
-    /* Start Workout + Clear workout (under 4 quadrants): side-by-side, equal width */
-    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
-        display: flex !important;
-        flex-wrap: nowrap !important;
-        gap: 0.75rem !important;
-        width: 100% !important;
-        max-width: 24rem !important;
-    }
-    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
-        flex: 1 1 0 !important;
-        min-width: 0 !important;
-    }
-    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
-        width: 100% !important;
-    }
-    /* Workout Complete + Clear workout (bottom): side-by-side */
+    /* Start Workout + Clear workout: same look as Generate session / Request Custom Plan, side-by-side (incl. mobile) */
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
     [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
         display: flex !important;
         flex-wrap: nowrap !important;
         gap: 0.75rem !important;
-        max-width: 24rem !important;
+        width: 100% !important;
+        max-width: 28rem !important;
     }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
     [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
         flex: 1 1 0 !important;
         min-width: 0 !important;
     }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
     [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
         width: 100% !important;
+        font-family: 'DM Sans', sans-serif !important;
+        font-weight: 600 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #ffffff !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.5rem !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button:hover {
+        background: #e0e0e0 !important;
+        color: #000000 !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"] {
+        background: #333333 !important;
+        color: #ffffff !important;
+        border-color: #444444 !important;
+    }
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"]:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"]:hover {
+        background: #444444 !important;
+        color: #ffffff !important;
+    }
+    @media (max-width: 640px) {
+        [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+            flex-wrap: nowrap !important;
+            max-width: 100% !important;
+        }
+        [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+            flex: 1 1 0 !important;
+            min-width: min(120px, 45%) !important;
+        }
     }
     /* Workout tabs + Clear workout: tabs column fills width, Clear is compact */
     [data-testid="stMarkdown"]:has(#workout-tabs-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
@@ -3787,6 +3811,7 @@ def _render_training_session():
                                     _equip_display = ", ".join(user_for_mode) if user_for_mode else None
                             except Exception:
                                 pass
+                        _meta_is_explosive = _is_explosive_day or (strength_emphasis == "explosiveness") if effective_mode == "performance" else False
                         st.session_state.last_output_metadata = {
                             "mode": effective_mode,
                             "minutes": int(minutes),
@@ -3794,9 +3819,9 @@ def _render_training_session():
                             "conditioning": conditioning,
                             "conditioning_type": conditioning_type,
                             "workout_id": _sid,
-                            "strength_emphasis": strength_emphasis if effective_mode == "performance" else None,
-                            "strength_day_type": strength_day_type if effective_mode == "performance" else None,
-                            "is_explosive_day": _is_explosive_day if effective_mode == "performance" else False,
+                            "strength_emphasis": _payload_strength_emphasis if effective_mode == "performance" else None,
+                            "strength_day_type": _payload_strength_day if effective_mode == "performance" else None,
+                            "is_explosive_day": _meta_is_explosive,
                             "equipment_display": _equip_display,
                         }
                         st.session_state.scroll_to_workout = True
