@@ -1037,8 +1037,8 @@ def _render_your_work_stats():
         )
         prof = ensure_leveling_defaults(prof)
         level_prog = get_level_progress(prof)
-        st.markdown("**Bender Level**")
-        st.markdown(f"Level {level_prog['level']} — {level_prog['title']}")
+        st.markdown('<p class="bender-level-heading">Bender Level</p>', unsafe_allow_html=True)
+        st.markdown(f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>', unsafe_allow_html=True)
         st.caption(f"XP: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
         st.progress(level_prog["progress_pct"] / 100.0)
         st.markdown("")
@@ -2700,6 +2700,9 @@ st.markdown("""
     }
     .bender-board-section-title { color: #ffffff; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; }
     .bender-board-section-caption { color: #888888; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    /* Performance Dashboard: Bender Level text larger */
+    .bender-level-heading { font-size: 1.35rem !important; font-weight: 700 !important; color: #ffffff !important; margin-bottom: 0.25rem !important; }
+    .bender-level-value { font-size: 1.2rem !important; font-weight: 600 !important; color: #e0e0e0 !important; margin-bottom: 0.5rem !important; }
 
     /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
@@ -3263,19 +3266,6 @@ with st.sidebar:
 
 # ---------- Main area: form in card ----------
 # Account name is shown in the sidebar only
-# Bender level + badges (profile card)
-try:
-    from bender_leveling import ensure_leveling_defaults, get_unlocked_badges
-    _prof_card = ensure_leveling_defaults(st.session_state.current_profile or {})
-    _lv = _prof_card.get("level", 1)
-    _title = _prof_card.get("level_title", "Initiate")
-    _badges = get_unlocked_badges(_prof_card)
-    if _badges:
-        st.caption(f"Level {_lv} — {_title}  ·  🏅 " + "  🏅 ".join(_badges))
-    else:
-        st.caption(f"Level {_lv} — {_title}")
-except Exception:
-    pass
 
 # Athlete = logged-in user (for history, download filename, feedback)
 athlete_id = (st.session_state.current_profile or {}).get("display_name") or (st.session_state.current_profile or {}).get("user_id") or ""
