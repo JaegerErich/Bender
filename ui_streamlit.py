@@ -733,7 +733,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
         difficulty_5 = 3
     bottom_left = _get_bottom_left_quadrant(meta)
     time_label = f"~{minutes} mins" if minutes > 0 else "—"
-    xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
+    xp_display = f"+{xp_reward} points" if xp_reward > 0 else "— points"
 
     # Mode display label (MODE_LABELS + sub-modes)
     mode_display = MODE_LABELS.get(mode) or mode.replace("_", " ").title()
@@ -791,7 +791,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
         else:
             xp_remaining = max(0, next_xp - total)
             st.progress(progress_pct)
-            st.caption(f"**{xp_remaining:,} XP to Level {level + 1}**")
+            st.caption(f"**{xp_remaining:,} points to Level {level + 1}**")
     except Exception:
         st.progress(0.0)
         st.caption("—")
@@ -1198,17 +1198,15 @@ def _render_bender_board() -> None:
         _card = ['<div class="bender-player-card">']
         _card.append(f'<div class="player-card-title">{html.escape(card_title)}</div>')
         _card.append(f'<div class="player-card-level">Level {_lp["level"]} — {html.escape(str(_lp["title"]))}</div>')
-        _card.append(f'<div class="player-card-meta">Total XP: {_lp["current_xp"]:,}  ·  Workout streak: {_streak} days  ·  Total workouts: {_total_w:,}  ·  Full XP workouts: {_full_xp:,}</div>')
-        _card.append(f'<div class="player-card-meta">{_lp["current_xp"]:,} / {_lp["next_xp"]:,} XP to {html.escape(str(_lp.get("next_title", "next level")))} — {_lp["progress_pct"]}%</div>')
         _card.append('<div class="player-card-progress-wrap"><div class="player-card-progress-bar"><div class="player-card-progress-fill" style="width:' + str(_pct) + '%"></div></div></div>')
         _card.append('<details><summary>Category progress</summary>')
         for key, label in _cats:
             cp = get_category_progress(_prof, key)
             _cp_pct = min(100, max(0, cp["progress_pct"]))
             if cp["rank"] >= 8:
-                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong> (Rank maxed)</div>')
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong> (Rank maxed)<div class="cat-bar"><div class="player-card-progress-fill" style="width:100%"></div></div></div>')
             else:
-                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong> · {cp["current_xp"]:,} / {cp["next_xp"]:,} XP to {html.escape(str(cp.get("next_title", "next")))} ({cp["progress_pct"]}%)<div class="cat-bar"><div class="player-card-progress-fill" style="width:{_cp_pct}%"></div></div></div>')
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(str(cp["title"]))}</strong><div class="cat-bar"><div class="player-card-progress-fill" style="width:{_cp_pct}%"></div></div></div>')
         _card.append('</details>')
         if _badges:
             _card.append('<div class="player-card-badges">Badges: ' + "  ".join(f"[{html.escape(b)}]" for b in _badges) + '</div>')
@@ -1228,7 +1226,7 @@ def _render_bender_board() -> None:
     # --- Section: Overall Leaderboard ---
     _rank_visible = 15
     _dismiss_tok = st.session_state.get("bender_board_dismiss_token", 0)
-    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total points → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
     if _overall:
 
         @st.fragment
@@ -1241,7 +1239,7 @@ def _render_bender_board() -> None:
                 _xp = int(p.get("total_xp") or 0)
                 _bc = len(get_unlocked_badges(p))
                 _is_you = _uid == _current_uid
-                _rest = f"Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
+                _rest = f"Level {_lv} ({_title}) · {_xp:,} points · {_bc} badge{'s' if _bc != 1 else ''}"
                 _c1, _c2, _c3 = st.columns([0.4, 2.2, 4])
                 with _c1:
                     st.markdown(f"**{r}.**")
@@ -1260,7 +1258,7 @@ def _render_bender_board() -> None:
         _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
         if _your_rank is not None and _your_rank > _rank_visible:
             _p = next(p for p in _overall if (p.get("user_id") or "") == _current_uid)
-            st.caption(f"**Your rank: {_your_rank}** — Level {_p.get('level', 1)} ({_p.get('level_title', '')}) · {int(_p.get('total_xp') or 0):,} XP")
+            st.caption(f"**Your rank: {_your_rank}** — Level {_p.get('level', 1)} ({_p.get('level_title', '')}) · {int(_p.get('total_xp') or 0):,} points")
     else:
         st.caption("No players yet. Complete workouts to appear on the board.")
 
@@ -1297,7 +1295,7 @@ def _render_bender_board() -> None:
                 _cat_title = rank_title_for_category(leveling_cat, _cat_rank) if leveling_cat else "—"
                 _bc = len(get_unlocked_badges(p))
                 _is_you = (p.get("user_id") or "") == _current_uid
-                _line = f"{r}. Level {_cat_rank}: **{_cat_title}** — {_name} · {_xp:,} cat XP · {_bc} badge(s) · {fmt_val}"
+                _line = f"{r}. Level {_cat_rank}: **{_cat_title}** — {_name} · {_xp:,} cat points · {_bc} badge(s) · {fmt_val}"
                 if _is_you:
                     st.markdown(f":orange[{_line}] *(you)*")
                 else:
@@ -1310,7 +1308,7 @@ def _render_bender_board() -> None:
                 _cat_xp = int(_p.get(_xk) or 0) if _xk else 0
                 _yr_rank = rank_from_category_xp(_cat_xp)
                 _yr_title = rank_title_for_category(leveling_cat, _yr_rank)
-                st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat XP")
+                st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat points")
 
     # --- Section: Lifetime Highscores ---
     _lifetime_map = {cat: (name, val) for cat, name, val, _ in _bender_board_lifetime_leaders()}
@@ -1347,7 +1345,7 @@ def _render_your_work_stats():
         level_prog = get_level_progress(prof)
         st.markdown('<p class="bender-level-heading">Bender Level</p>', unsafe_allow_html=True)
         st.markdown(f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>', unsafe_allow_html=True)
-        st.caption(f"XP: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
+        st.caption(f"Points: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
         st.progress(level_prog["progress_pct"] / 100.0)
         st.markdown('<div class="bender-level-divider"></div>', unsafe_allow_html=True)
 
@@ -1363,13 +1361,13 @@ def _render_your_work_stats():
         for cat_key, cat_label in categories:
             cp = get_category_progress(prof, cat_key)
             st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(cp["title"])}</strong></p>', unsafe_allow_html=True)
-            st.caption(f"XP: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
+            st.caption(f"Points: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
             st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
 
         # Full XP workouts + badges (rank 8 + full XP milestones)
         full_xp_total = get_full_xp_workouts_total(prof)
-        st.caption(f"**Full XP Workouts:** {full_xp_total:,} (workouts that earned 100% XP)")
+        st.caption(f"**Full points Workouts:** {full_xp_total:,} (workouts that earned 100% points)")
         badges = get_unlocked_badges(prof)
         if badges:
             st.markdown("**Badges**")
@@ -1382,7 +1380,7 @@ def _render_your_work_stats():
             st.markdown("**Achievements**")
             for ach in ACHIEVEMENTS:
                 if ach["id"] in unlocked_ids:
-                    st.caption(f"✓ {ach['name']} (+{ach['bonus_xp']} XP)")
+                    st.caption(f"✓ {ach['name']} (+{ach['bonus_xp']} points)")
             st.markdown("")
 
         # Streak
@@ -3875,19 +3873,20 @@ def _build_progression_animation_html(payload: dict) -> str:
   if (!payload) return;
   var oldP = payload.old_progress, newP = payload.new_progress;
   var earnedXp = payload.earned_xp || 0;
+  var modeLabel = payload.mode_label || 'Workout';
   var levelUps = payload.level_ups || [];
   var animDelay = 400;
   var fillDur = 900;
   var levelUpPause = 600;
 
   function render(state) {{
-    var html = '<h2>Workout Complete</h2><div class="xp-earned">+' + earnedXp + ' XP</div>';
+    var html = '<h2>Workout Complete</h2><div class="xp-earned">' + modeLabel + '</div><div class="xp-earned" style="font-size:1rem;opacity:0.9">+' + earnedXp + ' points</div>';
     html += '<div class="level-row">Level ' + state.level + '</div>';
     html += '<div class="bar-wrap"><div class="bar-fill" id="bender-prog-fill" style="width:' + (state.progress * 100) + '%"></div></div>';
     if (state.is_max_level) {{
       html += '<div class="xp-to-next">Max Level Reached</div>';
     }} else {{
-      html += '<div class="xp-to-next" id="bender-prog-xp">' + state.xp_to_next.toLocaleString() + ' XP to Level ' + state.next_level + '</div>';
+      html += '<div class="xp-to-next" id="bender-prog-xp">' + state.xp_to_next.toLocaleString() + ' points to Level ' + state.next_level + '</div>';
     }}
     d.innerHTML = html;
   }}
@@ -3911,7 +3910,7 @@ def _build_progression_animation_html(payload: dict) -> str:
     if (fill) fill.style.width = '0%';
     setTimeout(function() {{
       if (fill) fill.style.width = (newP.progress * 100) + '%';
-      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' XP to Level ' + newP.next_level;
+      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' points to Level ' + newP.next_level;
       else if (xpEl) xpEl.textContent = 'Max Level Reached';
     }}, 50);
   }}
@@ -3924,7 +3923,7 @@ def _build_progression_animation_html(payload: dict) -> str:
     setTimeout(function() {{
       fill.style.width = (newP.progress * 100) + '%';
       var xpEl = d.querySelector('#bender-prog-xp');
-      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' XP to Level ' + newP.next_level;
+      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' points to Level ' + newP.next_level;
       var levelRow = d.querySelector('.level-row');
       if (levelRow) levelRow.textContent = 'Level ' + newP.level;
     }}, animDelay);
@@ -4312,7 +4311,9 @@ def _render_training_session():
                             save_profile(prof)
                             payload = _get_progression_animation_payload(old_total_xp, new_total_xp)
                             if payload:
-                                st.session_state.progression_feedback = payload
+                                mode = (_meta.get("mode") or "").strip().lower()
+                                mode_label = MODE_LABELS.get(mode) or mode.replace("_", " ").title() if mode else "Workout"
+                                st.session_state.progression_feedback = {**payload, "mode_label": mode_label}
                         clear_last_output()
                         st.rerun()
                 with _done_col2:

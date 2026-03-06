@@ -3690,7 +3690,9 @@ def build_heavy_leg_session(
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
         filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
-        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
+        if not filtered:
+            return None  # Equipment required — don't give exercises without equipment
+        pool = filtered
     if not pool:
         pool = [d for d in perf if is_active(d) and age_ok(d, age) and primary_region(d) == "lower"]
     used_ids: set = set()
@@ -3903,7 +3905,9 @@ def build_upper_core_stability_session(
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
         filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
-        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
+        if not filtered:
+            return None  # Equipment required — don't give exercises without equipment
+        pool = filtered
     if not pool:
         pool = [d for d in perf if is_active(d) and age_ok(d, age) and (primary_region(d) == "upper" or primary_region(d) == "core")]
     used_ids: set = set()
@@ -4044,7 +4048,9 @@ def build_explosive_session(
     pool = [d for d in pool if is_active(d) and age_ok(d, age)]
     if user_equipment is not None:
         filtered = [d for d in pool if equipment_ok_for_user(d, user_equipment)]
-        pool = filtered if filtered else pool  # Fallback: use unfiltered when equipment removes all
+        if not filtered:
+            return None  # Equipment required — don't give exercises without equipment
+        pool = filtered
 
     wu = build_strength_warmup(warmups, age, rnd, day_type="full")
     lines.append("\nWARMUP (~5–8 min)")
@@ -4970,11 +4976,10 @@ def extract_ids_from_plan(plan_text: str) -> List[str]:
     return out
 
 
-# Equipment to exclude from workout card display (assumed or redundant)
+# Equipment to exclude from workout card display (universal / not equipment)
+# Show all necessary equipment (Bosu, bands, extra sticks, shooting pad & net, etc.)
 _EQUIPMENT_DISPLAY_EXCLUDE = {
-    "stickhandling ball", "shooting pad", "shooting pad & net", "stick & puck",
-    "hockey stick", "puck", "pucks", "chair", "stick obstacle", "wall",
-    "wood stick", "none", "no equipment", "bodyweight",
+    "none", "no equipment", "bodyweight",
 }
 
 

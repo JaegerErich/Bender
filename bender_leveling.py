@@ -188,20 +188,20 @@ def calculate_workout_xp(
 
     if final_xp == 0:
         if category_mult == 0.0:
-            return (0.0, "0 XP — Daily XP limit reached for this category.")
-        return (0.0, "0 XP")
+            return (0.0, "0 points — Daily points limit reached for this category.")
+        return (0.0, "0 points")
 
     reasons = []
     if length_mult < 0.99:
-        reasons.append("Shorter workout duration adjusted XP")
+        reasons.append("Shorter workout duration adjusted points")
     if category_mult < 1.0 and category_mult > 0:
-        reasons.append("Reduced XP after optimal daily training volume")
+        reasons.append("Reduced points after optimal daily training volume")
     if repeat_mult < 1.0:
         reasons.append("Repeated workout cooldown applied")
 
     if not reasons:
-        return (float(final_xp), f"+{final_xp} XP")
-    return (float(final_xp), f"+{final_xp} XP — {'; '.join(reasons)}")
+        return (float(final_xp), f"+{final_xp} points")
+    return (float(final_xp), f"+{final_xp} points — {'; '.join(reasons)}")
 
 
 def level_from_total_xp(total_xp: int) -> int:
