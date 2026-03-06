@@ -1226,12 +1226,11 @@ def _video_marker_line(d: Dict[str, Any]) -> str:
 
 def format_drill(d: Dict[str, Any]) -> str:
     name = _display_name(d)
-    equip = _equipment_display(d)
+    equip = _equipment_display(d) or "None"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     line = f"- {name}".strip()
-    if equip:
-        line += f"\n  Equipment: {equip}"
+    line += f"\n  Equipment: {equip}"
     if cues:
         line += f"\n  Cues: {cues}"
     if steps:
@@ -1286,9 +1285,8 @@ def build_skating_mechanics_sequential(
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         lines.append(f"- {name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
-        eq = _equipment_display(d)
-        if eq:
-            lines.append(f"  Equipment: {eq}")
+        eq = _equipment_display(d) or "None"
+        lines.append(f"  Equipment: {eq}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -1650,9 +1648,8 @@ def build_stickhandling_blocks_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
-        eq = _stickhandling_special_equipment(d)
-        if eq:
-            lines.append(f"  Equipment: {eq}")
+        eq = _stickhandling_special_equipment(d) or "Puck & stick"
+        lines.append(f"  Equipment: {eq}")
         if cue:
             lines.append(f"  Cue: {cue}")
 
@@ -1676,12 +1673,11 @@ def build_stickhandling_blocks_session(
 def format_stickhandling_drill(d: Dict[str, Any]) -> str:
     """Format stickhandling drill with Equipment above Cues."""
     name = _display_name(d)
-    eq = _stickhandling_special_equipment(d)
+    eq = _stickhandling_special_equipment(d) or "Puck & stick"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     line = f"- {name}".strip()
-    if eq:
-        line += f"\n  Equipment: {eq}"
+    line += f"\n  Equipment: {eq}"
     if cues:
         line += f"\n  Cue: {cues}"
     if steps:
@@ -1964,8 +1960,7 @@ def build_shooting_blocks_session(
         steps = norm(get(d, "step_by_step", ""))
         name = _display_name(d)
         line = f"- {name} | {sets} x {reps}"
-        if equip:
-            line += f"\n  Equipment: {equip}"
+        line += f"\n  Equipment: {equip or 'None'}"
         if cues:
             line += f"\n  Cues: {cues}"
         if steps:
@@ -2115,8 +2110,7 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
         out.append(
             f"  Time plan: ~{format_seconds_short(ramp)} ramp + {rounds} rounds of ({work}s work / {rest}s easy) (~{format_seconds_short(est)})"
         )
-        if equip:
-            out.append(f"  Equipment: {equip}")
+        out.append(f"  Equipment: {equip or 'None'}")
         if cues:
             out.append(f"  Cues: {cues}")
         if steps:
@@ -2355,9 +2349,8 @@ def build_conditioning_single_block(
         rounds = max(1, int(block_sec) // max(1, interval))
         r_label = "round" if rounds == 1 else "rounds"
         lines.append(f"  {rounds} {r_label} x {work}s work / {rest}s rest")
-    eq = _equipment_display(drill)
-    if eq:
-        lines.append(f"  Equipment: {eq}")
+    eq = _equipment_display(drill) or "None"
+    lines.append(f"  Equipment: {eq}")
     if cue:
         lines.append(f"  Cues: {cue}")
     return lines
@@ -2434,8 +2427,7 @@ def _append_gym_conditioning_and_mobility(
             steps = norm(get(d, "step_by_step", default=""))
             dur_label = "6 min" if norm(get(d, "id", "")) == "SMR_023" else "30–45s"
             lines.append(f"- {name} ({dur_label})")
-            if equip:
-                lines.append(f"  Equipment: {equip}")
+            lines.append(f"  Equipment: {equip or 'None'}")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
@@ -3009,15 +3001,14 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
 
 def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: str, rest_sec: Optional[int] = None) -> str:
     name = _display_name(d)
-    equip = _equipment_display(d)
+    equip = _equipment_display(d) or "None"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     rx = f"{sets} x {reps}"
     line = f"- {name} | {rx}".strip()
     if rest_sec:
         line += f" | Rest {rest_sec}s"
-    if equip:
-        line += f"\n  Equipment: {equip}"
+    line += f"\n  Equipment: {equip}"
     if cues:
         line += f"\n  Cues: {cues}"
     if steps:

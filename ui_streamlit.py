@@ -658,12 +658,59 @@ def _get_training_focus_for_card(metadata: dict) -> str:
         return "Training"
 
 
+def _get_category_base_xp(category: str) -> float:
+    """Base XP for this category (at average duration)."""
+    values = {
+        "puck_mastery": 30,
+        "skating_mechanics": 25,
+        "performance": 25,
+        "conditioning": 10,
+        "mobility": 10,
+        "mobility_recovery": 10,
+    }
+    return values.get(category, 0)
+
+
+def _get_category_average_minutes(category: str) -> float:
+    """Average workout duration for category (minutes). 1.0x XP at this duration."""
+    values = {
+        "puck_mastery": 45,
+        "skating_mechanics": 45,
+        "performance": 60,
+        "conditioning": 15,
+        "mobility": 30,
+        "mobility_recovery": 30,
+    }
+    return values.get(category, 45)
+
+
+def _clamp(value: float, min_val: float, max_val: float) -> float:
+    return max(min_val, min(max_val, value))
+
+
+def _get_estimated_preview_xp(category: str, estimated_duration_minutes: float) -> int:
+    """Time-adjusted estimated XP for workout card preview.
+    Under 10 min = 0 XP; at category average = 1.0x base; multiplier clamped 0.25–2.0."""
+    if estimated_duration_minutes < 10:
+        return 0
+    base_xp = _get_category_base_xp(category)
+    avg_minutes = _get_category_average_minutes(category)
+    if avg_minutes <= 0:
+        return round(base_xp)
+    length_ratio = estimated_duration_minutes / avg_minutes
+    length_multiplier = _clamp(length_ratio, 0.25, 2.0)
+    return round(base_xp * length_multiplier)
+
+
 def _get_workout_card_xp_reward(metadata: dict) -> int:
-    """Expected base XP for this workout category (for card display)."""
+    """Time-adjusted estimated XP for this workout (for card preview display)."""
     try:
-        from bender_leveling import category_from_mode, xp_for_category
+        from bender_leveling import category_from_mode
         category = category_from_mode((metadata.get("mode") or "").strip().lower())
-        return xp_for_category(category) if category else 0
+        if not category:
+            return 0
+        minutes = float(metadata.get("minutes") or metadata.get("len_min") or 0)
+        return _get_estimated_preview_xp(category, minutes)
     except Exception:
         return 0
 
@@ -687,6 +734,9 @@ def _render_workout_overview_card(metadata: dict) -> None:
     time_label = f"~{minutes} mins" if minutes > 0 else "—"
     xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
 
+    # Mode display label (MODE_LABELS + sub-modes)
+    mode_display = MODE_LABELS.get(mode) or mode.replace("_", " ").title()
+
     # Quadrant card: Bender colors (dark bg, light borders, white text)
     _q_style = (
         "display:flex;align-items:center;gap:0.6rem;padding:1rem 1.25rem;"
@@ -699,7 +749,9 @@ def _render_workout_overview_card(metadata: dict) -> None:
     _is_equip_quadrant = (mode or "") not in ("performance",)
     _bl_icon = "🛠" if _is_equip_quadrant else "🎯"
     card_html = f"""
-    <div id="workout-quadrant-card" style="background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;margin:0.75rem 0;">
+    <div id="workout-quadrant-section" style="margin:0.75rem 0;">
+        <div style="font-family:'DM Sans',sans-serif;font-size:1.5rem;font-weight:700;color:#ffffff;margin-bottom:0.5rem;">{mode_display}</div>
+        <div id="workout-quadrant-card" style="background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;">
         <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;">
             <div style="{_q_style}">
                 <span style="{_icon_style}" aria-hidden="true">🏆</span>
@@ -717,6 +769,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
                 <span style="{_icon_style}" aria-hidden="true">⏱</span>
                 <span>{time_label}</span>
             </div>
+        </div>
         </div>
     </div>
     """
@@ -1200,7 +1253,7 @@ def _render_bender_board() -> None:
                 st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat XP")
 
     # --- Section: Lifetime Highscores ---
-    _lifetime_map = {cat: (name, val, prof) for cat, name, val, prof in _bender_board_lifetime_leaders()}
+    _lifetime_map = {cat: (name, val) for cat, name, val, _ in _bender_board_lifetime_leaders()}
     _lifetime_lines = ['<div class="bender-board-section">']
     _lifetime_lines.append('<div class="bender-board-section-title">Lifetime Highscores</div>')
     _lifetime_lines.append('<div class="bender-board-section-caption">All-time leader per category</div>')
@@ -3969,7 +4022,7 @@ def _render_training_session():
                 if st.session_state.get("scroll_to_workout"):
                     st.session_state.scroll_to_workout = False
                     st.components.v1.html(
-                        "<script>(function(){var w=window.parent;var d=w.document;var el=d.getElementById('workout-quadrant-card');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}})();</script>",
+                        "<script>(function(){var w=window.parent;var d=w.document;var el=d.getElementById('workout-quadrant-section');if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}})();</script>",
                         height=0,
                     )
                 _workout_started = st.session_state.get("workout_started", False)
