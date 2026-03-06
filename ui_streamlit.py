@@ -1041,10 +1041,10 @@ def _render_your_work_stats():
         st.markdown(f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>', unsafe_allow_html=True)
         st.caption(f"XP: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
         st.progress(level_prog["progress_pct"] / 100.0)
-        st.markdown("")
+        st.markdown('<div class="bender-level-divider"></div>', unsafe_allow_html=True)
 
         # Category ranks
-        st.markdown("**Category Ranks**")
+        st.markdown('<p class="category-ranks-heading">Category Ranks</p>', unsafe_allow_html=True)
         categories = [
             ("puck_mastery", "Puck Mastery"),
             ("skating_mechanics", "Skating Mechanics"),
@@ -1054,7 +1054,7 @@ def _render_your_work_stats():
         ]
         for cat_key, cat_label in categories:
             cp = get_category_progress(prof, cat_key)
-            st.markdown(f"**{cat_label}** — {cp['title']}")
+            st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — {html.escape(cp["title"])}</p>', unsafe_allow_html=True)
             st.caption(f"XP: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
             st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
@@ -2703,6 +2703,10 @@ st.markdown("""
     /* Performance Dashboard: Bender Level text larger */
     .bender-level-heading { font-size: 1.35rem !important; font-weight: 700 !important; color: #ffffff !important; margin-bottom: 0.25rem !important; }
     .bender-level-value { font-size: 1.2rem !important; font-weight: 600 !important; color: #e0e0e0 !important; margin-bottom: 0.5rem !important; }
+    .bender-level-divider { height: 1px; background: #333333; margin: 1rem 0; }
+    /* Performance Dashboard: Category Ranks slightly larger */
+    .category-ranks-heading { font-size: 1.15rem !important; font-weight: 700 !important; color: #ffffff !important; margin-bottom: 0.5rem !important; }
+    .category-rank-line { font-size: 1.05rem !important; color: #e0e0e0 !important; margin-bottom: 0.25rem !important; }
 
     /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
