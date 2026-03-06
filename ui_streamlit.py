@@ -890,19 +890,15 @@ def _render_bender_board() -> None:
         rank_from_category_xp = lambda x: 1
         _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
 
-    # --- Player Card (current user) ---
+    # --- Player Card (current user) — boxed card with Category progress dropdown ---
     if _current_uid:
         _prof = ensure_leveling_defaults(st.session_state.get("current_profile") or {})
         _lp = get_level_progress(_prof)
         _badges = get_unlocked_badges(_prof)
-        st.markdown("**Your player card**")
         _name = _prof.get("display_name") or _prof.get("user_id") or "Player"
-        st.markdown(f"**{_name}**")
-        st.markdown(f"Level {_lp['level']} — {_lp['title']}")
         _full_xp = get_full_xp_workouts_total(_prof)
-        st.caption(f"Total XP: {_lp['current_xp']:,}  ·  Workout streak: {int(_prof.get('workout_streak') or 0)} days  ·  Total workouts: {int(_prof.get('total_workouts') or 0):,}  ·  Full XP workouts: {_full_xp:,}")
-        st.caption(f"{_lp['current_xp']:,} / {_lp['next_xp']:,} XP to {_lp.get('next_title', 'next level')} — {_lp['progress_pct']}%")
-        st.progress(_lp["progress_pct"] / 100.0)
+        _streak = int(_prof.get("workout_streak") or 0)
+        _total_w = int(_prof.get("total_workouts") or 0)
         _cats = [
             ("puck_mastery", "Puck Mastery"),
             ("skating_mechanics", "Skating Mechanics"),
@@ -911,17 +907,28 @@ def _render_bender_board() -> None:
             ("mobility", "Mobility & Recovery"),
         ]
         _cat_parts = [f"{label}: {get_category_progress(_prof, key)['title']}" for key, label in _cats]
-        st.caption("  ·  ".join(_cat_parts))
-        with st.expander("Category progress", expanded=False):
-            for key, label in _cats:
-                cp = get_category_progress(_prof, key)
-                if cp["rank"] >= 8:
-                    st.caption(f"**{label}** — Rank maxed — {cp['title']}")
-                else:
-                    st.caption(f"**{label}** — {cp['title']} · {cp['current_xp']:,} / {cp['next_xp']:,} XP to {cp.get('next_title', 'next')} ({cp['progress_pct']}%)")
-                st.progress(cp["progress_pct"] / 100.0)
+        _pct = min(100, max(0, _lp["progress_pct"]))
+        _card = ['<div class="bender-player-card">']
+        _card.append('<div class="player-card-title">Your player card</div>')
+        _card.append(f'<div class="player-card-name">{html.escape(_name)}</div>')
+        _card.append(f'<div class="player-card-level">Level {_lp["level"]} — {html.escape(str(_lp["title"]))}</div>')
+        _card.append(f'<div class="player-card-meta">Total XP: {_lp["current_xp"]:,}  ·  Workout streak: {_streak} days  ·  Total workouts: {_total_w:,}  ·  Full XP workouts: {_full_xp:,}</div>')
+        _card.append(f'<div class="player-card-meta">{_lp["current_xp"]:,} / {_lp["next_xp"]:,} XP to {html.escape(str(_lp.get("next_title", "next level")))} — {_lp["progress_pct"]}%</div>')
+        _card.append('<div class="player-card-progress-wrap"><div class="player-card-progress-bar"><div class="player-card-progress-fill" style="width:' + str(_pct) + '%"></div></div></div>')
+        _card.append(f'<div class="player-card-cats">{"  ·  ".join(html.escape(p) for p in _cat_parts)}</div>')
+        _card.append('<details><summary>Category progress</summary>')
+        for key, label in _cats:
+            cp = get_category_progress(_prof, key)
+            _cp_pct = min(100, max(0, cp["progress_pct"]))
+            if cp["rank"] >= 8:
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — Rank maxed — {html.escape(str(cp["title"]))}</div>')
+            else:
+                _card.append(f'<div class="player-card-cat-row"><strong>{html.escape(label)}</strong> — {html.escape(str(cp["title"]))} · {cp["current_xp"]:,} / {cp["next_xp"]:,} XP to {html.escape(str(cp.get("next_title", "next")))} ({cp["progress_pct"]}%)<div class="cat-bar"><div class="player-card-progress-fill" style="width:{_cp_pct}%"></div></div></div>')
+        _card.append('</details>')
         if _badges:
-            st.caption("Badges: " + "  ".join(f"[{b}]" for b in _badges))
+            _card.append('<div class="player-card-badges">Badges: ' + "  ".join(f"[{html.escape(b)}]" for b in _badges) + '</div>')
+        _card.append('</div>')
+        st.markdown("\n".join(_card), unsafe_allow_html=True)
         st.markdown("---")
 
     # --- Overall Bender leaderboard ---
@@ -2669,6 +2676,24 @@ st.markdown("""
     .your-work-footer {
         margin-top: 0.75rem; color: #888888; font-size: 0.8rem; text-align: center;
     }
+    /* Bender Board player card */
+    .bender-player-card {
+        background: #1a1a1a; border: 1px solid #333333; border-radius: 12px; padding: 1.25rem 1.5rem;
+        max-width: 28rem; margin-top: 0.5rem; margin-bottom: 1rem; font-family: 'DM Sans', sans-serif;
+    }
+    .bender-player-card .player-card-title { color: #ffffff; font-weight: 700; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .bender-player-card .player-card-name { color: #ffffff; font-weight: 600; font-size: 1.15rem; margin-bottom: 0.35rem; }
+    .bender-player-card .player-card-level { color: #e0e0e0; font-size: 1rem; margin-bottom: 0.5rem; }
+    .bender-player-card .player-card-meta { color: #888888; font-size: 0.8rem; margin-bottom: 0.35rem; line-height: 1.4; }
+    .bender-player-card .player-card-progress-wrap { margin: 0.5rem 0 0.75rem; }
+    .bender-player-card .player-card-progress-bar { height: 8px; background: #333333; border-radius: 4px; overflow: hidden; }
+    .bender-player-card .player-card-progress-fill { height: 100%; background: #ffffff; border-radius: 4px; transition: width 0.2s; }
+    .bender-player-card .player-card-cats { color: #cccccc; font-size: 0.85rem; margin: 0.5rem 0; line-height: 1.4; }
+    .bender-player-card details { margin-top: 0.75rem; border-top: 1px solid #333333; padding-top: 0.75rem; }
+    .bender-player-card summary { color: #ffffff; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .bender-player-card .player-card-cat-row { color: #cccccc; font-size: 0.85rem; margin: 0.4rem 0; }
+    .bender-player-card .player-card-cat-row .cat-bar { height: 6px; background: #333333; border-radius: 3px; overflow: hidden; margin-top: 0.2rem; }
+    .bender-player-card .player-card-badges { color: #888888; font-size: 0.8rem; margin-top: 0.75rem; }
 
     /* Workout headers and content: bold headers, full width, wide layout (desktop app, browser, mobile) */
     *:has(#workout-result-section) .stSubheader,
