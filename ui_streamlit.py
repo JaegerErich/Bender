@@ -640,19 +640,40 @@ def _render_workout_overview_card(metadata: dict) -> None:
         difficulty_5 = 3
     focus = _get_training_focus_for_card(meta)
     time_label = f"~{minutes} mins" if minutes > 0 else "—"
+    xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
 
-    # 2x2 quadrants — XP is the most prominent
-    r1c1, r1c2 = st.columns(2)
-    with r1c1:
-        xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
-        st.markdown(f'<span style="font-size:1.35rem;font-weight:700;">{xp_display}</span>', unsafe_allow_html=True)
-    with r1c2:
-        st.markdown(f"Difficulty {difficulty_5}/5")
-    r2c1, r2c2 = st.columns(2)
-    with r2c1:
-        st.markdown(f"**{focus}**")
-    with r2c2:
-        st.markdown(time_label)
+    # Quadrant card: Bender colors (dark bg, light borders, white text)
+    _q_style = (
+        "display:flex;align-items:center;gap:0.6rem;padding:1rem 1.25rem;"
+        "border-right:1px solid #333;border-bottom:1px solid #333;color:#ffffff;"
+    )
+    _q_style_r = "border-right:none;"
+    _q_style_b = "border-bottom:none;"
+    _q_style_rb = "border-right:none;border-bottom:none;"
+    _icon_style = "font-size:1.1rem;opacity:0.9;"
+    card_html = f"""
+    <div style="background:#1a1a1a;border:1px solid #333;border-radius:12px;overflow:hidden;margin:0.75rem 0;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto;">
+            <div style="{_q_style}">
+                <span style="{_icon_style}" aria-hidden="true">🏆</span>
+                <span style="font-size:1.4rem;font-weight:700;">{xp_display}</span>
+            </div>
+            <div style="{_q_style}{_q_style_r}">
+                <span style="{_icon_style}" aria-hidden="true">📊</span>
+                <span>Difficulty {difficulty_5}/5</span>
+            </div>
+            <div style="{_q_style}{_q_style_b}">
+                <span style="{_icon_style}" aria-hidden="true">🎯</span>
+                <span>{focus}</span>
+            </div>
+            <div style="{_q_style}{_q_style_r}{_q_style_b}">
+                <span style="{_icon_style}" aria-hidden="true">⏱</span>
+                <span>{time_label}</span>
+            </div>
+        </div>
+    </div>
+    """
+    st.markdown(card_html, unsafe_allow_html=True)
 
     # Full-width progress section
     try:
@@ -3633,6 +3654,7 @@ def _render_training_session():
                     out_text = resp.get("output_text")
                     if out_text and out_text.strip():
                         st.session_state.last_output_text = out_text
+                        st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
                         _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
                         st.session_state.last_output_metadata = {
                             "mode": effective_mode,
@@ -3666,6 +3688,19 @@ def _render_training_session():
                 st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
                 _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
                 _render_workout_overview_card(_meta)
+                _workout_started = st.session_state.get("workout_started", False)
+                if not _workout_started:
+                    _btn_col1, _btn_col2 = st.columns(2)
+                    with _btn_col1:
+                        if st.button("Start Workout", type="primary", key="start_workout_btn"):
+                            st.session_state.workout_started = True
+                            st.rerun()
+                    with _btn_col2:
+                        if st.button("Clear workout", type="secondary", key="clear_workout_top"):
+                            clear_last_output()
+                            st.rerun()
+                    st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
+                    st.stop()  # Don't render workout body until "Start Workout"
                 # Video overlay: pop-up when user clicks play; Close returns to workout
                 _overlay_url = st.session_state.get("video_overlay_embed_url")
                 if _overlay_url:
