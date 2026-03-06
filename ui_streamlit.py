@@ -508,13 +508,14 @@ def get_mode_options():
 
 RAW_MODES = get_mode_options()
 
-# Top-level display labels
+# Top-level display labels (includes sub-modes for quadrant title)
 MODE_LABELS = {
     "puck_mastery": "Puck Mastery",
     "performance": "Performance",
     "energy_systems": "Conditioning",
     "skating_mechanics": "Skating Mechanics",
     "mobility": "Mobility & Recovery",
+    "skills_only": "Shooting and Stickhandling",
 }
 
 # Puck Mastery sub-options (map to actual session_mode sent to engine)
@@ -891,6 +892,65 @@ def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "tra
     except Exception:
         pass
     return prof, xp_feedback
+
+
+def _get_progression_animation_payload(old_total_xp: int, new_total_xp: int) -> dict | None:
+    """Build payload for post-workout progression animation. Uses real level thresholds.
+    Returns None if no XP gained (animation can still show +0)."""
+    from bender_leveling import (
+        LEVEL_THRESHOLDS,
+        LEVEL_TITLES,
+        level_from_total_xp,
+        title_for_level,
+        xp_threshold_for_level,
+    )
+    earned_xp = max(0, new_total_xp - old_total_xp)
+
+    def _progress(total_xp: int) -> dict:
+        level = level_from_total_xp(total_xp)
+        floor_xp = xp_threshold_for_level(level)
+        next_xp = xp_threshold_for_level(level + 1) if level < 25 else floor_xp
+        is_max = level >= 25
+        if is_max:
+            progress = 1.0
+            xp_to_next = 0
+        else:
+            span = max(1, next_xp - floor_xp)
+            progress = (total_xp - floor_xp) / span
+            xp_to_next = next_xp - total_xp
+        return {
+            "level": level,
+            "progress": max(0.0, min(1.0, progress)),
+            "xp_to_next": int(xp_to_next),
+            "title": title_for_level(level),
+            "next_level": level + 1 if level < 25 else level,
+            "next_title": title_for_level(level + 1) if level < 25 else title_for_level(level),
+            "floor_xp": floor_xp,
+            "next_level_xp": next_xp,
+            "is_max_level": is_max,
+        }
+
+    old_prog = _progress(old_total_xp)
+    new_prog = _progress(new_total_xp)
+    level_ups = []
+    ol, nl = old_prog["level"], new_prog["level"]
+    for lv in range(ol + 1, nl + 1):
+        level_ups.append({
+            "from_level": lv - 1,
+            "to_level": lv,
+            "from_title": title_for_level(lv - 1),
+            "to_title": title_for_level(lv),
+        })
+    return {
+        "earned_xp": earned_xp,
+        "old_total_xp": old_total_xp,
+        "new_total_xp": new_total_xp,
+        "old_progress": old_prog,
+        "new_progress": new_prog,
+        "level_ups": level_ups,
+        "level_thresholds": LEVEL_THRESHOLDS,
+        "level_titles": LEVEL_TITLES,
+    }
 
 
 def _monthly_totals_from_history(completion_history: list, year: int, month: int) -> dict:
@@ -3783,7 +3843,124 @@ age = int((st.session_state.current_profile or {}).get("age") or 16)
 age = max(6, min(99, age))
 
 
+def _build_progression_animation_html(payload: dict) -> str:
+    """Build self-contained HTML/JS for post-workout progression animation."""
+    data_js = json.dumps(payload)
+    return f"""
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+*{{box-sizing:border-box}}
+.bender-prog{{font-family:'DM Sans',system-ui,sans-serif;background:#1a1a1a;color:#fff;padding:1.5rem;border-radius:12px;border:1px solid #333}}
+.bender-prog h2{{margin:0 0 0.25rem 0;font-size:1.4rem;font-weight:700}}
+.bender-prog .xp-earned{{color:#4ade80;font-size:1.2rem;font-weight:600;margin-bottom:1rem}}
+.bender-prog .level-row{{font-size:0.95rem;color:#aaa;margin-bottom:0.5rem}}
+.bender-prog .bar-wrap{{height:10px;background:#333;border-radius:6px;overflow:hidden;margin:0.5rem 0 1rem 0}}
+.bender-prog .bar-fill{{height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6);border-radius:6px;transition:width 0.6s ease-out;width:0%}}
+.bender-prog .xp-to-next{{font-size:0.9rem;color:#888;margin-top:0.25rem}}
+.bender-prog .level-up{{text-align:center;padding:1rem;margin:1rem 0;background:rgba(34,197,94,0.15);border:1px solid #22c55e;border-radius:8px}}
+.bender-prog .level-up-title{{font-size:1rem;font-weight:700;color:#4ade80;letter-spacing:0.05em;margin-bottom:0.25rem}}
+.bender-prog .level-up-detail{{font-size:0.95rem;color:#ccc}}
+</style></head>
+<body>
+<pre id="bender-prog-data" style="display:none">{html.escape(data_js)}</pre>
+<div class="bender-prog" id="bender-prog-root"></div>
+<script>
+(function(){{
+  var d = document.getElementById('bender-prog-root');
+  var payload;
+  try {{
+    var pre = document.getElementById('bender-prog-data');
+    payload = pre ? JSON.parse(pre.textContent) : null;
+  }} catch(e) {{ return; }}
+  if (!payload) return;
+  var oldP = payload.old_progress, newP = payload.new_progress;
+  var earnedXp = payload.earned_xp || 0;
+  var levelUps = payload.level_ups || [];
+  var animDelay = 400;
+  var fillDur = 900;
+  var levelUpPause = 600;
+
+  function render(state) {{
+    var html = '<h2>Workout Complete</h2><div class="xp-earned">+' + earnedXp + ' XP</div>';
+    html += '<div class="level-row">Level ' + state.level + '</div>';
+    html += '<div class="bar-wrap"><div class="bar-fill" id="bender-prog-fill" style="width:' + (state.progress * 100) + '%"></div></div>';
+    if (state.is_max_level) {{
+      html += '<div class="xp-to-next">Max Level Reached</div>';
+    }} else {{
+      html += '<div class="xp-to-next" id="bender-prog-xp">' + state.xp_to_next.toLocaleString() + ' XP to Level ' + state.next_level + '</div>';
+    }}
+    d.innerHTML = html;
+  }}
+
+  function showLevelUp(cb) {{
+    var fromL = levelUps[0].from_level, toL = levelUps[levelUps.length - 1].to_level;
+    var toTitle = levelUps[levelUps.length - 1].to_title || '';
+    var insert = d.querySelector('.bar-wrap');
+    var div = document.createElement('div');
+    div.className = 'level-up';
+    div.innerHTML = '<div class="level-up-title">LEVEL UP</div><div class="level-up-detail">Level ' + fromL + ' → Level ' + toL + '</div>' + (toTitle ? '<div class="level-up-detail">' + toTitle + '</div>' : '');
+    insert.parentNode.insertBefore(div, insert.nextSibling);
+    setTimeout(cb, levelUpPause);
+  }}
+
+  function runPhase2() {{
+    var fill = d.querySelector('#bender-prog-fill');
+    var levelRow = d.querySelector('.level-row');
+    var xpEl = d.querySelector('#bender-prog-xp');
+    if (levelRow) levelRow.textContent = 'Level ' + newP.level;
+    if (fill) fill.style.width = '0%';
+    setTimeout(function() {{
+      if (fill) fill.style.width = (newP.progress * 100) + '%';
+      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' XP to Level ' + newP.next_level;
+      else if (xpEl) xpEl.textContent = 'Max Level Reached';
+    }}, 50);
+  }}
+
+  render({{ level: oldP.level, progress: oldP.progress, xp_to_next: oldP.xp_to_next, next_level: oldP.next_level, is_max_level: oldP.is_max_level }});
+  var fill = d.querySelector('#bender-prog-fill');
+  if (!fill) return;
+
+  if (levelUps.length === 0) {{
+    setTimeout(function() {{
+      fill.style.width = (newP.progress * 100) + '%';
+      var xpEl = d.querySelector('#bender-prog-xp');
+      if (xpEl && !newP.is_max_level) xpEl.textContent = newP.xp_to_next.toLocaleString() + ' XP to Level ' + newP.next_level;
+      var levelRow = d.querySelector('.level-row');
+      if (levelRow) levelRow.textContent = 'Level ' + newP.level;
+    }}, animDelay);
+  }} else {{
+    setTimeout(function() {{
+      fill.style.width = '100%';
+      setTimeout(function() {{
+        showLevelUp(runPhase2);
+      }}, fillDur);
+    }}, animDelay);
+  }}
+}})();
+</script>
+</body></html>
+"""
+
+
 def _render_training_session():
+    # Post-workout progression animation (after Workout Complete)
+    _prog = st.session_state.get("progression_feedback")
+    if _prog:
+
+        def _on_progression_continue():
+            if "progression_feedback" in st.session_state:
+                del st.session_state["progression_feedback"]
+            st.rerun()
+
+        @st.dialog("Workout Complete", width="large")
+        def _progression_dialog():
+            st.components.v1.html(_build_progression_animation_html(_prog), height=280)
+            st.caption("Your progress has been saved.")
+            if st.button("Continue", type="primary", key="progression_continue"):
+                _on_progression_continue()
+
+        _progression_dialog()
+
     # Custom Plan Intake questionnaire (shown when Request Custom Plan clicked)
     if st.session_state.get("custom_plan_intake_open"):
         st.markdown("### BENDER PLAN INTAKE")
@@ -4128,14 +4305,15 @@ def _render_training_session():
                     if st.button("Workout Complete", type="primary", key="workout_complete_bender", use_container_width=True):
                         prof = st.session_state.get("current_profile") or {}
                         if prof and _meta:
+                            old_total_xp = int(prof.get("total_xp") or 0)
                             prof, xp_msg = _add_completion_to_profile(prof, _meta)
+                            new_total_xp = int(prof.get("total_xp") or 0)
                             st.session_state.current_profile = prof
                             save_profile(prof)
+                            payload = _get_progression_animation_payload(old_total_xp, new_total_xp)
+                            if payload:
+                                st.session_state.progression_feedback = payload
                         clear_last_output()
-                        if prof and _meta and xp_msg:
-                            st.success("Workout Complete — " + xp_msg)
-                        else:
-                            st.success("Workout logged to Performance Dashboard!")
                         st.rerun()
                 with _done_col2:
                     if st.button("Clear workout", type="secondary", key="clear_workout_bottom", use_container_width=True):
