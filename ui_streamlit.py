@@ -890,9 +890,36 @@ def _render_bender_board() -> None:
         rank_from_category_xp = lambda x: 1
         _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
 
-    # --- Player Card (current user) — boxed card with Category progress dropdown ---
-    if _current_uid:
-        _prof = ensure_leveling_defaults(st.session_state.get("current_profile") or {})
+    _overall = _bender_overall_ranked()
+    _view_uids = [""] + [p.get("user_id") or "" for p in _overall if p.get("user_id")]
+
+    def _view_label(uid: str) -> str:
+        if not uid:
+            return "(Your card)"
+        for p in _overall:
+            if (p.get("user_id") or "") == uid:
+                _name = p.get("display_name") or p.get("user_id") or "Unknown"
+                _lv = int(p.get("level") or 1)
+                return f"{_name} — Level {_lv}"
+        return uid or "(Your card)"
+
+    _current_view = st.session_state.get("bender_board_view_uid")
+    if _current_view is not None and _current_view not in _view_uids:
+        _current_view = ""
+    if _current_view is None:
+        _current_view = ""
+    _idx = _view_uids.index(_current_view) if _current_view in _view_uids else 0
+    _sel = st.selectbox(
+        "View player card",
+        options=_view_uids,
+        index=_idx,
+        format_func=_view_label,
+        key="bender_board_view_uid",
+    )
+    _view_uid = _sel or ""
+
+    def _render_player_card(prof: dict, card_title: str) -> None:
+        _prof = ensure_leveling_defaults(prof)
         _lp = get_level_progress(_prof)
         _badges = get_unlocked_badges(_prof)
         _full_xp = get_full_xp_workouts_total(_prof)
@@ -907,7 +934,7 @@ def _render_bender_board() -> None:
         ]
         _pct = min(100, max(0, _lp["progress_pct"]))
         _card = ['<div class="bender-player-card">']
-        _card.append('<div class="player-card-title">Your player card</div>')
+        _card.append(f'<div class="player-card-title">{html.escape(card_title)}</div>')
         _card.append(f'<div class="player-card-level">Level {_lp["level"]} — {html.escape(str(_lp["title"]))}</div>')
         _card.append(f'<div class="player-card-meta">Total XP: {_lp["current_xp"]:,}  ·  Workout streak: {_streak} days  ·  Total workouts: {_total_w:,}  ·  Full XP workouts: {_full_xp:,}</div>')
         _card.append(f'<div class="player-card-meta">{_lp["current_xp"]:,} / {_lp["next_xp"]:,} XP to {html.escape(str(_lp.get("next_title", "next level")))} — {_lp["progress_pct"]}%</div>')
@@ -925,16 +952,34 @@ def _render_bender_board() -> None:
             _card.append('<div class="player-card-badges">Badges: ' + "  ".join(f"[{html.escape(b)}]" for b in _badges) + '</div>')
         _card.append('</div>')
         st.markdown("\n".join(_card), unsafe_allow_html=True)
+
+    if _view_uids:
+        if not _view_uid:
+            _prof = st.session_state.get("current_profile") or {}
+            if _prof and (_prof.get("user_id") or _current_uid):
+                _render_player_card(_prof, "Your player card")
+            else:
+                st.caption("Complete workouts to get your player card.")
+        else:
+            _profile_to_show = next((p for p in _overall if (p.get("user_id") or "") == _view_uid), None)
+            if _profile_to_show is None:
+                _profile_to_show = load_profile(_view_uid)
+                if _profile_to_show:
+                    _profile_to_show = ensure_leveling_defaults(_profile_to_show)
+            if _profile_to_show:
+                _name = _profile_to_show.get("display_name") or _profile_to_show.get("user_id") or "Unknown"
+                _render_player_card(_profile_to_show, f"{_name}'s player card")
+            else:
+                st.caption("Player not found.")
         st.markdown("---")
 
     _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
 
     # --- Section: Overall Leaderboard ---
-    _overall = _bender_overall_ranked()
     _rank_visible = 15
     _overall_lines = ['<div class="bender-board-section">']
     _overall_lines.append('<div class="bender-board-section-title">Overall Leaderboard</div>')
-    _overall_lines.append('<div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak</div>')
+    _overall_lines.append('<div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Use <strong>View player card</strong> above to see any player\'s card.</div>')
     if _overall:
         for r, p in enumerate(_overall[:_rank_visible], 1):
             _uid = p.get("user_id") or ""
