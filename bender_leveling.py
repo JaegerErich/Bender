@@ -1,17 +1,28 @@
 """
 Bender Leveling System: XP, overall level (1-25), category ranks (8 per category), achievements.
 All XP is earned by completing existing workouts. Do not modify workout generation.
+Includes XP caps, workout-length scaling, daily category caps, and same-workout cooldown.
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
-# --- Category XP weights (per completed workout) ---
+# --- Category XP weights (base XP at average duration) ---
 CATEGORY_XP = {
     "puck_mastery": 30,
     "skating_mechanics": 25,
     "performance": 25,
     "conditioning": 10,
     "mobility": 10,
+}
+
+# --- Average workout duration by category (minutes) — full XP baseline ---
+CATEGORY_AVERAGE_MINUTES = {
+    "puck_mastery": 45,
+    "skating_mechanics": 45,
+    "performance": 60,
+    "conditioning": 15,
+    "mobility": 30,
+    "mobility_recovery": 30,
 }
 
 # Map session mode (from metadata) to our category key
@@ -79,8 +90,97 @@ def category_from_mode(mode: str) -> str | None:
 
 
 def xp_for_category(category: str) -> int:
-    """XP awarded for completing a workout in this category."""
+    """Base XP for this category (at average duration)."""
     return CATEGORY_XP.get(category, 0)
+
+
+def get_category_average_minutes(category: str) -> int:
+    """Average workout duration for category (minutes). Full XP at this duration."""
+    return CATEGORY_AVERAGE_MINUTES.get(category, 45)
+
+
+def get_length_multiplier(category: str, completed_duration_minutes: float) -> float:
+    """Length multiplier: 0.5 to 1.5 based on duration vs category average."""
+    avg = get_category_average_minutes(category)
+    if avg <= 0:
+        return 1.0
+    ratio = completed_duration_minutes / avg
+    return max(0.5, min(1.5, ratio))
+
+
+def get_category_multiplier(category: str, workouts_today_in_category: int) -> float:
+    """Daily category cap: 1.0, 0.5, or 0.0 based on how many in this category today (including this one)."""
+    n = workouts_today_in_category
+    if category == "puck_mastery":
+        if n <= 3:
+            return 1.0
+        if n <= 5:
+            return 0.5
+        return 0.0
+    if category == "skating_mechanics":
+        if n <= 2:
+            return 1.0
+        if n == 3:
+            return 0.5
+        return 0.0
+    if category == "performance":
+        if n == 1:
+            return 1.0
+        if n == 2:
+            return 0.25
+        return 0.0
+    if category == "conditioning":
+        if n == 1:
+            return 1.0
+        if n == 2:
+            return 0.5
+        return 0.0
+    if category == "mobility":
+        if n <= 2:
+            return 1.0
+        if n == 3:
+            return 0.5
+        return 0.0
+    return 1.0
+
+
+def get_repeat_multiplier(same_exact_workout_completed_within_24_hours: bool) -> float:
+    """0.25 if same workout repeated within 24h, else 1.0."""
+    return 0.25 if same_exact_workout_completed_within_24_hours else 1.0
+
+
+def calculate_workout_xp(
+    base_xp: float,
+    category: str,
+    completed_duration_minutes: float,
+    workouts_today_in_category: int,
+    same_exact_workout_completed_within_24_hours: bool,
+) -> tuple[float, str]:
+    """
+    Returns (final_xp, feedback_message). Uses consistent rounding (int for XP).
+    """
+    length_mult = get_length_multiplier(category, completed_duration_minutes)
+    category_mult = get_category_multiplier(category, workouts_today_in_category)
+    repeat_mult = get_repeat_multiplier(same_exact_workout_completed_within_24_hours)
+    raw = base_xp * length_mult * category_mult * repeat_mult
+    final_xp = max(0, round(raw))
+
+    if final_xp == 0:
+        if category_mult == 0.0:
+            return (0.0, "0 XP — Daily XP limit reached for this category.")
+        return (0.0, "0 XP")
+
+    reasons = []
+    if length_mult < 0.99:
+        reasons.append("Shorter workout duration adjusted XP")
+    if category_mult < 1.0 and category_mult > 0:
+        reasons.append("Reduced XP after optimal daily training volume")
+    if repeat_mult < 1.0:
+        reasons.append("Repeated workout cooldown applied")
+
+    if not reasons:
+        return (float(final_xp), f"+{final_xp} XP")
+    return (float(final_xp), f"+{final_xp} XP — {'; '.join(reasons)}")
 
 
 def level_from_total_xp(total_xp: int) -> int:
@@ -163,6 +263,33 @@ def _compute_streak(completion_history: list) -> int:
     return streak
 
 
+def get_longest_streak(completion_history: list) -> int:
+    """Longest consecutive calendar days with at least one completion (any time period)."""
+    if not completion_history:
+        return 0
+    dates = []
+    for e in completion_history:
+        d = e.get("date") or ""
+        try:
+            dt = date.fromisoformat(d[:10]) if d else None
+            if dt:
+                dates.append(dt)
+        except (ValueError, TypeError):
+            continue
+    dates = sorted(set(dates))
+    if not dates:
+        return 0
+    best = 1
+    curr = 1
+    for i in range(1, len(dates)):
+        if (dates[i] - dates[i - 1]).days == 1:
+            curr += 1
+        else:
+            best = max(best, curr)
+            curr = 1
+    return max(best, curr)
+
+
 def _check_achievements(profile: dict) -> tuple[list[str], int]:
     """Return (list of newly unlocked achievement ids, total bonus XP to add to total_xp)."""
     unlocked = set(profile.get("achievements_unlocked") or [])
@@ -202,6 +329,7 @@ def ensure_leveling_defaults(profile: dict) -> dict:
         "mobility_xp": 0,
         "mobility_rank": 1,
         "workout_streak": 0,
+        "longest_streak": 0,
         "total_workouts": 0,
         "achievements_unlocked": [],
     }
@@ -211,6 +339,8 @@ def ensure_leveling_defaults(profile: dict) -> dict:
     if "total_workouts" not in p or p["total_workouts"] is None:
         stats = p.get("private_victory_stats") or {}
         p["total_workouts"] = int(stats.get("completions_count", 0) or 0)
+    # Keep longest_streak in sync from completion_history
+    p["longest_streak"] = get_longest_streak(p.get("completion_history") or [])
     return p
 
 
@@ -230,39 +360,96 @@ def _category_profile_key(category: str) -> tuple[str, str]:
     return (f"{category}_xp", f"{category}_rank")
 
 
-def apply_xp_and_leveling(profile: dict, metadata: dict) -> dict:
+def _count_workouts_today_in_category(completion_history: list, category: str) -> int:
+    """Count completions today in this category (including the one just appended)."""
+    today_str = date.today().isoformat()
+    count = 0
+    for e in completion_history or []:
+        d = (e.get("date") or "")[:10]
+        if d != today_str:
+            continue
+        mode = (e.get("mode") or "").strip().lower()
+        cat = category_from_mode(mode)
+        if cat == category:
+            count += 1
+    return count
+
+
+def _same_workout_completed_within_24_hours(completion_history: list, workout_id: str, completed_at_iso: str) -> bool:
+    """True if another completion with same workout_id exists within the last 24 hours."""
+    if not workout_id or not isinstance(workout_id, str) or not workout_id.strip():
+        return False
+    try:
+        now = datetime.fromisoformat(completed_at_iso.replace("Z", "+00:00")[:26])
+        if now.tzinfo:
+            now = now.replace(tzinfo=None)
+        cutoff = now - timedelta(hours=24)
+    except (ValueError, TypeError):
+        return False
+    count = 0
+    for e in completion_history or []:
+        if (e.get("workout_id") or "").strip() != workout_id.strip():
+            continue
+        ts = e.get("completed_at") or ""
+        try:
+            t = datetime.fromisoformat(ts.replace("Z", "+00:00")[:26])
+            if t.tzinfo:
+                t = t.replace(tzinfo=None)
+            if t >= cutoff:
+                count += 1
+        except (ValueError, TypeError):
+            continue
+    return count >= 2
+
+
+def apply_xp_and_leveling(profile: dict, metadata: dict) -> tuple[dict, int, str]:
     """
-    Apply workout completion: add category XP and total XP, update level, ranks, streak, achievements.
+    Apply workout completion: add scaled XP, update level, ranks, streak, achievements.
     Call this after the caller has already appended to completion_history and incremented completions_count.
-    metadata must have 'mode' (session mode). Returns updated profile (new dict).
+    metadata: mode, minutes (or len_min), optional workout_id.
+    Returns (updated_profile, xp_awarded, feedback_message).
     """
     p = ensure_leveling_defaults(profile)
     mode = (metadata.get("mode") or "").strip().lower()
     category = category_from_mode(mode)
-    if not category:
-        return p
+    feedback = ""
 
-    xp = xp_for_category(category)
-    if xp <= 0:
-        return p
+    if not category:
+        return (p, 0, feedback)
+
+    base_xp = xp_for_category(category)
+    if base_xp <= 0:
+        return (p, 0, feedback)
+
+    completed_min = float(metadata.get("minutes") or metadata.get("len_min") or 0)
+    hist = p.get("completion_history") or []
+    workouts_today = _count_workouts_today_in_category(hist, category)
+    workout_id = (metadata.get("workout_id") or "").strip()
+    last_at = hist[-1].get("completed_at") if hist else ""
+    same_in_24h = _same_workout_completed_within_24_hours(hist, workout_id, last_at or datetime.now().isoformat())
+
+    final_xp, feedback = calculate_workout_xp(
+        base_xp, category, completed_min, workouts_today, same_in_24h
+    )
+    xp_int = max(0, int(final_xp))
 
     # Category XP and rank
     xp_key, rank_key = _category_profile_key(category)
-    p[xp_key] = int(p.get(xp_key) or 0) + xp
+    p[xp_key] = int(p.get(xp_key) or 0) + xp_int
     p[rank_key] = rank_from_category_xp(p[xp_key])
 
     # Total XP
-    p["total_xp"] = int(p.get("total_xp") or 0) + xp
+    p["total_xp"] = int(p.get("total_xp") or 0) + xp_int
     p["level"] = level_from_total_xp(p["total_xp"])
     p["level_title"] = title_for_level(p["level"])
 
     # total_workouts = completions_count (caller already incremented it)
     stats = p.get("private_victory_stats") or {}
     p["total_workouts"] = int(stats.get("completions_count", 0) or 0)
-    # Streak from completion_history (caller already appended today's completion)
     p["workout_streak"] = _compute_streak(p.get("completion_history") or [])
+    p["longest_streak"] = get_longest_streak(p.get("completion_history") or [])
 
-    # Achievements (check after total_workouts and streak are updated)
+    # Achievements
     new_ach, bonus_xp = _check_achievements(p)
     if new_ach:
         p["achievements_unlocked"] = list(set(p.get("achievements_unlocked") or []) | set(new_ach))
@@ -270,7 +457,7 @@ def apply_xp_and_leveling(profile: dict, metadata: dict) -> dict:
         p["level"] = level_from_total_xp(p["total_xp"])
         p["level_title"] = title_for_level(p["level"])
 
-    return p
+    return (p, xp_int, feedback)
 
 
 def _streak_from_dates(dates: set) -> int:
@@ -304,9 +491,11 @@ def get_level_progress(profile: dict) -> dict:
     else:
         span = next_thresh - current_thresh
         pct = round(100 * (total - current_thresh) / span, 1) if span else 0
+    next_title = title_for_level(level + 1) if level < 25 else title_for_level(level)
     return {
         "level": level,
         "title": title_for_level(level),
+        "next_title": next_title,
         "current_xp": total,
         "next_xp": next_thresh,
         "progress_pct": pct,
@@ -324,12 +513,15 @@ def get_category_progress(profile: dict, category: str) -> dict:
     if rank >= 8:
         pct = 100
         next_thresh = current_thresh
+        next_title = rank_title_for_category(category, rank)
     else:
         span = next_thresh - current_thresh
         pct = round(100 * (xp - current_thresh) / span, 1) if span else 0
+        next_title = rank_title_for_category(category, rank + 1)
     return {
         "rank": rank,
         "title": rank_title_for_category(category, rank),
+        "next_title": next_title,
         "current_xp": xp,
         "next_xp": next_thresh,
         "progress_pct": pct,

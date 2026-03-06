@@ -359,7 +359,7 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
                     if all_done and wv_day < total_days - 1:
                         st.session_state.plan_selected_day = wv_day + 1
                     _params = fi.get("params") or {}
-                    _meta = {"mode": fi.get("mode_key") or _params.get("mode"), "minutes": _params.get("session_len_min", 25)}
+                    _meta = {"mode": fi.get("mode_key") or _params.get("mode"), "minutes": _params.get("session_len_min", 25), "workout_id": f"plan_{wv_day}_{wv_mode}"}
                     if _params.get("shooting_min") is not None:
                         _meta["shooting_min"] = _params["shooting_min"]
                     if _params.get("stickhandling_min") is not None:
@@ -630,9 +630,10 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
     return out
 
 
-def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "training_session") -> dict:
+def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "training_session") -> tuple[dict, str]:
     """Add workout completion volumes to profile's private_victory_stats (Performance Dashboard).
-    Also appends to completion_history for monthly Bender Board and accountability audit."""
+    Appends to completion_history and applies Bender XP (scaled by duration, daily cap, repeat cooldown).
+    Returns (updated_profile, xp_feedback_message)."""
     prof = dict(profile)
     stats = dict(prof.get("private_victory_stats") or {})
     for k, default in [
@@ -659,12 +660,14 @@ def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "tra
     hist = list(prof.get("completion_history") or [])
     mode = (metadata.get("mode") or "").lower() or "unknown"
     minutes = int(metadata.get("minutes") or metadata.get("len_min") or 0)
+    _workout_id = (metadata.get("workout_id") or "").strip() or None
     hist.append({
         "date": date.today().isoformat(),
         "completed_at": datetime.now().isoformat(),
         "mode": mode,
         "minutes": minutes,
         "source": source,
+        "workout_id": _workout_id,
         "stickhandling_hours": deltas["stickhandling_hours"],
         "shots": deltas["shots"],
         "gym_hours": deltas["gym_hours"],
@@ -673,13 +676,14 @@ def _add_completion_to_profile(profile: dict, metadata: dict, source: str = "tra
         "mobility_hours": deltas["mobility_hours"],
     })
     prof["completion_history"] = hist
-    # Bender leveling: add XP, update level, ranks, streak, achievements
+    # Bender leveling: scaled XP, level, ranks, streak, achievements
+    xp_feedback = ""
     try:
         from bender_leveling import apply_xp_and_leveling
-        prof = apply_xp_and_leveling(prof, metadata)
+        prof, _xp, xp_feedback = apply_xp_and_leveling(prof, metadata)
     except Exception:
         pass
-    return prof
+    return prof, xp_feedback
 
 
 def _monthly_totals_from_history(completion_history: list, year: int, month: int) -> dict:
@@ -801,27 +805,155 @@ def _bender_board_lifetime_leaders() -> list[tuple[str, str, str]]:
     return rows
 
 
+# Map Bender Board category label to leveling category key (for rank title / badge)
+_BB_CAT_TO_LEVELING_CAT = {
+    "Shots": "puck_mastery",
+    "Stickhandling time": "puck_mastery",
+    "Skating mechanics time": "skating_mechanics",
+    "Conditioning time": "conditioning",
+    "Gym time": "performance",
+    "Mobility / recovery time": "mobility",
+}
+
+_BB_CAT_DEFS = [
+    ("Shots", lambda h: h["shots"], lambda s: int(s.get("shots", 0) or 0), "{:,}"),
+    ("Stickhandling time", lambda h: h["stickhandling_hours"], lambda s: float(s.get("stickhandling_hours", 0) or 0), "{:.1f} h"),
+    ("Skating mechanics time", lambda h: h["skating_hours"], lambda s: float(s.get("skating_hours", 0) or 0), "{:.1f} h"),
+    ("Conditioning time", lambda h: h["conditioning_hours"], lambda s: float(s.get("conditioning_hours", 0) or 0), "{:.1f} h"),
+    ("Gym time", lambda h: h["gym_hours"], lambda s: float(s.get("gym_hours", 0) or 0), "{:.1f} h"),
+    ("Mobility / recovery time", lambda h: h["mobility_hours"], lambda s: float(s.get("mobility_hours", 0) or 0), "{:.1f} h"),
+]
+
+
+def _bender_overall_ranked() -> list[dict]:
+    """All profiles sorted by total_xp desc, total_workouts desc, longest_streak desc."""
+    try:
+        from bender_leveling import ensure_leveling_defaults, get_longest_streak
+    except Exception:
+        return []
+    all_profs = [ensure_leveling_defaults(p) for p in list_profiles()]
+    for p in all_profs:
+        if "longest_streak" not in p or p["longest_streak"] is None:
+            p["longest_streak"] = get_longest_streak(p.get("completion_history") or [])
+    return sorted(
+        all_profs,
+        key=lambda p: (
+            -int(p.get("total_xp") or 0),
+            -int(p.get("total_workouts") or 0),
+            -int(p.get("longest_streak") or 0),
+        ),
+    )
+
+
+def _bender_monthly_ranked(year: int, month: int) -> dict[str, list[tuple[dict, float, str]]]:
+    """Per category: list of (profile, value, formatted_value) sorted by value desc for the given month."""
+    all_profs = list_profiles()
+    out = {}
+    for cat_label, get_hist_val, _get_stats_val, fmt in _BB_CAT_DEFS:
+        rows = []
+        for p in all_profs:
+            mt = _monthly_totals_from_history(p.get("completion_history"), year, month)
+            v = get_hist_val(mt)
+            if isinstance(v, float) and v > 0 or isinstance(v, int) and v > 0:
+                rows.append((p, v, fmt.format(v)))
+        rows.sort(key=lambda x: (-x[1], (x[0].get("display_name") or x[0].get("user_id") or "")))
+        out[cat_label] = rows
+    return out
+
+
 def _render_bender_board() -> None:
-    """Bender Board tab: monthly and lifetime leaders in Shots, Stickhandling, Skating mechanics, Conditioning, Gym, Mobility.
-    Visible to all accounts (players and admins). Data from private_victory_stats and completion_history."""
+    """Bender Board tab: player card, overall leaderboard, monthly/lifetime category leaders.
+    Visible to all accounts. Extends existing monthly leaders with progression (level, ranks, badges)."""
     st.subheader("Bender Board")
-    st.caption("Monthly and lifetime leaders across all accounts. Complete workouts to climb the board.")
+    st.caption("Compete on the ladder. Your level, ranks, and badges are built from completed workouts.")
     _today = date.today()
+    _current_uid = (st.session_state.get("current_profile") or {}).get("user_id") or ""
 
-    _bb_categories = [
-        "Shots",
-        "Stickhandling time",
-        "Skating mechanics time",
-        "Conditioning time",
-        "Gym time",
-        "Mobility / recovery time",
-    ]
+    try:
+        from bender_leveling import (
+            ensure_leveling_defaults,
+            get_level_progress,
+            get_category_progress,
+            get_unlocked_badges,
+            rank_title_for_category,
+            rank_from_category_xp,
+            _category_profile_key,
+        )
+    except Exception:
+        ensure_leveling_defaults = lambda p: p
+        get_level_progress = lambda p: {"level": 1, "title": "Initiate", "current_xp": 0, "next_xp": 100, "progress_pct": 0}
+        get_category_progress = lambda p, c: {"rank": 1, "title": "—", "current_xp": 0, "next_xp": 150, "progress_pct": 0}
+        get_unlocked_badges = lambda p: []
+        rank_title_for_category = lambda c, r: "—"
+        rank_from_category_xp = lambda x: 1
+        _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
+
+    # --- Player Card (current user) ---
+    if _current_uid:
+        _prof = ensure_leveling_defaults(st.session_state.get("current_profile") or {})
+        _lp = get_level_progress(_prof)
+        _badges = get_unlocked_badges(_prof)
+        st.markdown("**Your player card**")
+        _name = _prof.get("display_name") or _prof.get("user_id") or "Player"
+        st.markdown(f"**{_name}**")
+        st.markdown(f"Level {_lp['level']} — {_lp['title']}")
+        st.caption(f"Total XP: {_lp['current_xp']:,}  ·  Workout streak: {int(_prof.get('workout_streak') or 0)} days  ·  Total workouts: {int(_prof.get('total_workouts') or 0):,}")
+        st.caption(f"{_lp['current_xp']:,} / {_lp['next_xp']:,} XP to {_lp.get('next_title', 'next level')} — {_lp['progress_pct']}%")
+        st.progress(_lp["progress_pct"] / 100.0)
+        _cats = [
+            ("puck_mastery", "Puck Mastery"),
+            ("skating_mechanics", "Skating Mechanics"),
+            ("performance", "Performance"),
+            ("conditioning", "Conditioning"),
+            ("mobility", "Mobility & Recovery"),
+        ]
+        _cat_parts = [f"{label}: {get_category_progress(_prof, key)['title']}" for key, label in _cats]
+        st.caption("  ·  ".join(_cat_parts))
+        with st.expander("Category progress", expanded=False):
+            for key, label in _cats:
+                cp = get_category_progress(_prof, key)
+                if cp["rank"] >= 8:
+                    st.caption(f"**{label}** — Rank maxed — {cp['title']}")
+                else:
+                    st.caption(f"**{label}** — {cp['title']} · {cp['current_xp']:,} / {cp['next_xp']:,} XP to {cp.get('next_title', 'next')} ({cp['progress_pct']}%)")
+                st.progress(cp["progress_pct"] / 100.0)
+        if _badges:
+            st.caption("Badges: " + "  ".join(f"[{b}]" for b in _badges))
+        st.markdown("---")
+
+    # --- Overall Bender leaderboard ---
+    st.markdown("**Overall leaderboard**")
+    st.caption("Sorted by Total XP → Total workouts → Longest streak")
+    _overall = _bender_overall_ranked()
+    _rank_visible = 15
+    if _overall:
+        for r, p in enumerate(_overall[:_rank_visible], 1):
+            _uid = p.get("user_id") or ""
+            _name = p.get("display_name") or _uid or "Unknown"
+            _lv = int(p.get("level") or 1)
+            _title = (p.get("level_title") or "Initiate").strip()
+            _xp = int(p.get("total_xp") or 0)
+            _bc = len(get_unlocked_badges(p))
+            _is_you = _uid == _current_uid
+            _row = f"**{r}. {_name}** — Level {_lv} ({_title}) · {_xp:,} XP · {_bc} badge{'s' if _bc != 1 else ''}"
+            if _is_you:
+                st.markdown(f":orange[{_row}] *(you)*")
+            else:
+                st.markdown(_row)
+        # Your rank summary if not in top N
+        _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
+        if _your_rank is not None and _your_rank > _rank_visible:
+            _p = next(p for p in _overall if (p.get("user_id") or "") == _current_uid)
+            st.caption(f"**Your rank: {_your_rank}** — Level {_p.get('level', 1)} ({_p.get('level_title', '')}) · {int(_p.get('total_xp') or 0):,} XP")
+    else:
+        st.caption("No players yet. Complete workouts to appear on the board.")
+    st.markdown("")
+
+    # --- Monthly leaders (existing box: one leader per category) ---
+    _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
     _monthly_map = {cat: (name, val) for cat, name, val in _bender_board_monthly_leaders(_today.year, _today.month)}
-    _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
-
-    # Monthly leaders — categories in the box, "Nothing yet this month" when empty
     st.markdown("**Monthly leaders**")
-    st.caption(f"{_today.strftime('%B %Y')}")
+    st.caption(f"{_today.strftime('%B %Y')} — top performer per category")
     _lines = ['<div class="your-work-stats-card">']
     for cat in _bb_categories:
         if cat in _monthly_map:
@@ -832,8 +964,42 @@ def _render_bender_board() -> None:
     _lines.append("</div>")
     st.markdown("\n".join(_lines), unsafe_allow_html=True)
 
+    # --- Monthly category rankings (upgraded: full table per category with rank title, XP, level, badges) ---
+    st.markdown("**Monthly category rankings**")
+    st.caption(f"{_today.strftime('%B %Y')} — ranked by volume in each category")
+    _monthly_ranked = _bender_monthly_ranked(_today.year, _today.month)
+    for cat_label in _bb_categories:
+        rows = _monthly_ranked.get(cat_label, [])
+        leveling_cat = _BB_CAT_TO_LEVELING_CAT.get(cat_label, "")
+        with st.expander(f"{cat_label} ({len(rows)} players)" if rows else cat_label, expanded=False):
+            if not rows:
+                st.caption("Nothing yet this month")
+                continue
+            for r, (p, _val, fmt_val) in enumerate(rows[:20], 1):
+                p = ensure_leveling_defaults(p)
+                _name = p.get("display_name") or p.get("user_id") or "Unknown"
+                _cat_title = rank_title_for_category(leveling_cat, rank_from_category_xp(int(p.get(_category_profile_key(leveling_cat)[0]) or 0))) if leveling_cat else "—"
+                _xp = int(p.get(_category_profile_key(leveling_cat)[0]) or 0) if leveling_cat else 0
+                _lv = int(p.get("level") or 1)
+                _bc = len(get_unlocked_badges(p))
+                _is_you = (p.get("user_id") or "") == _current_uid
+                _line = f"{r}. **{_name}** — {_cat_title} · {_xp:,} cat XP · Lv {_lv} · {_bc} badge(s) · {fmt_val}"
+                if _is_you:
+                    st.markdown(f":orange[{_line}] *(you)*")
+                else:
+                    st.markdown(_line)
+            _your_idx = next((i for i, (p, _, _) in enumerate(rows) if (p.get("user_id") or "") == _current_uid), None)
+            if _your_idx is not None and _your_idx >= 20:
+                _p, _v, _fv = rows[_your_idx]
+                _p = ensure_leveling_defaults(_p)
+                _xk = _category_profile_key(leveling_cat)[0] if leveling_cat else ""
+                _cat_xp = int(_p.get(_xk) or 0) if _xk else 0
+                st.caption(f"**Your rank: {_your_idx + 1}** — {rank_title_for_category(leveling_cat, rank_from_category_xp(_cat_xp))} · {_cat_xp:,} cat XP")
     st.markdown("")
+
+    # --- Lifetime highscores (existing: one leader per category) ---
     st.markdown("**Lifetime highscores**")
+    _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
     _lines2 = ['<div class="your-work-stats-card">']
     for cat in _bb_categories:
         if cat in _lifetime_map:
@@ -3323,12 +3489,14 @@ def _render_training_session():
                     out_text = resp.get("output_text")
                     if out_text and out_text.strip():
                         st.session_state.last_output_text = out_text
+                        _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
                         st.session_state.last_output_metadata = {
                             "mode": effective_mode,
                             "minutes": int(minutes),
                             "location": location,
                             "conditioning": conditioning,
                             "conditioning_type": conditioning_type,
+                            "workout_id": _sid,
                         }
                         st.session_state.scroll_to_workout = True
                         st.success("Generated")
@@ -3426,11 +3594,14 @@ def _render_training_session():
                 if st.button("Workout Complete", type="primary", key="workout_complete_bender"):
                     prof = st.session_state.get("current_profile") or {}
                     if prof and _meta:
-                        prof = _add_completion_to_profile(prof, _meta)
+                        prof, xp_msg = _add_completion_to_profile(prof, _meta)
                         st.session_state.current_profile = prof
                         save_profile(prof)
                     clear_last_output()
-                    st.success("Workout logged to Performance Dashboard!")
+                    if prof and _meta and xp_msg:
+                        st.success("Workout Complete — " + xp_msg)
+                    else:
+                        st.success("Workout logged to Performance Dashboard!")
                     st.rerun()
                 if st.button("Clear workout", type="secondary", key="clear_workout_bottom"):
                     clear_last_output()
@@ -3483,7 +3654,9 @@ else:
             c[key] = list(set(c.get(key, [])) | {mode_key})
             prof["assigned_plan_completed"] = c
             if params_or_meta:
-                prof = _add_completion_to_profile(prof, params_or_meta, source="plan")
+                prof, _xp_msg = _add_completion_to_profile(prof, params_or_meta, source="plan")
+                if _xp_msg:
+                    st.toast(_xp_msg)
             st.session_state.current_profile = prof
             save_profile(prof)
             st.rerun()
