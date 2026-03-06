@@ -3262,8 +3262,7 @@ with st.sidebar:
         st.rerun()  # Shows landing (Log in page)
 
 # ---------- Main area: form in card ----------
-# Signed-in line (Sign out is only in the sidebar Equipment section)
-st.caption(f"Signed in as **{display_name}**")
+# Account name is shown in the sidebar only
 # Bender level + badges (profile card)
 try:
     from bender_leveling import ensure_leveling_defaults, get_unlocked_badges
