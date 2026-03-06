@@ -528,9 +528,9 @@ LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
 # Strength emphasis labels
 # -----------------------------
 STRENGTH_EMPHASIS_LABELS = {
-    "power": "power (explosive speed)",
+    "power": "Power",
     "explosiveness": "Explosiveness",
-    "hypertrophy": "hypertrophy (strength capacity)",
+    "hypertrophy": "Hypertrophy",
     "recovery": "recovery (less stress)",
 }
 EMPHASIS_KEYS = list(STRENGTH_EMPHASIS_LABELS.keys())
@@ -1750,9 +1750,12 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
             cues = ""
             steps = ""
             i += 1
-            while i < len(lines) and (lines[i].strip().startswith("Cues:") or lines[i].strip().startswith("Steps:")):
+            equipment = ""
+            while i < len(lines) and (lines[i].strip().startswith("Equipment:") or lines[i].strip().startswith("Cues:") or lines[i].strip().startswith("Steps:")):
                 sub = lines[i].strip()
-                if sub.lower().startswith("cues:"):
+                if sub.lower().startswith("equipment:"):
+                    equipment = sub[10:].strip()
+                elif sub.lower().startswith("cues:"):
                     cues = sub[5:].strip()
                 elif sub.lower().startswith("steps:"):
                     steps = sub[6:].strip()
@@ -1777,7 +1780,7 @@ def _parse_workout_for_editing(text: str) -> list[dict]:
                             rest = int(r)
                         except (ValueError, TypeError):
                             rest = 60
-                items.append({"type": "strength", "name": name, "sets": sets or 3, "reps": reps or "8", "rest": rest or 60, "cues": cues, "steps": steps, "section_key": section_key})
+                items.append({"type": "strength", "name": name, "sets": sets or 3, "reps": reps or "8", "rest": rest or 60, "equipment": equipment, "cues": cues, "steps": steps, "section_key": section_key})
             elif " — " in body:
                 nm, _, dur = body.partition(" — ")
                 name = nm.strip()
@@ -1811,6 +1814,8 @@ def _rebuild_workout_from_edits(items: list[dict], form_vals: dict) -> str:
             rest = v.get("rest", it.get("rest", 60))
             line = f"- {name} | {sets} x {reps} | Rest {rest}s"
             out.append(line)
+            if it.get("equipment"):
+                out.append(f"  Equipment: {it['equipment']}")
             if it.get("cues"):
                 out.append(f"  Cues: {it['cues']}")
             if it.get("steps"):
@@ -1822,6 +1827,8 @@ def _rebuild_workout_from_edits(items: list[dict], form_vals: dict) -> str:
             duration = v.get("duration", it.get("duration", 30))
             line = f"- {name} — {duration}s"
             out.append(line)
+            if it.get("equipment"):
+                out.append(f"  Equipment: {it['equipment']}")
             if it.get("cues"):
                 out.append(f"  Cues: {it['cues']}")
             if it.get("steps"):
@@ -1831,6 +1838,8 @@ def _rebuild_workout_from_edits(items: list[dict], form_vals: dict) -> str:
             v = form_vals.get(ex_idx, {})
             name = v.get("name", it["name"])
             out.append(f"- {name}")
+            if it.get("equipment"):
+                out.append(f"  Equipment: {it['equipment']}")
             if it.get("cues"):
                 out.append(f"  Cues: {it['cues']}")
             if it.get("steps"):
@@ -3033,6 +3042,53 @@ st.markdown("""
         margin-top: 0.15rem !important;
     }
 
+    /* Start Workout, Clear workout, Workout Complete — styles applied via JS-added classes */
+    .bender-workout-action-btn {
+        font-family: 'DM Sans', sans-serif !important;
+        font-weight: 600 !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.5rem !important;
+        width: 100% !important;
+    }
+    .bender-workout-action-btn.bender-workout-primary {
+        background: #ffffff !important;
+        color: #000000 !important;
+        border: 1px solid #ffffff !important;
+    }
+    .bender-workout-action-btn.bender-workout-primary:hover {
+        background: #e0e0e0 !important;
+        color: #000000 !important;
+    }
+    .bender-workout-action-btn.bender-workout-secondary {
+        background: #333333 !important;
+        color: #ffffff !important;
+        border: 1px solid #444444 !important;
+    }
+    .bender-workout-action-btn.bender-workout-secondary:hover {
+        background: #444444 !important;
+        color: #ffffff !important;
+    }
+    /* Row layout: side-by-side, incl. mobile */
+    .bender-workout-action-row {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 0.75rem !important;
+        width: 100% !important;
+        max-width: 28rem !important;
+    }
+    .bender-workout-action-row > * {
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+    }
+    @media (max-width: 640px) {
+        .bender-workout-action-row {
+            max-width: 100% !important;
+        }
+        .bender-workout-action-row > * {
+            min-width: min(120px, 45%) !important;
+        }
+    }
+    /* Legacy selectors (fallback if JS doesn't run) */
     /* Start Workout + Clear workout, Workout Complete + Clear workout: same look as Generate session / Request Custom Plan */
     /* Use multiple selector variants for Streamlit DOM (markdown + div/block sibling) */
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
@@ -3922,6 +3978,18 @@ def _render_training_session():
                         if st.button("Clear workout", type="secondary", key="clear_workout_top", use_container_width=True):
                             clear_last_output()
                             st.rerun()
+                    st.components.v1.html("""
+                    <script>(function(){
+                    function run(){try{var d=(window.parent&&window.parent.document)||document;var btns=d.querySelectorAll('button');
+                    for(var i=0;i<btns.length;i++){var b=btns[i],t=(b.textContent||'').trim();
+                    if(t==='Start Workout'||t==='Workout Complete'){b.classList.add('bender-workout-action-btn','bender-workout-primary');
+                    var row=b.closest&&b.closest('[data-testid="stHorizontalBlock"]');if(row)row.classList.add('bender-workout-action-row');}
+                    else if(t==='Clear workout'){b.classList.add('bender-workout-action-btn','bender-workout-secondary');
+                    var row=b.closest&&b.closest('[data-testid="stHorizontalBlock"]');if(row)row.classList.add('bender-workout-action-row');}}
+                    }catch(e){}}
+                    setTimeout(run,120);
+                    })();</script>
+                    """, height=0)
                     st.markdown('<div id="workout-result"></div>', unsafe_allow_html=True)
                     st.stop()  # Don't render workout body until "Start Workout"
                 # Video overlay: pop-up when user clicks play; Close returns to workout
@@ -4014,6 +4082,18 @@ def _render_training_session():
                     if st.button("Clear workout", type="secondary", key="clear_workout_bottom", use_container_width=True):
                         clear_last_output()
                         st.rerun()
+                st.components.v1.html("""
+                <script>(function(){
+                function run(){try{var d=(window.parent&&window.parent.document)||document;var btns=d.querySelectorAll('button');
+                for(var i=0;i<btns.length;i++){var b=btns[i],t=(b.textContent||'').trim();
+                if(t==='Start Workout'||t==='Workout Complete'){b.classList.add('bender-workout-action-btn','bender-workout-primary');
+                var row=b.closest&&b.closest('[data-testid="stHorizontalBlock"]');if(row)row.classList.add('bender-workout-action-row');}
+                else if(t==='Clear workout'){b.classList.add('bender-workout-action-btn','bender-workout-secondary');
+                var row=b.closest&&b.closest('[data-testid="stHorizontalBlock"]');if(row)row.classList.add('bender-workout-action-row');}}
+                }catch(e){}}
+                setTimeout(run,120);
+                })();</script>
+                """, height=0)
 
     _training_session_fragment()
 
