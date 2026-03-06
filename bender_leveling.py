@@ -72,6 +72,18 @@ RANK_8_BADGES = {
     "mobility": "Indestructible",
 }
 
+# Full XP workout milestone badges (lifetime count of workouts that earned 100% XP)
+FULL_XP_WORKOUT_BADGES = {
+    10: "Showing Up",
+    25: "Practice Regular",
+    50: "Dialed In",
+    100: "Training Consistent",
+    200: "Daily Driver",
+    400: "Built Different",
+    700: "Work Ethic",
+    1000: "Iron Habit",
+}
+
 # --- Achievement bonuses (add to total_xp only, not category XP) ---
 ACHIEVEMENTS = [
     {"id": "streak_7", "name": "7 Day Workout Streak", "bonus_xp": 50, "check": "streak", "value": 7},
@@ -147,6 +159,15 @@ def get_category_multiplier(category: str, workouts_today_in_category: int) -> f
 def get_repeat_multiplier(same_exact_workout_completed_within_24_hours: bool) -> float:
     """0.25 if same workout repeated within 24h, else 1.0."""
     return 0.25 if same_exact_workout_completed_within_24_hours else 1.0
+
+
+def is_full_xp_workout(length_multiplier: float, category_multiplier: float, repeat_multiplier: float) -> bool:
+    """True only if the workout earned full XP (no length, daily, or repeat penalty)."""
+    return (
+        length_multiplier >= 1.0
+        and category_multiplier == 1.0
+        and repeat_multiplier == 1.0
+    )
 
 
 def calculate_workout_xp(
@@ -332,6 +353,8 @@ def ensure_leveling_defaults(profile: dict) -> dict:
         "longest_streak": 0,
         "total_workouts": 0,
         "achievements_unlocked": [],
+        "full_xp_workouts_total": 0,
+        "full_xp_workout_badges_unlocked": [],
     }
     for k, v in defaults.items():
         if k not in p or p[k] is None:
@@ -428,10 +451,24 @@ def apply_xp_and_leveling(profile: dict, metadata: dict) -> tuple[dict, int, str
     last_at = hist[-1].get("completed_at") if hist else ""
     same_in_24h = _same_workout_completed_within_24_hours(hist, workout_id, last_at or datetime.now().isoformat())
 
+    length_mult = get_length_multiplier(category, completed_min)
+    category_mult = get_category_multiplier(category, workouts_today)
+    repeat_mult = get_repeat_multiplier(same_in_24h)
+
     final_xp, feedback = calculate_workout_xp(
         base_xp, category, completed_min, workouts_today, same_in_24h
     )
     xp_int = max(0, int(final_xp))
+
+    # Full XP workout track: count and unlock milestone badges
+    if is_full_xp_workout(length_mult, category_mult, repeat_mult):
+        p["full_xp_workouts_total"] = int(p.get("full_xp_workouts_total") or 0) + 1
+        total_full = p["full_xp_workouts_total"]
+        unlocked = list(p.get("full_xp_workout_badges_unlocked") or [])
+        for threshold, badge_name in FULL_XP_WORKOUT_BADGES.items():
+            if total_full >= threshold and badge_name not in unlocked:
+                unlocked.append(badge_name)
+        p["full_xp_workout_badges_unlocked"] = unlocked
 
     # Category XP and rank
     xp_key, rank_key = _category_profile_key(category)
@@ -529,7 +566,7 @@ def get_category_progress(profile: dict, category: str) -> dict:
 
 
 def get_unlocked_badges(profile: dict) -> list[str]:
-    """Badge names for categories where player has reached rank 8."""
+    """All badge names: rank 8 category badges + full XP workout milestone badges."""
     p = ensure_leveling_defaults(profile)
     badges = []
     for cat, badge_name in RANK_8_BADGES.items():
@@ -537,4 +574,11 @@ def get_unlocked_badges(profile: dict) -> list[str]:
         xp = int(p.get(xp_key) or 0)
         if rank_from_category_xp(xp) >= 8:
             badges.append(badge_name)
+    badges.extend(p.get("full_xp_workout_badges_unlocked") or [])
     return badges
+
+
+def get_full_xp_workouts_total(profile: dict) -> int:
+    """Lifetime count of workouts that earned 100% XP."""
+    p = ensure_leveling_defaults(profile)
+    return int(p.get("full_xp_workouts_total") or 0)

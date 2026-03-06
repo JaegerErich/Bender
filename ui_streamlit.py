@@ -875,6 +875,7 @@ def _render_bender_board() -> None:
             get_level_progress,
             get_category_progress,
             get_unlocked_badges,
+            get_full_xp_workouts_total,
             rank_title_for_category,
             rank_from_category_xp,
             _category_profile_key,
@@ -884,6 +885,7 @@ def _render_bender_board() -> None:
         get_level_progress = lambda p: {"level": 1, "title": "Initiate", "current_xp": 0, "next_xp": 100, "progress_pct": 0}
         get_category_progress = lambda p, c: {"rank": 1, "title": "—", "current_xp": 0, "next_xp": 150, "progress_pct": 0}
         get_unlocked_badges = lambda p: []
+        get_full_xp_workouts_total = lambda p: 0
         rank_title_for_category = lambda c, r: "—"
         rank_from_category_xp = lambda x: 1
         _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
@@ -897,7 +899,8 @@ def _render_bender_board() -> None:
         _name = _prof.get("display_name") or _prof.get("user_id") or "Player"
         st.markdown(f"**{_name}**")
         st.markdown(f"Level {_lp['level']} — {_lp['title']}")
-        st.caption(f"Total XP: {_lp['current_xp']:,}  ·  Workout streak: {int(_prof.get('workout_streak') or 0)} days  ·  Total workouts: {int(_prof.get('total_workouts') or 0):,}")
+        _full_xp = get_full_xp_workouts_total(_prof)
+        st.caption(f"Total XP: {_lp['current_xp']:,}  ·  Workout streak: {int(_prof.get('workout_streak') or 0)} days  ·  Total workouts: {int(_prof.get('total_workouts') or 0):,}  ·  Full XP workouts: {_full_xp:,}")
         st.caption(f"{_lp['current_xp']:,} / {_lp['next_xp']:,} XP to {_lp.get('next_title', 'next level')} — {_lp['progress_pct']}%")
         st.progress(_lp["progress_pct"] / 100.0)
         _cats = [
@@ -1022,6 +1025,7 @@ def _render_your_work_stats():
             get_level_progress,
             get_category_progress,
             get_unlocked_badges,
+            get_full_xp_workouts_total,
             ensure_leveling_defaults,
             ACHIEVEMENTS,
         )
@@ -1049,7 +1053,9 @@ def _render_your_work_stats():
             st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
 
-        # Rank 8 badges
+        # Full XP workouts + badges (rank 8 + full XP milestones)
+        full_xp_total = get_full_xp_workouts_total(prof)
+        st.caption(f"**Full XP Workouts:** {full_xp_total:,} (workouts that earned 100% XP)")
         badges = get_unlocked_badges(prof)
         if badges:
             st.markdown("**Badges**")
