@@ -714,7 +714,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
             </div>
             <div style="{_q_style}{_q_style_b}">
                 <span style="{_icon_style}" aria-hidden="true">🎯</span>
-                <span>{focus}</span>
+                <span>{bottom_left}</span>
             </div>
             <div style="{_q_style}{_q_style_r}{_q_style_b}">
                 <span style="{_icon_style}" aria-hidden="true">⏱</span>
