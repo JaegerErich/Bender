@@ -529,7 +529,7 @@ LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
 # -----------------------------
 STRENGTH_EMPHASIS_LABELS = {
     "power": "power (explosive speed)",
-    "strength": "strength (game strength)",
+    "explosiveness": "Explosiveness",
     "hypertrophy": "hypertrophy (strength capacity)",
     "recovery": "recovery (less stress)",
 }
@@ -614,6 +614,7 @@ MODE_TO_EQUIPMENT_MODE = {
 # Strength emphasis key -> display label (Technique for performance quadrant)
 STRENGTH_EMPHASIS_TO_LABEL = {
     "power": "Power",
+    "explosiveness": "Explosiveness",
     "strength": "Strength",
     "hypertrophy": "Hypertrophy",
     "recovery": "Recovery",
@@ -1053,7 +1054,7 @@ def _render_bender_board() -> None:
         if "bender_board_dialog_uid" in st.session_state:
             del st.session_state["bender_board_dialog_uid"]
 
-    @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss)
+    @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss, width="medium")
     def _show_player_card_dialog(uid: str) -> None:
         prof = next((p for p in _overall if (p.get("user_id") or "") == uid), None)
         if prof is None:
@@ -1112,7 +1113,7 @@ def _render_bender_board() -> None:
 
     # --- Section: Overall Leaderboard ---
     _rank_visible = 15
-    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a player\'s name to view their card.</div></div>', unsafe_allow_html=True)
+    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
     if _overall:
         for r, p in enumerate(_overall[:_rank_visible], 1):
             _uid = p.get("user_id") or ""
@@ -1132,8 +1133,8 @@ def _render_bender_board() -> None:
                 else:
                     with st.popover(_name, type="secondary"):
                         if st.button("View player card", key=f"bender_view_card_{_uid}"):
-                            st.session_state.bender_board_selected_player_uid = _uid
-                            st.rerun()
+                            st.session_state.bender_board_dialog_uid = _uid
+                            _show_player_card_dialog(_uid)
             with _c3:
                 st.markdown(_rest)
         _your_rank = next((i for i, p in enumerate(_overall, 1) if (p.get("user_id") or "") == _current_uid), None)
@@ -3700,7 +3701,7 @@ def _render_training_session():
                 STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
                 day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS, index=0)  # Default Lower (has special superset)
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("strength"))
+                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("explosiveness"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
                 # 20% explosive day: override to Power + power (same logic as Workout Plan)
                 if random.random() < 0.20:
@@ -3736,6 +3737,12 @@ def _render_training_session():
             if generate_clicked:
                 profile = st.session_state.get("current_profile") or {}
                 user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
+                # Explosiveness = Power day + power emphasis (explosive session)
+                _payload_strength_day = strength_day_type
+                _payload_strength_emphasis = strength_emphasis
+                if strength_emphasis == "explosiveness":
+                    _payload_strength_day = "heavy_explosive"
+                    _payload_strength_emphasis = "power"
                 payload = {
                     "athlete_id": athlete_id,
                     "age": int(age),
@@ -3743,8 +3750,8 @@ def _render_training_session():
                     "mode": effective_mode,
                     "focus": focus,
                     "location": location,
-                    "strength_day_type": strength_day_type,
-                    "strength_emphasis": strength_emphasis,
+                    "strength_day_type": _payload_strength_day,
+                    "strength_emphasis": _payload_strength_emphasis,
                     "skate_within_24h": skate_within_24h,
                     "conditioning": conditioning,
                     "conditioning_type": conditioning_type,
