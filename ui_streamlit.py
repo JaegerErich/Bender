@@ -589,6 +589,92 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
     return {}
 
 
+# Training focus fallback by category (workout overview card)
+CATEGORY_FOCUS_FALLBACK = {
+    "puck_mastery": "Technique",
+    "skating_mechanics": "Speed",
+    "performance": "Power",
+    "conditioning": "Endurance",
+    "mobility": "Recovery",
+    "mobility_recovery": "Recovery",
+}
+
+
+def _get_training_focus_for_card(metadata: dict) -> str:
+    """Training focus label for workout card: explicit training_focus or category fallback."""
+    if metadata.get("training_focus"):
+        return (metadata.get("training_focus") or "").strip() or "Training"
+    try:
+        from bender_leveling import category_from_mode
+        mode = (metadata.get("mode") or "").strip().lower()
+        category = category_from_mode(mode)
+        return CATEGORY_FOCUS_FALLBACK.get(category, "Training")
+    except Exception:
+        return "Training"
+
+
+def _get_workout_card_xp_reward(metadata: dict) -> int:
+    """Expected base XP for this workout category (for card display)."""
+    try:
+        from bender_leveling import category_from_mode, xp_for_category
+        category = category_from_mode((metadata.get("mode") or "").strip().lower())
+        return xp_for_category(category) if category else 0
+    except Exception:
+        return 0
+
+
+def _render_workout_overview_card(metadata: dict) -> None:
+    """2x2 quadrant card + full-width progress: XP, Difficulty, Training Focus, Time, then level progress."""
+    meta = metadata or {}
+    mode = (meta.get("mode") or "").strip().lower()
+    minutes = int(meta.get("minutes") or meta.get("len_min") or 0)
+    xp_reward = _get_workout_card_xp_reward(meta)
+    difficulty_raw = meta.get("difficulty")
+    if difficulty_raw is not None:
+        try:
+            d = int(difficulty_raw)
+            difficulty_5 = max(1, min(5, d if d <= 5 else round(d / 2)))
+        except (TypeError, ValueError):
+            difficulty_5 = 3
+    else:
+        difficulty_5 = 3
+    focus = _get_training_focus_for_card(meta)
+    time_label = f"~{minutes} mins" if minutes > 0 else "—"
+
+    # 2x2 quadrants — XP is the most prominent
+    r1c1, r1c2 = st.columns(2)
+    with r1c1:
+        xp_display = f"+{xp_reward} XP" if xp_reward > 0 else "— XP"
+        st.markdown(f'<span style="font-size:1.35rem;font-weight:700;">{xp_display}</span>', unsafe_allow_html=True)
+    with r1c2:
+        st.markdown(f"Difficulty {difficulty_5}/5")
+    r2c1, r2c2 = st.columns(2)
+    with r2c1:
+        st.markdown(f"**{focus}**")
+    with r2c2:
+        st.markdown(time_label)
+
+    # Full-width progress section
+    try:
+        from bender_leveling import ensure_leveling_defaults, get_level_progress, LEVEL_THRESHOLDS
+        prof = ensure_leveling_defaults(st.session_state.get("current_profile") or {})
+        lp = get_level_progress(prof)
+        total = int(lp.get("current_xp") or 0)
+        next_xp = int(lp.get("next_xp") or 0)
+        level = int(lp.get("level") or 1)
+        progress_pct = float(lp.get("progress_pct") or 0) / 100.0
+        if level >= 25:
+            st.progress(1.0)
+            st.caption("**Max Level Reached**")
+        else:
+            xp_remaining = max(0, next_xp - total)
+            st.progress(progress_pct)
+            st.caption(f"**{xp_remaining:,} XP to Level {level + 1}**")
+    except Exception:
+        st.progress(0.0)
+        st.caption("—")
+
+
 def _compute_volume_from_metadata(metadata: dict) -> dict:
     """Compute volume deltas from workout metadata for Performance Dashboard stats.
     Returns {stickhandling_hours, shots, gym_hours, skating_hours, conditioning_hours, mobility_hours}."""
@@ -891,32 +977,7 @@ def _render_bender_board() -> None:
         _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
 
     _overall = _bender_overall_ranked()
-    _view_uids = [""] + [p.get("user_id") or "" for p in _overall if p.get("user_id")]
-
-    def _view_label(uid: str) -> str:
-        if not uid:
-            return "(Your card)"
-        for p in _overall:
-            if (p.get("user_id") or "") == uid:
-                _name = p.get("display_name") or p.get("user_id") or "Unknown"
-                _lv = int(p.get("level") or 1)
-                return f"{_name} — Level {_lv}"
-        return uid or "(Your card)"
-
-    _current_view = st.session_state.get("bender_board_view_uid")
-    if _current_view is not None and _current_view not in _view_uids:
-        _current_view = ""
-    if _current_view is None:
-        _current_view = ""
-    _idx = _view_uids.index(_current_view) if _current_view in _view_uids else 0
-    _sel = st.selectbox(
-        "View player card",
-        options=_view_uids,
-        index=_idx,
-        format_func=_view_label,
-        key="bender_board_view_uid",
-    )
-    _view_uid = _sel or ""
+    _view_uid = st.session_state.get("bender_board_selected_player_uid") or ""
 
     def _render_player_card(prof: dict, card_title: str) -> None:
         _prof = ensure_leveling_defaults(prof)
@@ -953,7 +1014,7 @@ def _render_bender_board() -> None:
         _card.append('</div>')
         st.markdown("\n".join(_card), unsafe_allow_html=True)
 
-    if _view_uids:
+    if _current_uid or _overall:
         if not _view_uid:
             _prof = st.session_state.get("current_profile") or {}
             if _prof and (_prof.get("user_id") or _current_uid):
@@ -969,6 +1030,9 @@ def _render_bender_board() -> None:
             if _profile_to_show:
                 _name = _profile_to_show.get("display_name") or _profile_to_show.get("user_id") or "Unknown"
                 _render_player_card(_profile_to_show, f"{_name}'s player card")
+                if st.button("← Back to your card", key="bender_back_to_your_card"):
+                    st.session_state.bender_board_selected_player_uid = ""
+                    st.rerun()
             else:
                 st.caption("Player not found.")
         st.markdown("---")
@@ -995,10 +1059,9 @@ def _render_bender_board() -> None:
                 if _is_you:
                     st.markdown(f":orange[**{_name}**] *(you)*")
                 else:
-                    with st.popover(_name, type="tertiary"):
-                        st.caption("View this player's level, XP, and category progress.")
+                    with st.popover(_name, type="secondary"):
                         if st.button("View player card", key=f"bender_view_card_{_uid}"):
-                            st.session_state.bender_board_view_uid = _uid
+                            st.session_state.bender_board_selected_player_uid = _uid
                             st.rerun()
             with _c3:
                 st.markdown(_rest)
@@ -3601,6 +3664,8 @@ def _render_training_session():
             if st.session_state.last_output_text:
                 st.divider()
                 st.markdown('<div id="workout-result-section" class="workout-display-wrapper"></div>', unsafe_allow_html=True)
+                _meta = st.session_state.get("last_output_metadata") or _parse_workout_header_for_metadata(st.session_state.last_output_text or "")
+                _render_workout_overview_card(_meta)
                 # Video overlay: pop-up when user clicks play; Close returns to workout
                 _overlay_url = st.session_state.get("video_overlay_embed_url")
                 if _overlay_url:
