@@ -1124,7 +1124,7 @@ def _render_bender_board() -> None:
     st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total XP → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
     if _overall:
 
-        @st.fragment(run_every=None)
+        @st.fragment
         def _leaderboard_rows():
             for r, p in enumerate(_overall[:_rank_visible], 1):
                 _uid = p.get("user_id") or ""
