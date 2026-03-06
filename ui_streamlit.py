@@ -1048,7 +1048,22 @@ def _render_bender_board() -> None:
         _category_profile_key = lambda c: (f"{c}_xp", f"{c}_rank")
 
     _overall = _bender_overall_ranked()
-    _view_uid = st.session_state.get("bender_board_selected_player_uid") or ""
+
+    def _on_player_card_dismiss():
+        if "bender_board_dialog_uid" in st.session_state:
+            del st.session_state["bender_board_dialog_uid"]
+
+    @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss)
+    def _show_player_card_dialog(uid: str) -> None:
+        prof = next((p for p in _overall if (p.get("user_id") or "") == uid), None)
+        if prof is None:
+            prof = load_profile(uid)
+            if prof:
+                prof = ensure_leveling_defaults(prof)
+        if not prof:
+            st.caption("Player not found.")
+            return
+        _render_player_card(prof, f"{(prof.get('display_name') or prof.get('user_id') or 'Unknown')}'s card")
 
     def _render_player_card(prof: dict, card_title: str) -> None:
         _prof = ensure_leveling_defaults(prof)
@@ -1086,26 +1101,11 @@ def _render_bender_board() -> None:
         st.markdown("\n".join(_card), unsafe_allow_html=True)
 
     if _current_uid or _overall:
-        if not _view_uid:
-            _prof = st.session_state.get("current_profile") or {}
-            if _prof and (_prof.get("user_id") or _current_uid):
-                _render_player_card(_prof, "Your player card")
-            else:
-                st.caption("Complete workouts to get your player card.")
+        _prof = st.session_state.get("current_profile") or {}
+        if _prof and (_prof.get("user_id") or _current_uid):
+            _render_player_card(_prof, "Your player card")
         else:
-            _profile_to_show = next((p for p in _overall if (p.get("user_id") or "") == _view_uid), None)
-            if _profile_to_show is None:
-                _profile_to_show = load_profile(_view_uid)
-                if _profile_to_show:
-                    _profile_to_show = ensure_leveling_defaults(_profile_to_show)
-            if _profile_to_show:
-                _name = _profile_to_show.get("display_name") or _profile_to_show.get("user_id") or "Unknown"
-                _render_player_card(_profile_to_show, f"{_name}'s player card")
-                if st.button("← Back to your card", key="bender_back_to_your_card"):
-                    st.session_state.bender_board_selected_player_uid = ""
-                    st.rerun()
-            else:
-                st.caption("Player not found.")
+            st.caption("Complete workouts to get your player card.")
         st.markdown("---")
 
     _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
@@ -2885,6 +2885,29 @@ st.markdown("""
     }
     .bender-board-section-title { color: #ffffff; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; }
     .bender-board-section-caption { color: #888888; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    /* Monthly Leaders & Lifetime Highscores: cleaner on mobile */
+    @media (max-width: 640px) {
+        .bender-board-section {
+            width: 100% !important; max-width: 100% !important;
+            padding: 1rem 1rem !important; margin-left: 0 !important; margin-right: 0 !important;
+            box-sizing: border-box !important;
+        }
+        .bender-board-section .your-work-stats-card {
+            max-width: 100% !important; padding: 0.75rem 0 !important;
+        }
+        .bender-board-section .your-work-row {
+            flex-direction: column !important; align-items: flex-start !important;
+            gap: 0.15rem !important; padding: 0.5rem 0 !important;
+            border-bottom: 1px solid #2a2a2a !important;
+        }
+        .bender-board-section .your-work-row:last-child { border-bottom: none !important; }
+        .bender-board-section .your-work-cat {
+            font-size: 0.85rem !important; color: #999999 !important;
+        }
+        .bender-board-section .your-work-num {
+            font-size: 0.95rem !important; font-weight: 600 !important; color: #ffffff !important;
+        }
+    }
     /* Performance Dashboard: Bender Level text larger */
     .bender-level-heading { font-size: 1.35rem !important; font-weight: 700 !important; color: #ffffff !important; margin-bottom: 0.25rem !important; }
     .bender-level-value { font-size: 1.2rem !important; font-weight: 600 !important; color: #e0e0e0 !important; margin-bottom: 0.5rem !important; }
