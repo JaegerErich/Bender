@@ -2813,6 +2813,7 @@ if st.session_state.current_user_id is None:
     create_age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1, key="create_age")
     create_position = st.selectbox("Position", options=POSITION_OPTIONS, key="create_position")
     create_level = st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, key="create_level")
+    create_team = st.text_input("Team (current team you play for)", key="create_team", placeholder="e.g. Eagles U16")
     _ch_h, _ch_w = st.columns(2)
     with _ch_h:
         create_height = st.text_input("Height", placeholder="e.g. 5'10\" or 180 cm", key="create_height")
@@ -2850,6 +2851,7 @@ if st.session_state.current_user_id is None:
                     "age": int(create_age),
                     "position": create_position,
                     "current_level": create_level,
+                    "team": (create_team or "").strip(),
                     "height": (create_height or "").strip(),
                     "weight": (create_weight or "").strip(),
                     "equipment": _create_equipment,
@@ -2912,7 +2914,7 @@ with st.sidebar:
         st.markdown('<p style="font-size:2rem; font-weight:700; letter-spacing:0.05em; color:#ffffff; margin-bottom:0;">B</p>', unsafe_allow_html=True)
     st.markdown(f"**{display_name}**")
     with st.expander("Account Settings", expanded=False):
-        st.caption("Position, level, age, height & weight")
+        st.caption("Position, level, team, age, height & weight")
         _prof = st.session_state.current_profile or {}
         _pos_val = _prof.get("position") or "Forward"
         _pos_idx = POSITION_OPTIONS.index(_pos_val) if _pos_val in POSITION_OPTIONS else 0
@@ -2920,6 +2922,7 @@ with st.sidebar:
         _lvl_val = _prof.get("current_level") or "Youth"
         _lvl_idx = CURRENT_LEVEL_OPTIONS.index(_lvl_val) if _lvl_val in CURRENT_LEVEL_OPTIONS else 0
         st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, index=_lvl_idx, key="sidebar_level")
+        st.text_input("Team", value=_prof.get("team") or "", placeholder="e.g. Eagles U16", key="sidebar_team")
         _age_val = max(6, min(99, int(_prof.get("age") or 16)))
         st.number_input("Age", min_value=6, max_value=99, value=_age_val, step=1, key="sidebar_age")
         _row_hw = st.columns(2)
@@ -2943,6 +2946,7 @@ with st.sidebar:
             prof["equipment"] = new_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
+            prof["team"] = (st.session_state.get("sidebar_team") or "").strip()
             _saved_age = st.session_state.get("sidebar_age")
             prof["age"] = max(6, min(99, int(_saved_age) if _saved_age is not None else int(prof.get("age") or 16)))
             prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
