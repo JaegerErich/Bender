@@ -4946,6 +4946,53 @@ def extract_ids_from_plan(plan_text: str) -> List[str]:
     return out
 
 
+# Equipment to exclude from workout card display (assumed or redundant)
+_EQUIPMENT_DISPLAY_EXCLUDE = {
+    "stickhandling ball", "shooting pad", "shooting pad & net", "stick & puck",
+    "hockey stick", "puck", "pucks", "chair", "stick obstacle", "wall",
+    "wood stick", "none", "no equipment", "bodyweight",
+}
+
+
+def extract_equipment_from_plan(plan_text: str, data: Dict[str, List[Dict[str, Any]]]) -> List[str]:
+    """
+    Extract unique equipment required by drills in the plan. Excludes assumed items
+    (stick/puck, shooting pad & net, stickhandling ball) and empty/none.
+    Returns canonical display names.
+    """
+    ids = extract_ids_from_plan(plan_text or "")
+    circuit_ids = extract_circuit_ids_from_plan(plan_text or "")
+    leg2can = _legacy_to_canonical_map()
+    seen_raw: Dict[str, str] = {}
+    for cat, drills in (data or {}).items():
+        if not isinstance(drills, list):
+            continue
+        for d in drills:
+            did = norm(get(d, "id", ""))
+            if did and did in ids:
+                for raw in drill_equipment_list(d):
+                    r = norm(raw)
+                    if not r or r in _EQUIPMENT_DISPLAY_EXCLUDE:
+                        continue
+                    key = r.lower()
+                    if any(ex in key for ex in _EQUIPMENT_DISPLAY_EXCLUDE):
+                        continue
+                    if key not in seen_raw:
+                        can = leg2can.get(key, raw)
+                        if can and norm(can).lower() not in _EQUIPMENT_DISPLAY_EXCLUDE:
+                            seen_raw[key] = can
+    for cid in circuit_ids:
+        for circ in (data.get("circuits") or []) if isinstance(data.get("circuits"), list) else []:
+            if norm(get(circ, "id", "")) == cid:
+                raw = norm(get(circ, "equipment", ""))
+                if raw and raw.lower() not in _EQUIPMENT_DISPLAY_EXCLUDE:
+                    key = raw.lower()
+                    if key not in seen_raw:
+                        seen_raw[key] = leg2can.get(key, raw)
+                break
+    return list(dict.fromkeys(seen_raw.values()))
+
+
 # ------------------------------
 # Session generation
 # ------------------------------
@@ -5018,6 +5065,9 @@ def generate_session(
                 pass
         return plan_text
 
+    def _return_with_equipment(text: str):
+        return {"output_text": text, "equipment_used": extract_equipment_from_plan(text, data)}
+
     lines: List[str] = []
     lines.append(f"\nBENDER SINGLE WORKOUT | mode={session_mode} | len={session_len_min} min | age={age} | focus={focus or 'none'}\n")
 
@@ -5066,7 +5116,7 @@ def generate_session(
                     focus_rule=focus_rule,
                     user_equipment=user_equipment,
                 )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             # Development (13-15): strength base + power OR explosive-lite (max 2 contrast blocks)
             if stage == "development":
@@ -5081,7 +5131,7 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                 )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             # Performance / Advanced (16+): map to heavy_leg, upper_core_stability, or heavy_explosive
             pt = (program_day_type or strength_day_type or "leg").lower().strip()
@@ -5115,7 +5165,7 @@ def generate_session(
                     skate_within_24h=skate_within_24h,
                     user_equipment=user_equipment,
                 )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             if pt == "heavy_explosive":
                 strength_lines = build_explosive_session(
@@ -5140,7 +5190,7 @@ def generate_session(
                         post_lift_conditioning_type=post_lift_conditioning_type,
                         skate_within_24h=skate_within_24h,
                     )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             if pt == "heavy_leg":
                 strength_lines = build_heavy_leg_session(
@@ -5164,7 +5214,7 @@ def generate_session(
                         post_lift_conditioning_type=post_lift_conditioning_type,
                         skate_within_24h=skate_within_24h,
                     )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             if pt == "upper_core_stability":
                 strength_lines = build_upper_core_stability_session(
@@ -5188,7 +5238,7 @@ def generate_session(
                         post_lift_conditioning_type=post_lift_conditioning_type,
                         skate_within_24h=skate_within_24h,
                     )
-                return _finalize_and_return("\n".join(lines + strength_lines))
+                return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
             # Fallback: leg/upper without specific program_day_type → generic strength session
             dt = "leg" if pt in ("heavy_leg", "leg") else "upper"
@@ -5212,7 +5262,7 @@ def generate_session(
                 skate_within_24h=skate_within_24h,
                 user_equipment=user_equipment,
             )
-            return _finalize_and_return("\n".join(lines + strength_lines))
+            return _return_with_equipment(_finalize_and_return("\n".join(lines + strength_lines)))
 
         # Shooting — block-based: Warm-up (mechanics), Main (quick release + skill), Finisher (puck retrieval/transition)
         if category == "shooting":
@@ -5320,7 +5370,7 @@ def generate_session(
             for d in chosen:
                 lines.append(format_drill(d))
 
-    return _finalize_and_return("\n".join(lines))
+    return _return_with_equipment(_finalize_and_return("\n".join(lines)))
 
 
 # ------------------------------
@@ -5448,7 +5498,8 @@ def main():
         post_lift_conditioning_type=post_lift_conditioning_type,
         skate_within_24h=skate_within_24h,
     )
-    print(plan)
+    text = plan.get("output_text", plan) if isinstance(plan, dict) else plan
+    print(text)
 
 
 def run_age_stage_tests() -> None:
@@ -5473,8 +5524,9 @@ def run_age_stage_tests() -> None:
             strength_full_gym=(age >= 14),
             user_equipment=None,
         )
-        print(plan)
-        plan_lower = plan.lower()
+        text = plan.get("output_text", plan) if isinstance(plan, dict) else plan
+        print(text)
+        plan_lower = (text or "").lower()
         if age == 11:
             for bad in forbidden_age11:
                 assert bad not in plan_lower, f"Age 11 plan must not contain '{bad}'"

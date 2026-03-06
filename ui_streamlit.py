@@ -633,23 +633,13 @@ def _get_bottom_left_quadrant(metadata: dict) -> str:
             return "Explosiveness"
         emph = (metadata.get("strength_emphasis") or "strength").strip().lower()
         return STRENGTH_EMPHASIS_TO_LABEL.get(emph, "Strength")
-    # Puck Mastery, Conditioning, Skating Mechanics, Mobility -> equipment required
-    equip = metadata.get("equipment_display")
-    items = []
-    if equip:
-        s = str(equip).strip()
-        if s:
-            items = [x.strip() for x in s.split(",") if x.strip()][:5]
-    if not items:
-        try:
-            equip_mode = MODE_TO_EQUIPMENT_MODE.get(mode, "")
-            if equip_mode:
-                import bender_generate_v8_1 as _gen
-                by_mode = getattr(_gen, "get_canonical_equipment_by_mode", lambda: {})()
-                opts = by_mode.get(equip_mode, [])
-                items = [o for o in opts if (o or "").strip().lower() != "none"][:5]
-        except Exception:
-            pass
+    # Puck Mastery, Conditioning, Skating Mechanics, Mobility -> equipment required for this workout
+    # Uses equipment_used from generator (actual drills in workout), excludes stick/puck/pad/net/ball
+    items = metadata.get("equipment_used") or []
+    if isinstance(items, list):
+        items = [str(x).strip() for x in items if str(x).strip()][:5]
+    else:
+        items = []
     if items:
         return "Equipment: " + ", ".join(items)
     return "Equipment: Minimal"
@@ -1185,12 +1175,12 @@ def _render_bender_board() -> None:
             for r, (p, _val, fmt_val) in enumerate(rows[:20], 1):
                 p = ensure_leveling_defaults(p)
                 _name = p.get("display_name") or p.get("user_id") or "Unknown"
-                _cat_title = rank_title_for_category(leveling_cat, rank_from_category_xp(int(p.get(_category_profile_key(leveling_cat)[0]) or 0))) if leveling_cat else "—"
                 _xp = int(p.get(_category_profile_key(leveling_cat)[0]) or 0) if leveling_cat else 0
-                _lv = int(p.get("level") or 1)
+                _cat_rank = rank_from_category_xp(_xp) if leveling_cat else 1
+                _cat_title = rank_title_for_category(leveling_cat, _cat_rank) if leveling_cat else "—"
                 _bc = len(get_unlocked_badges(p))
                 _is_you = (p.get("user_id") or "") == _current_uid
-                _line = f"{r}. **{_name}** — {_cat_title} · {_xp:,} cat XP · Lv {_lv} · {_bc} badge(s) · {fmt_val}"
+                _line = f"{r}. Level {_cat_rank}: **{_cat_title}** — {_name} · {_xp:,} cat XP · {_bc} badge(s) · {fmt_val}"
                 if _is_you:
                     st.markdown(f":orange[{_line}] *(you)*")
                 else:
@@ -1201,7 +1191,9 @@ def _render_bender_board() -> None:
                 _p = ensure_leveling_defaults(_p)
                 _xk = _category_profile_key(leveling_cat)[0] if leveling_cat else ""
                 _cat_xp = int(_p.get(_xk) or 0) if _xk else 0
-                st.caption(f"**Your rank: {_your_idx + 1}** — {rank_title_for_category(leveling_cat, rank_from_category_xp(_cat_xp))} · {_cat_xp:,} cat XP")
+                _yr_rank = rank_from_category_xp(_cat_xp)
+                _yr_title = rank_title_for_category(leveling_cat, _yr_rank)
+                st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat XP")
 
     # --- Section: Lifetime Highscores ---
     _lifetime_map = {cat: (name, val) for cat, name, val in _bender_board_lifetime_leaders()}
@@ -2065,7 +2057,7 @@ def _generate_via_engine(payload: dict) -> dict:
     available_space = payload.get("available_space")
     conditioning_mode = payload.get("conditioning_mode")
     conditioning_effort = payload.get("conditioning_effort")
-    out_text = ENGINE.generate_session(
+    resp = ENGINE.generate_session(
         data=data,
         age=age,
         seed=seed,
@@ -2090,11 +2082,15 @@ def _generate_via_engine(payload: dict) -> dict:
         conditioning_mode=conditioning_mode,
         conditioning_effort=conditioning_effort,
     )
+    if isinstance(resp, dict):
+        out_text = resp.get("output_text", "")
+        equipment_used = resp.get("equipment_used", [])
+    else:
+        out_text = resp
+        equipment_used = []
 
-    # Lightweight "session_id" for display/share later (not persisted)
     session_id = f"{athlete_id.strip().lower()}-{seed}"
-
-    return {"session_id": session_id, "output_text": out_text}
+    return {"session_id": session_id, "output_text": out_text, "equipment_used": equipment_used}
 
 
 def _generate_via_api(payload: dict) -> dict:
@@ -3037,9 +3033,16 @@ st.markdown("""
         margin-top: 0.15rem !important;
     }
 
-    /* Start Workout + Clear workout: same look as Generate session / Request Custom Plan, side-by-side (incl. mobile) */
+    /* Start Workout + Clear workout, Workout Complete + Clear workout: same look as Generate session / Request Custom Plan */
+    /* Use multiple selector variants for Streamlit DOM (markdown + div/block sibling) */
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"],
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"],
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] {
         display: flex !important;
         flex-wrap: nowrap !important;
         gap: 0.75rem !important;
@@ -3047,12 +3050,24 @@ st.markdown("""
         max-width: 28rem !important;
     }
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"] [data-testid="column"],
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] [data-testid="column"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"] [data-testid="column"],
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
         flex: 1 1 0 !important;
         min-width: 0 !important;
     }
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button {
         width: 100% !important;
         font-family: 'DM Sans', sans-serif !important;
         font-weight: 600 !important;
@@ -3063,29 +3078,57 @@ st.markdown("""
         padding: 0.5rem 1.5rem !important;
     }
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button:hover,
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button:hover {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button:hover {
         background: #e0e0e0 !important;
         color: #000000 !important;
     }
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"],
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"] {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"],
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"],
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"],
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"],
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"] {
         background: #333333 !important;
         color: #ffffff !important;
         border-color: #444444 !important;
     }
     [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"]:hover,
-    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"]:hover {
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover,
+    [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover,
+    div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type .stButton button[kind="secondary"]:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover,
+    [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover,
+    div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] .stButton button[kind="secondary"]:hover {
         background: #444444 !important;
         color: #ffffff !important;
     }
     @media (max-width: 640px) {
         [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
-        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type {
+        [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#workout-start-clear-row) + [data-testid="stHorizontalBlock"],
+        div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type,
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + [data-testid="stHorizontalBlock"],
+        div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] {
             flex-wrap: nowrap !important;
             max-width: 100% !important;
         }
         [data-testid="stMarkdown"]:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
-        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        [data-testid="stMarkdown"]:has(#workout-start-clear-row) + div [data-testid="stHorizontalBlock"] [data-testid="column"],
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"],
+        [data-testid="stMarkdown"]:has(#workout-complete-clear-row) + div [data-testid="stHorizontalBlock"] [data-testid="column"],
+        div:has(#workout-start-clear-row) ~ [data-testid="stHorizontalBlock"] [data-testid="column"],
+        div:has(#workout-complete-clear-row) ~ [data-testid="stHorizontalBlock"] [data-testid="column"] {
             flex: 1 1 0 !important;
             min-width: min(120px, 45%) !important;
         }
@@ -3819,23 +3862,11 @@ def _render_training_session():
 
                     st.session_state.last_session_id = resp.get("session_id")
                     out_text = resp.get("output_text")
+                    _equip_used = resp.get("equipment_used") or []
                     if out_text and out_text.strip():
                         st.session_state.last_output_text = out_text
                         st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
                         _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
-                        # Build equipment_display for non-performance modes (quadrant card)
-                        _equip_display = None
-                        if effective_mode != "performance":
-                            try:
-                                equip_mode = MODE_TO_EQUIPMENT_MODE.get(effective_mode, "")
-                                if equip_mode and ENGINE:
-                                    by_mode = ENGINE.get_canonical_equipment_by_mode()
-                                    opts = set((o or "").strip().lower() for o in (by_mode.get(equip_mode) or []))
-                                    _canon = getattr(ENGINE, "canonicalize_equipment_list", lambda x: x or [])(profile.get("equipment"))
-                                    user_for_mode = [e for e in _canon if (e or "").strip().lower() in opts][:5]
-                                    _equip_display = ", ".join(user_for_mode) if user_for_mode else None
-                            except Exception:
-                                pass
                         _meta_is_explosive = _is_explosive_day or (strength_emphasis == "explosiveness") if effective_mode == "performance" else False
                         st.session_state.last_output_metadata = {
                             "mode": effective_mode,
@@ -3847,7 +3878,7 @@ def _render_training_session():
                             "strength_emphasis": _payload_strength_emphasis if effective_mode == "performance" else None,
                             "strength_day_type": _payload_strength_day if effective_mode == "performance" else None,
                             "is_explosive_day": _meta_is_explosive,
-                            "equipment_display": _equip_display,
+                            "equipment_used": _equip_used,
                         }
                         st.session_state.scroll_to_workout = True
                         st.success("Generated")
