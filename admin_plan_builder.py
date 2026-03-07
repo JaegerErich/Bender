@@ -474,10 +474,17 @@ def generate_plan_with_workouts(
             shooting_fi = next((f for f in focus_items if f["mode_key"] == "shooting"), None)
             stick_fi = next((f for f in focus_items if f["mode_key"] == "stickhandling"), None)
             if shooting_fi and stick_fi:
-                merged_workout = (shooting_fi.get("workout") or "").strip()
+                def _workout_str(fi: dict) -> str:
+                    w = fi.get("workout")
+                    if w is None:
+                        return ""
+                    if isinstance(w, list):
+                        return "\n".join(str(x) for x in w).strip()
+                    return str(w).strip()
+                merged_workout = _workout_str(shooting_fi)
                 if merged_workout:
                     merged_workout += "\n\n"
-                merged_workout += (stick_fi.get("workout") or "").strip()
+                merged_workout += _workout_str(stick_fi)
                 shoot_min = shooting_fi.get("params", {}).get("session_len_min", 25)
                 stick_min = stick_fi.get("params", {}).get("session_len_min", 25)
                 focus_items = [

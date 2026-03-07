@@ -35,6 +35,16 @@ def load_custom_plan_requests() -> list[dict]:
 def _render_equipment_dropdowns(equipment_by_mode: dict, current_equip: set, key_prefix: str) -> None:
     """Render equipment per mode as expanders (dropdowns) with Select All + individual checkboxes."""
     _equip_tooltips = {"Line/Tape": "Floor line (tape or painted) for agility.", "Reaction ball": "Small rebound ball for reaction drills."}
+    # Initialize missing keys from profile so checkboxes don't appear deselected after session restart
+    for mode_name, opts in equipment_by_mode.items():
+        opts_real = [o for o in opts if o != "None"]
+        for opt in opts_real:
+            key = f"{key_prefix}_{mode_name}_{opt}"
+            if key not in st.session_state:
+                st.session_state[key] = opt in current_equip
+        sel_all_key = f"{key_prefix}_{mode_name}_Select All"
+        if sel_all_key not in st.session_state:
+            st.session_state[sel_all_key] = all(opt in current_equip for opt in opts_real)
     for mode_name, opts in equipment_by_mode.items():
         opts_real = [o for o in opts if o != "None"]
         if not opts_real:
@@ -3733,9 +3743,17 @@ with st.sidebar:
         prof = st.session_state.current_profile or {}
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
         current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
-        _render_equipment_dropdowns(equipment_by_mode, current_equip, "sidebar")
+        _equip_prefix = "sidebar_" + (str(st.session_state.get("current_user_id") or "default").replace(" ", "_")[:80])
+        _render_equipment_dropdowns(equipment_by_mode, current_equip, _equip_prefix)
         if st.button("Save equipment", key="sidebar_save"):
-            new_equip = _collect_equipment_from_session(equipment_by_mode, "sidebar")
+            new_equip = _collect_equipment_from_session(equipment_by_mode, _equip_prefix)
+            existing_equip = prof.get("equipment") or []
+            if existing_equip and not new_equip:
+                if not st.session_state.get("sidebar_confirm_clear_equipment"):
+                    st.session_state.sidebar_confirm_clear_equipment = True
+                    st.warning("This will clear all equipment. Click Save again to confirm, or cancel by refreshing.")
+                    st.rerun()
+                del st.session_state.sidebar_confirm_clear_equipment
             prof["equipment"] = new_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
@@ -4079,21 +4097,13 @@ def _render_training_session():
                     st.caption("Conditioning capped at 25 min for quality.")
     
             elif effective_mode == "performance":
-                # Lower → heavy_leg, Upper → upper_core_stability, Power → heavy_explosive
-                STRENGTH_DAY_OPTIONS = ["Lower", "Upper", "Power"]
-                STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability", "Power": "heavy_explosive"}
-                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS, index=0)  # Default Lower (has special superset)
+                STRENGTH_DAY_OPTIONS = ["Lower", "Upper"]
+                STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability"}
+                day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS, index=0)
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("explosiveness"))
+                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("power"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
-                # 20% explosive day: override to Power + power (same logic as Workout Plan)
-                if random.random() < 0.20:
-                    day_label = "Power"
-                    strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                    strength_emphasis = "power"
-                    _is_explosive_day = True
-                else:
-                    _is_explosive_day = False
+                _is_explosive_day = strength_emphasis == "explosiveness"
             elif effective_mode == "mobility":
                 focus = "mobility"
 
@@ -4152,9 +4162,11 @@ def _render_training_session():
                             resp = _generate_via_engine(payload)
 
                     st.session_state.last_session_id = resp.get("session_id")
-                    out_text = resp.get("output_text")
+                    out_text = resp.get("output_text") or ""
                     _equip_used = resp.get("equipment_used") or []
-                    if out_text and out_text.strip():
+                    if "BENDER_EQUIPMENT_REQUIRED" in out_text:
+                        st.error("Equipment is required.")
+                    elif out_text and out_text.strip():
                         st.session_state.last_output_text = out_text
                         st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
                         _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]

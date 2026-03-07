@@ -1526,6 +1526,8 @@ def build_stickhandling_blocks_session(
     """
     pool = _filter_stickhandling_pool(drills, age, available_equipment, available_space)
     if not pool:
+        if available_equipment:
+            return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
         return [f"Stickhandling ({stickhandling_minutes} min)", "Format: 45s work / 30s rest per rep", "- [No matching drills found]"]
 
     total_sec = stickhandling_minutes * 60
@@ -1826,6 +1828,8 @@ def build_shooting_blocks_session(
     """
     pool = filter_shooting_pool(drills, age, athlete_skill, user_equipment)
     if not pool:
+        if user_equipment:
+            return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
         return ["- [No matching drills found]"]
 
     effective_minutes = minutes - max(2, round(minutes * 0.1))
@@ -2557,6 +2561,8 @@ def build_mobility_recovery_session(
         pool = [d for d in pool if not _mobility_is_foam_roller(d)]
 
     if not pool:
+        if user_equipment:
+            return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
         return [
             "Mobility / Recovery (%d min)" % minutes,
             "- [No matching drills found]",
@@ -2656,6 +2662,8 @@ def build_mobility_recovery_session(
             used_ids.add(norm(get(d, "id", "")))
 
     if not selected:
+        if user_equipment:
+            return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
         return ["Mobility / Recovery (%d min)" % minutes, "- [No matching drills found]"]
 
     # Assign rounds: start 1 per drill; add in priority hips->ankles->flow->breathing; max 3 per drill, foam max 2
@@ -4976,10 +4984,12 @@ def extract_ids_from_plan(plan_text: str) -> List[str]:
     return out
 
 
-# Equipment to exclude from workout card display (universal / not equipment)
-# Show all necessary equipment (Bosu, bands, extra sticks, shooting pad & net, etc.)
+# Equipment to exclude from workout card display (assumed base / not "necessary" extra)
+# Show necessary extra equipment (Bosu, bands, 2 extra sticks, etc.) — exclude assumed base items
 _EQUIPMENT_DISPLAY_EXCLUDE = {
     "none", "no equipment", "bodyweight",
+    "stickhandling ball", "shooting pad", "shooting pad & net", "stick & puck",
+    "hockey stick", "puck", "pucks", "chair", "stick obstacle", "wall", "wood stick",
 }
 
 
@@ -5207,6 +5217,8 @@ def generate_session(
                     max_contrast_blocks=3,
                     include_elastic_primer=True,
                 )
+                if strength_lines is None:
+                    return _return_with_equipment("BENDER_EQUIPMENT_REQUIRED\n\nEquipment is required.")
                 if strength_full_gym:
                     _append_gym_conditioning_and_mobility(
                         strength_lines,
@@ -5231,6 +5243,8 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                 )
+                if strength_lines is None:
+                    return _return_with_equipment("BENDER_EQUIPMENT_REQUIRED\n\nEquipment is required.")
                 if strength_full_gym:
                     _append_gym_conditioning_and_mobility(
                         strength_lines,
@@ -5255,6 +5269,8 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                 )
+                if strength_lines is None:
+                    return _return_with_equipment("BENDER_EQUIPMENT_REQUIRED\n\nEquipment is required.")
                 if strength_full_gym:
                     _append_gym_conditioning_and_mobility(
                         strength_lines,
@@ -5387,7 +5403,11 @@ def generate_session(
         section_title = "SKATING MECHANICS" if (category == "movement" and session_mode == "skating_mechanics") else category.replace("_", " ").upper()
         lines.append(f"\n{section_title} (~{minutes} min)")
         if not chosen:
-            lines.append("- [No matching drills found]")
+            if user_equipment is not None:
+                lines.append("BENDER_EQUIPMENT_REQUIRED")
+                lines.append("Equipment is required.")
+            else:
+                lines.append("- [No matching drills found]")
         elif category == "movement" and session_mode == "skating_mechanics":
             # Single events with time each; total matches block
             lines.extend(build_skating_mechanics_sequential(chosen, seconds))
