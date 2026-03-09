@@ -14,7 +14,7 @@ import os
 import random
 import time
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -877,6 +877,7 @@ def pick_n(
     avoid_names: Optional[set] = None,
     recent_ids: Optional[set] = None,
     recent_penalty: float = 0.25,
+    extra_weight_fn: Optional[Callable[[Dict[str, Any]], float]] = None,
 ) -> List[Dict[str, Any]]:
     if not drills or n <= 0:
         return []
@@ -909,6 +910,8 @@ def pick_n(
             did = norm(get(d, "id", default=""))
             if did and did in recent_ids_norm:
                 w *= float(recent_penalty)
+            if extra_weight_fn:
+                w *= extra_weight_fn(d)
             w *= (0.95 + 0.10 * rnd.random())
             weights.append(w)
 
@@ -1401,6 +1404,25 @@ def _is_baseline_equip_part(pl: str) -> bool:
     return False
 
 
+def _stickhandling_equipment_group(d: Dict[str, Any]) -> str:
+    """Return equipment group key for clustering: bosu, resistance_band, 2_extra_sticks, metal_plate, partner, other, minimal."""
+    eq = _stickhandling_special_equipment(d)
+    if not eq:
+        return "minimal"
+    low = eq.lower()
+    if "bosu" in low:
+        return "bosu"
+    if "band" in low or "resistance" in low:
+        return "resistance_band"
+    if "stick" in low and ("2" in low or "extra" in low):
+        return "2_extra_sticks"
+    if "plate" in low or "metal" in low:
+        return "metal_plate"
+    if "partner" in low:
+        return "partner"
+    return "other"
+
+
 def _stickhandling_special_equipment(d: Dict[str, Any]) -> Optional[str]:
     """Return only the extra equipment needed (exclude stick/puck); None if nothing special."""
     eq = norm(get(d, "equipment", "")).strip()
@@ -1578,8 +1600,16 @@ def build_stickhandling_blocks_session(
     used_ids: set = set()
     bucket_counts: Dict[str, int] = {}
     med_high_count = 0
+    active_equipment_groups: set = set()
 
-    def pick_for_block(block: str, n: int, exclude_ids: set, bcounts: Dict[str, int], mh_count: int) -> List[Dict[str, Any]]:
+    def pick_for_block(
+        block: str,
+        n: int,
+        exclude_ids: set,
+        bcounts: Dict[str, int],
+        mh_count: int,
+        equip_groups: set,
+    ) -> List[Dict[str, Any]]:
         candidates = [
             d for d in pool
             if norm(get(d, "id", "")) not in exclude_ids
@@ -1597,7 +1627,11 @@ def build_stickhandling_blocks_session(
             candidates.sort(key=lambda d: preference_score(d))
         if focus_rule:
             candidates = sorted(candidates, key=lambda d: focus_multiplier_for_drill(d, focus_rule), reverse=True)
-        return pick_n(candidates, n=min(n, len(candidates)), rnd=rnd, focus_rule=focus_rule)
+        # Prefer drills that share equipment with already-selected drills (pull out BOSU once, use it 2x)
+        def equip_weight(d: Dict[str, Any]) -> float:
+            g = _stickhandling_equipment_group(d)
+            return 2.0 if g != "minimal" and g in equip_groups else 1.0
+        return pick_n(candidates, n=min(n, len(candidates)), rnd=rnd, focus_rule=focus_rule, extra_weight_fn=equip_weight)
 
     for block in ("control", "quick_hands", "game_transfer", "decision"):
         sec = block_sec[block]
@@ -1605,7 +1639,7 @@ def build_stickhandling_blocks_session(
         if not block_pool:
             continue
         n_drills = min(2, len(block_pool))
-        drills_for_block = pick_for_block(block, n_drills, used_ids, bucket_counts, med_high_count)
+        drills_for_block = pick_for_block(block, n_drills, used_ids, bucket_counts, med_high_count, active_equipment_groups)
         if not drills_for_block:
             continue
         for d in drills_for_block:
@@ -1614,11 +1648,27 @@ def build_stickhandling_blocks_session(
             bucket_counts[b] = bucket_counts.get(b, 0) + 1
             if norm(get(d, "intensity", "")).lower() == "med-high":
                 med_high_count += 1
+            g = _stickhandling_equipment_group(d)
+            if g != "minimal":
+                active_equipment_groups.add(g)
         # Each rep = 45s work + 30s rest; allocate block time across drills
         reps = max(2, round(sec / (len(drills_for_block) * STICKHANDLING_INTERVAL_SEC)))
         for d in drills_for_block:
             per_drill_total = reps * STICKHANDLING_INTERVAL_SEC  # work + rest
             result.append((block, d, reps, per_drill_total))
+
+    # Cluster drills by equipment so players don't pull out BOSU/band/extra sticks for one drill then put away
+    _EQUIP_ORDER = ("minimal", "bosu", "resistance_band", "2_extra_sticks", "metal_plate", "partner", "other")
+    _BLOCK_ORDER = ("control", "quick_hands", "game_transfer", "decision")
+
+    def _sort_key(item: Tuple[str, Dict[str, Any], int, int]) -> Tuple[int, int]:
+        block, d, reps, per = item
+        eq_group = _stickhandling_equipment_group(d)
+        eq_idx = _EQUIP_ORDER.index(eq_group) if eq_group in _EQUIP_ORDER else 99
+        block_idx = _BLOCK_ORDER.index(block) if block in _BLOCK_ORDER else 99
+        return (eq_idx, block_idx)
+
+    result.sort(key=_sort_key)
 
     # Nudge to fit usable_sec
     total_assigned = sum(per for _, _, _, per in result)
