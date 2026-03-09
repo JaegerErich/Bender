@@ -1,5 +1,24 @@
 [
   {
+    "team_id": "t_bears_u16_001",
+    "team_name": "U16 Bears",
+    "age_group": "U16",
+    "level": "",
+    "season": "",
+    "coach_user_id": "john_smith",
+    "coach_name": "John Smith",
+    "assistant_coaches": [],
+    "invite_code": "BEARS16",
+    "members": [
+      {
+        "user_id": "john_smith",
+        "role": "coach",
+        "joined_at": "2026-03-09T12:00:00.000000"
+      }
+    ],
+    "created_at": "2026-03-09T12:00:00.000000"
+  },
+  {
     "team_id": "t_08e475f25facf334",
     "team_name": "Test Eagles",
     "age_group": "",
