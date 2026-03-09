@@ -490,6 +490,7 @@ def render_workout_pretty(text: str) -> None:
 # -----------------------------
 import sys
 import importlib
+import importlib.util
 
 ENGINE_IMPORT_ERROR = None
 ENGINE = None
@@ -501,7 +502,14 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 try:
-    ENGINE = importlib.import_module("bender_generate_v8_1")
+    _engine_path = os.path.join(BASE_DIR, "bender_generate_v8_1.py")
+    if os.path.isfile(_engine_path):
+        _spec = importlib.util.spec_from_file_location("bender_generate_v8_1", _engine_path)
+        _engine_mod = importlib.util.module_from_spec(_spec)
+        _spec.loader.exec_module(_engine_mod)
+        ENGINE = _engine_mod
+    else:
+        ENGINE = importlib.import_module("bender_generate_v8_1")
 except Exception as e:
     ENGINE_IMPORT_ERROR = e
 
