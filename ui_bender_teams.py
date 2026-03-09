@@ -32,6 +32,11 @@ try:
         get_player_activity_summary,
         get_team_activity_summary,
         get_recent_team_activity,
+        get_team_weekly_targets,
+        set_team_weekly_targets,
+        get_team_mode_minutes,
+        TEAM_CATEGORY_ORDER,
+        TEAM_CATEGORY_LABELS,
         is_team_coach,
         mark_assignment_completed,
         FEEDBACK_TYPES,
@@ -49,6 +54,11 @@ except ImportError:
     remove_member_from_team = lambda *a: False
     get_team_members = get_team_players = get_team_players_extended = get_teams_for_user = get_teams_coached_by = lambda *a: []
     get_player_activity_summary = get_team_activity_summary = get_recent_team_activity = lambda *a: {}
+    get_team_weekly_targets = lambda *a: {}
+    set_team_weekly_targets = lambda *a: False
+    get_team_mode_minutes = lambda *a: {}
+    TEAM_CATEGORY_ORDER = []
+    TEAM_CATEGORY_LABELS = {}
     is_team_coach = lambda *a: False
     mark_assignment_completed = lambda *a: False
     FEEDBACK_TYPES = ()
@@ -199,6 +209,51 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
         st.metric("Completion %", f"{summary.get('completion_percentage', 0)}%")
     with m4:
         st.metric("Avg minutes", f"{int(summary.get('avg_minutes_per_player', 0))}")
+
+    # Weekly targets, current week avg, season totals
+    st.markdown("#### Weekly targets & progress")
+    targets = get_team_weekly_targets(team_id)
+    week_mins = get_team_mode_minutes(team_id, loader, period="week")
+    season_mins = get_team_mode_minutes(team_id, loader, period="season")
+    n_players = max(1, len(players))
+    with st.container():
+        cols = st.columns([2, 1, 1])
+        with cols[0]:
+            st.caption("**Category**")
+        with cols[1]:
+            st.caption("**Target (min/week)**")
+        with cols[2]:
+            st.caption("**Avg this week**")
+        new_targets = {}
+        for cat in TEAM_CATEGORY_ORDER:
+            label = TEAM_CATEGORY_LABELS.get(cat, cat)
+            with cols[0]:
+                st.write(label)
+            with cols[1]:
+                v = st.number_input(
+                    f"Target {cat}",
+                    min_value=0,
+                    max_value=600,
+                    value=int(targets.get(cat, 0)),
+                    step=15,
+                    key=f"target_{team_id}_{cat}",
+                    label_visibility="collapsed",
+                )
+                new_targets[cat] = int(v)
+            with cols[2]:
+                avg_week = week_mins.get(cat, 0) / n_players
+                st.write(f"{int(avg_week)} min")
+        if st.button("Save targets", key=f"save_targets_{team_id}"):
+            set_team_weekly_targets(team_id, new_targets)
+            st.rerun()
+    st.markdown("**Season totals (all players)**")
+    for cat in TEAM_CATEGORY_ORDER:
+        label = TEAM_CATEGORY_LABELS.get(cat, cat)
+        tot = int(season_mins.get(cat, 0))
+        h, m = divmod(tot, 60)
+        st.caption(f"{label}: {h}h {m}m" if h > 0 else f"{label}: {m}m")
+
+    st.divider()
     # Roster snapshot + attention
     col_roster, col_attention = st.columns([2, 1])
     with col_roster:
@@ -431,18 +486,17 @@ def render_bender_teams_coach(
         render_team_creation(load_profile_fn, save_profile_fn)
         return
     team_ids = [t["team_id"] for t in coached]
-    team_names = [t.get("team_name", t["team_id"]) for t in coached]
+    def _team_label(t):
+        name = t.get("team_name", t["team_id"])
+        code = (t.get("invite_code") or "").strip()
+        return f"{name} - Invite code: {code}" if code else name
+    team_names = [_team_label(t) for t in coached]
     if "bender_teams_team_idx" not in st.session_state:
         st.session_state.bender_teams_team_idx = 0
     # Team selector row
     sel_idx = st.selectbox("Team", range(len(team_ids)), index=st.session_state.bender_teams_team_idx, format_func=lambda i: team_names[i], key="bender_teams_team_select")
     st.session_state.bender_teams_team_idx = min(sel_idx, len(team_ids) - 1)
     team_id = team_ids[sel_idx]
-    # Invite code for current team (coach can share with players)
-    _cur_team = coached[sel_idx]
-    _invite_code = _cur_team.get("invite_code") or ""
-    if _invite_code:
-        st.info(f"**Invite code for players:** `{_invite_code}` — Share this code so players can join **{_cur_team.get('team_name', 'your team')}**.")
     sub = st.session_state.get("bender_teams_sub", "Overview")
     opts = ["Overview", "Roster", "Assignments", "Feedback", "Add Team", "Join team"]
     st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)

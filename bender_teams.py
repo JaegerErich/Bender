@@ -201,6 +201,77 @@ def get_team_by_id(team_id: str) -> dict | None:
     return None
 
 
+def update_team(team_id: str, **updates: Any) -> bool:
+    """Update team fields. Returns True if team found and updated."""
+    teams = load_teams()
+    for t in teams:
+        if t.get("team_id") == team_id:
+            t.update(updates)
+            save_teams(teams)
+            return True
+    return False
+
+
+def get_team_weekly_targets(team_id: str) -> dict[str, int]:
+    """Coach weekly target minutes per category. Keys: performance, skating_mechanics, puck_mastery, energy_systems, mobility."""
+    t = get_team_by_id(team_id)
+    return dict(t.get("weekly_target_minutes") or {})
+
+
+def set_team_weekly_targets(team_id: str, targets: dict[str, int]) -> bool:
+    """Set coach weekly target minutes per category."""
+    return update_team(team_id, weekly_target_minutes=targets)
+
+
+# Display categories for mode aggregation (raw modes -> display category)
+TEAM_MODE_CATEGORIES = {
+    "performance": "performance",
+    "skating_mechanics": "skating_mechanics",
+    "stickhandling": "puck_mastery",
+    "shooting": "puck_mastery",
+    "skills_only": "puck_mastery",
+    "energy_systems": "energy_systems",
+    "mobility": "mobility",
+}
+TEAM_CATEGORY_LABELS = {
+    "performance": "Performance",
+    "skating_mechanics": "Skating Mechanics",
+    "puck_mastery": "Puck Mastery",
+    "energy_systems": "Conditioning",
+    "mobility": "Mobility Recovery",
+}
+TEAM_CATEGORY_ORDER = ["performance", "skating_mechanics", "puck_mastery", "energy_systems", "mobility"]
+
+
+def get_team_mode_minutes(
+    team_id: str,
+    profile_loader,
+    *,
+    period: str = "week",
+) -> dict[str, float]:
+    """Minutes per category for team. period='week' (last 7 days) or 'season' (all time)."""
+    players = get_team_players_extended(team_id)
+    today = date.today()
+    cutoff = today - timedelta(days=7) if period == "week" else None
+    mins: dict[str, float] = {k: 0.0 for k in TEAM_CATEGORY_ORDER}
+    for m in players:
+        uid = m.get("user_id")
+        prof = profile_loader(uid) if uid else None
+        if not prof:
+            continue
+        for e in prof.get("completion_history") or []:
+            d = e.get("date") or ""
+            try:
+                dt = date.fromisoformat(d[:10]) if d else None
+            except (ValueError, TypeError):
+                dt = None
+            if period == "season" or (dt and cutoff and dt >= cutoff):
+                m_raw = (e.get("mode") or "").strip().lower()
+                cat = TEAM_MODE_CATEGORIES.get(m_raw, "performance")
+                mins[cat] = mins.get(cat, 0) + float(e.get("minutes", 0) or 0)
+    return mins
+
+
 def get_team_by_invite_code(code: str) -> dict | None:
     c = (code or "").strip().upper()
     for t in load_teams():
