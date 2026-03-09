@@ -70,5 +70,12 @@
       "team_name": "U16 Bears",
       "role": "player"
     }
-  ]
+  ],
+  "performance_tests": {
+    "vertical_jump": "21.2 in",
+    "agility_5_10_5": "5.37 s",
+    "shooting_tests": "45",
+    "stickhandling_tests": "69",
+    "conditioning_test": "71"
+  }
 }
