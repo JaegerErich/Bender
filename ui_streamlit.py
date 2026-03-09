@@ -3905,14 +3905,16 @@ if _admin:
     except Exception:
         _team_req_pending = 0
     _team_req_label = f"Admin: Team Requests ({_team_req_pending})" if _team_req_pending > 0 else "Admin: Team Requests"
-    _admin_regular_tabs = ["Workout Generator", "Admin: Plan Builder", "Performance Dashboard", "Bender Board"]
+    _admin_regular_tabs = ["Workout Generator", "Performance Dashboard", "Bender Board"]
     if _is_coach:
         _admin_regular_tabs.append("Bender Teams")
-    _admin_special_tabs = ["Admin: Highscores", _custom_req_tab_label, _team_req_label]
+    _admin_special_tabs = ["Admin: Plan Builder", "Admin: Highscores", _custom_req_tab_label, _team_req_label]
     _admin_tab_names = _admin_regular_tabs + _admin_special_tabs
-    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else (4 if _is_coach else 0)
-    if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
-        st.session_state.admin_tab_idx = _admin_default_idx
+    _admin_default_tab = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else ("Bender Teams" if _is_coach else "Workout Generator")
+    if "admin_tab" not in st.session_state or st.session_state.get("admin_pending_integration"):
+        st.session_state.admin_tab = _admin_default_tab
+    if "admin_tab_idx" in st.session_state:
+        del st.session_state["admin_tab_idx"]
     _tab_plan = None
 elif _has_valid_plan:
     _tab_admin = None
@@ -4466,22 +4468,25 @@ def _render_training_session():
 if _admin:
     st.markdown('<div id="admin-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
     _admin_row1_cols = st.columns(len(_admin_regular_tabs))
-    for _ai, _aname in enumerate(_admin_regular_tabs):
-        with _admin_row1_cols[_ai]:
-            _a_selected = st.session_state.admin_tab_idx == _ai
-            if st.button(_aname, key=f"admin_tab_{_ai}", type="primary" if _a_selected else "secondary"):
-                st.session_state.admin_tab_idx = _ai
+    for _aname in _admin_regular_tabs:
+        with _admin_row1_cols[_admin_regular_tabs.index(_aname)]:
+            _a_selected = st.session_state.admin_tab == _aname
+            if st.button(_aname, key=f"admin_tab_{_aname.replace(' ', '_').replace(':', '')}", type="primary" if _a_selected else "secondary"):
+                st.session_state.admin_tab = _aname
                 st.rerun()
     st.markdown('<div id="admin-tab-bar-row2" aria-hidden="true"></div>', unsafe_allow_html=True)
     _admin_row2_cols = st.columns(len(_admin_special_tabs))
-    for _ai, _aname in enumerate(_admin_special_tabs):
-        _idx = len(_admin_regular_tabs) + _ai
-        with _admin_row2_cols[_ai]:
-            _a_selected = st.session_state.admin_tab_idx == _idx
-            if st.button(_aname, key=f"admin_tab_{_idx}", type="primary" if _a_selected else "secondary"):
-                st.session_state.admin_tab_idx = _idx
+    for _a2i, _aname in enumerate(_admin_special_tabs):
+        _a_selected = st.session_state.admin_tab == _aname or (
+            _aname.startswith("Admin: Custom Plan Request") and (st.session_state.admin_tab or "").startswith("Admin: Custom Plan Request")
+        ) or (
+            _aname.startswith("Admin: Team Requests") and (st.session_state.admin_tab or "").startswith("Admin: Team Requests")
+        )
+        with _admin_row2_cols[_a2i]:
+            if st.button(_aname, key=f"admin_tab_special_{_a2i}", type="primary" if _a_selected else "secondary"):
+                st.session_state.admin_tab = _aname
                 st.rerun()
-    if st.session_state.admin_tab_idx == 0:
+    if st.session_state.admin_tab == "Workout Generator":
         _render_training_session()
 else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
@@ -4541,7 +4546,7 @@ else:
             st.error(f"Bender Teams: {e}")
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
-if _admin and st.session_state.get("admin_tab_idx") == 1:
+if _admin and st.session_state.get("admin_tab", "").startswith("Admin: Plan Builder"):
         # Process pending integration from Custom Plan Request tab (before any widgets that use these keys)
         if st.session_state.get("admin_pending_integration"):
             _req = st.session_state.admin_pending_integration
@@ -4951,15 +4956,15 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
             else:
                 st.caption("No other profiles found. Create accounts for players first.")
 
-# Admin: Team Requests tab (approve/deny team creation requests)
-if _admin and st.session_state.get("admin_tab_idx") == 7:
+# Admin: Team Requests tab (approve/deny team creation requests from Bender Teams)
+if _admin and (st.session_state.get("admin_tab") or "").startswith("Admin: Team Requests"):
     try:
         from bender_teams import load_team_requests, approve_team_request, deny_team_request
-        st.subheader("Admin: Team creation requests")
-        st.caption("Approve or deny team creation requests from users. Approved requests create the team and add the requester as coach.")
+        st.subheader("Admin: Team Requests")
+        st.caption("Team creation requests from **Bender Teams**. Approve or deny requests; approved requests create the team and add the requester as coach.")
         requests_list = load_team_requests()
         if not requests_list:
-            st.info("No team creation requests yet. Users can submit requests via **Bender Teams** → Create a team.")
+            st.info("No team creation requests yet. Users submit requests from **Bender Teams** → Create a team.")
         else:
             for req in reversed(requests_list):
                 status = req.get("status", "pending")
@@ -5003,8 +5008,8 @@ if _admin and st.session_state.get("admin_tab_idx") == 7:
     except Exception as e:
         st.error(f"Team Requests: {e}")
 
-# Custom Plan Requester tab (admin only)
-if _admin and st.session_state.get("admin_tab_idx") == 6:
+# Admin: Custom Plan Request tab
+if _admin and (st.session_state.get("admin_tab") or "").startswith("Admin: Custom Plan Request"):
         st.subheader("Admin: Custom Plan Request")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
@@ -5036,16 +5041,16 @@ if _admin and st.session_state.get("admin_tab_idx") == 6:
 
 
 # Performance Dashboard tab — admin only (players get it via player tabs)
-if _admin and st.session_state.get("admin_tab_idx") == 2:
+if _admin and st.session_state.get("admin_tab") == "Performance Dashboard":
         _render_your_work_stats()
 
 # Bender Board tab — visible to all (admin and player)
-if _admin and st.session_state.get("admin_tab_idx") == 3:
+if _admin and st.session_state.get("admin_tab") == "Bender Board":
         _render_bender_board()
 
 
 # Bender Teams tab (admin/coach only)
-if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 4:
+if _admin and _is_coach and st.session_state.get("admin_tab") == "Bender Teams":
     if st.session_state.get("bender_teams_join_success"):
         st.success(st.session_state.bender_teams_join_success)
         st.session_state.bender_teams_join_success = None
@@ -5056,7 +5061,7 @@ if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 4:
         st.error(f"Bender Teams: {e}")
 
 # Admin: Highscores tab (admin only)
-if _admin and st.session_state.get("admin_tab_idx") == 5:
+if _admin and st.session_state.get("admin_tab", "").startswith("Admin: Highscores"):
         st.subheader("Admin: Highscores")
         st.caption("Lifetime completions across all players. Data from **Workout Complete** (Training Session) and plan completions (My Plan).")
         all_profs = list_profiles()
