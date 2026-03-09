@@ -2747,7 +2747,7 @@ def build_mobility_recovery_session(
 STRENGTH_EMPHASIS_UI_NAME = {
     "power": "Power",
     "strength": "strength (game strength)",
-    "hypertrophy": "Hypertrophy",
+    "hypertrophy": "Muscle Endurance",
     "recovery": "recovery (less stress)",
 }
 
@@ -2769,12 +2769,12 @@ STRENGTH_RX_TABLE: Dict[str, Dict[str, Any]] = {
     },
     "hypertrophy": {
         FATIGUE_ROLE_HIGH:      {"sets": 4, "reps": 8,  "rest_sec": 150},
-        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 12, "rest_sec": 75},
-        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 15, "rest_sec": 45},
+        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 10, "rest_sec": 75},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 12, "rest_sec": 45},
     },
     "recovery": {
         FATIGUE_ROLE_HIGH:      None,
-        FATIGUE_ROLE_SECONDARY: {"sets": 3, "reps": 12, "rest_sec": 60},
+        FATIGUE_ROLE_SECONDARY: {"sets": 3, "reps": 12, "rest_sec": 60},  # 10–15 reps or 20–45s
         FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 0,  "rest_sec": 0},  # use timed prescriptions if needed
     },
 }
@@ -2917,7 +2917,8 @@ def _avoid_movement_pattern(pool: List[Dict[str, Any]], mp_to_avoid: str) -> Lis
 REP_LIMITS: Dict[str, Tuple[int, int]] = {
     "power": (1, 5),
     "max_strength": (2, 6),
-    "hypertrophy": (6, 15),
+    "hypertrophy": (6, 12),  # Muscle Endurance: 6–12 reps
+    "stability": (6, 10),    # Stability/Core: 6–10 per side
     "strength_endurance": (10, 25),
     "youth": (6, 12),
 }
@@ -2985,10 +2986,10 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
     role = fatigue_role
 
     LIMITS = {
-        "power": {FATIGUE_ROLE_HIGH: (2, 6), FATIGUE_ROLE_SECONDARY: (3, 6), FATIGUE_ROLE_RESILIENCE: (6, 10)},
+        "power": {FATIGUE_ROLE_HIGH: (2, 6), FATIGUE_ROLE_SECONDARY: (3, 6), FATIGUE_ROLE_RESILIENCE: (6, 10)},  # 3–6 reps, don't change
         "strength": {FATIGUE_ROLE_HIGH: (3, 7), FATIGUE_ROLE_SECONDARY: (5, 10), FATIGUE_ROLE_RESILIENCE: (8, 12)},
-        "hypertrophy": {FATIGUE_ROLE_HIGH: (6, 10), FATIGUE_ROLE_SECONDARY: (8, 14), FATIGUE_ROLE_RESILIENCE: (12, 20)},
-        "recovery": {FATIGUE_ROLE_HIGH: (0, 0), FATIGUE_ROLE_SECONDARY: (10, 15), FATIGUE_ROLE_RESILIENCE: (0, 0)},
+        "hypertrophy": {FATIGUE_ROLE_HIGH: (6, 10), FATIGUE_ROLE_SECONDARY: (8, 12), FATIGUE_ROLE_RESILIENCE: (10, 12)},  # Muscle Endurance: 6–12
+        "recovery": {FATIGUE_ROLE_HIGH: (0, 0), FATIGUE_ROLE_SECONDARY: (10, 15), FATIGUE_ROLE_RESILIENCE: (10, 15)},  # 10–15 reps or 20–45s
     }
 
     lo, hi = parsed

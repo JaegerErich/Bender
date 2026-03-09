@@ -541,7 +541,7 @@ LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
 STRENGTH_EMPHASIS_LABELS = {
     "power": "Power",
     "explosiveness": "Explosiveness",
-    "hypertrophy": "Hypertrophy",
+    "hypertrophy": "Muscle Endurance",
     "recovery": "recovery (less stress)",
 }
 EMPHASIS_KEYS = list(STRENGTH_EMPHASIS_LABELS.keys())
@@ -627,7 +627,7 @@ STRENGTH_EMPHASIS_TO_LABEL = {
     "power": "Power",
     "explosiveness": "Explosiveness",
     "strength": "Strength",
-    "hypertrophy": "Hypertrophy",
+    "hypertrophy": "Muscle Endurance",
     "recovery": "Recovery",
 }
 
@@ -4104,6 +4104,23 @@ def _render_training_session():
                 em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("power"))
                 strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
                 _is_explosive_day = strength_emphasis == "explosiveness"
+                with st.expander("Rep range guide", expanded=False):
+                    st.markdown("""**Power (Explosive)**
+- 3–6 reps
+- Max speed and intent
+- Full recovery between sets
+
+**Muscle Endurance**
+- 6–12 reps
+- Controlled tempo
+- Moderate load
+
+**Stability / Core**
+- 6–10 reps per side **or** 20–40 seconds
+
+**Recovery / Mobility**
+- 10–15 reps **or** 20–45 seconds
+- Low fatigue""")
             elif effective_mode == "mobility":
                 focus = "mobility"
 
