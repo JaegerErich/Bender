@@ -4576,7 +4576,7 @@ else:
         try:
             if _is_coach:
                 from ui_bender_teams import render_bender_teams_coach
-                render_bender_teams_coach(load_profile, save_profile)
+                render_bender_teams_coach(load_profile, save_profile, _generate_via_engine)
             elif _on_team:
                 from ui_bender_teams import render_bender_teams_player_portal
                 _uid = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id
@@ -5160,7 +5160,7 @@ if _admin and st.session_state.get("admin_tab") == "Bender Teams":
         st.session_state.bender_teams_join_success = None
     try:
         from ui_bender_teams import render_bender_teams_coach
-        render_bender_teams_coach(load_profile, save_profile)
+        render_bender_teams_coach(load_profile, save_profile, _generate_via_engine)
     except Exception as e:
         st.error(f"Bender Teams: {e}")
 

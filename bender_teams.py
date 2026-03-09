@@ -16,6 +16,7 @@ TEAMS_PATH = DATA_DIR / "teams.json"
 TEAM_REQUESTS_PATH = DATA_DIR / "team_creation_requests.json"
 ASSIGNMENTS_PATH = DATA_DIR / "assignments.json"
 FEEDBACK_PATH = DATA_DIR / "feedback.json"
+TEAM_FOCUS_PATH = DATA_DIR / "team_focus.json"
 
 # Roles: coach, assistant_coach, player
 ROLES = ("coach", "assistant_coach", "player")
@@ -31,6 +32,12 @@ FEEDBACK_TYPES = ("encouragement", "correction", "focus_area", "recovery_note", 
 
 # Subgroups (used for assignment filtering)
 SUBGROUPS = ("forwards", "defense", "goalies", "rehab", "captains")
+
+# Assignment types (for scaling and Signals)
+ASSIGNMENT_TYPE_GENERATED = "generated_workout"
+ASSIGNMENT_TYPE_SPECIFIC = "specific_workout"
+ASSIGNMENT_TYPE_TEAM_FOCUS = "team_focus"
+ASSIGNMENT_TYPE_CHALLENGE = "challenge"
 
 
 def _load_json(path: Path, default: list | dict) -> list | dict:
@@ -562,10 +569,17 @@ def create_assignment(
     due_date: str | None = None,
     required_or_suggested: str = "required",
     note_from_coach: str = "",
+    assignment_type: str = ASSIGNMENT_TYPE_SPECIFIC,
+    workout_id: str | None = None,
+    generated_session_id: str | None = None,
+    focus_primary: str | None = None,
+    focus_secondary: str | None = None,
 ) -> dict:
+    now = datetime.now().isoformat()
     a = {
         "assignment_id": f"a_{secrets.token_hex(8)}",
         "team_id": team_id,
+        "assignment_type": assignment_type,
         "workout_title": workout_title or "Workout",
         "workout_text": workout_text or "",
         "workout_params": workout_params or {},
@@ -575,8 +589,15 @@ def create_assignment(
         "due_date": due_date or "",
         "required_or_suggested": required_or_suggested,
         "note_from_coach": note_from_coach or "",
-        "created_at": datetime.now().isoformat(),
+        "created_at": now,
+        "updated_at": now,
+        "status": "active",
+        "is_active": True,
         "completed_by": [],
+        "workout_id": workout_id or "",
+        "generated_session_id": generated_session_id or "",
+        "focus_primary": focus_primary or "",
+        "focus_secondary": focus_secondary or "",
     }
     assignments = load_assignments()
     assignments.append(a)
@@ -621,6 +642,155 @@ def get_assignment_by_id(assignment_id: str) -> dict | None:
         if a.get("assignment_id") == assignment_id:
             return a
     return None
+
+
+def update_assignment(assignment_id: str, **kwargs) -> bool:
+    """Update assignment fields. Returns True if found and updated."""
+    assignments = load_assignments()
+    for a in assignments:
+        if a.get("assignment_id") == assignment_id:
+            for k, v in kwargs.items():
+                a[k] = v
+            a["updated_at"] = datetime.now().isoformat()
+            save_assignments(assignments)
+            return True
+    return False
+
+
+def get_assignment_target_player_ids(
+    assignment: dict,
+    team_id: str,
+    get_players_fn,
+    *,
+    profile_loader=None,
+) -> list[str]:
+    """Return list of player user_ids this assignment applies to."""
+    to_type = assignment.get("assigned_to_type", "team")
+    to_id = assignment.get("assigned_to_id", "")
+    players = get_players_fn(team_id)
+    if to_type == ASSIGNED_TO_PLAYER:
+        return [to_id] if to_id else []
+    if to_type == ASSIGNED_TO_SUBGROUP:
+        subgroup = (to_id or "").strip().lower()
+        out = []
+        for m in players:
+            uid = m.get("user_id")
+            pos = (m.get("position") or "").strip().lower()
+            if profile_loader and not pos:
+                prof = profile_loader(uid) or {}
+                pos = (prof.get("position") or "").strip().lower()
+            if subgroup == "forwards" and pos in ("lw", "rw", "c", "f", "forward", "left wing", "right wing", "center"):
+                out.append(uid)
+            elif subgroup == "defense" and pos in ("d", "ld", "rd", "defense", "defence"):
+                out.append(uid)
+            elif subgroup == "goalies" and pos in ("g", "goalie", "goaltender"):
+                out.append(uid)
+            elif subgroup and pos == subgroup:
+                out.append(uid)
+            elif not subgroup:
+                out.append(uid)
+        return out if out else [m["user_id"] for m in players]
+    return [m["user_id"] for m in players]
+
+
+def get_assignment_completion_counts(
+    assignment: dict,
+    team_id: str,
+    get_players_fn,
+    *,
+    due_date_cutoff: date | None = None,
+    profile_loader=None,
+) -> dict:
+    """Return completed, pending, overdue, total, completion_pct for an assignment."""
+    target_ids = get_assignment_target_player_ids(
+        assignment, team_id, get_players_fn, profile_loader=profile_loader
+    )
+    total = len(target_ids)
+    completed_ids = set(assignment.get("completed_by") or [])
+    completed = sum(1 for uid in target_ids if uid in completed_ids)
+    pending = total - completed
+    due_str = (assignment.get("due_date") or "")[:10]
+    today = due_date_cutoff or date.today()
+    try:
+        due_dt = date.fromisoformat(due_str) if due_str else None
+    except (ValueError, TypeError):
+        due_dt = None
+    overdue = 0
+    if due_dt and pending > 0 and today > due_dt:
+        overdue = pending
+    return {
+        "completed": completed,
+        "pending": pending,
+        "overdue": overdue,
+        "total": total,
+        "completion_pct": round(completed / total * 100, 1) if total else 0,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Team focus (guides development; used by Signals and player suggestions)
+# ---------------------------------------------------------------------------
+
+def load_team_focus() -> list[dict]:
+    return _load_json(TEAM_FOCUS_PATH, [])
+
+
+def save_team_focus(focus_list: list[dict]) -> None:
+    _save_json(TEAM_FOCUS_PATH, focus_list)
+
+
+def get_team_focus(team_id: str, *, player_id: str | None = None, subgroup: str | None = None) -> dict | None:
+    """Active focus for team, optional player or subgroup. Most recent active wins."""
+    for f in reversed(load_team_focus()):
+        if f.get("team_id") != team_id or not f.get("is_active", True):
+            continue
+        if player_id and f.get("player_id") != player_id:
+            continue
+        if subgroup and f.get("subgroup") != subgroup:
+            continue
+        if not player_id and f.get("player_id"):
+            continue
+        if not subgroup and f.get("subgroup"):
+            continue
+        return f
+    return None
+
+
+def set_team_focus(
+    team_id: str,
+    created_by: str,
+    primary_focus: str,
+    *,
+    secondary_focus: str | None = None,
+    player_id: str | None = None,
+    subgroup: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> dict:
+    """Set or update active focus. Deactivates previous overlapping focus."""
+    now = datetime.now().isoformat()
+    focus_list = load_team_focus()
+    for f in focus_list:
+        if f.get("team_id") != team_id:
+            continue
+        if f.get("player_id") == player_id and f.get("subgroup") == subgroup and f.get("is_active", True):
+            f["is_active"] = False
+    new_f = {
+        "focus_id": f"f_{secrets.token_hex(6)}",
+        "team_id": team_id,
+        "player_id": player_id or "",
+        "subgroup": subgroup or "",
+        "primary_focus": primary_focus,
+        "secondary_focus": secondary_focus or "",
+        "created_by": created_by,
+        "start_date": start_date or date.today().isoformat(),
+        "end_date": end_date or "",
+        "is_active": True,
+        "created_at": now,
+    }
+    focus_list.append(new_f)
+    save_team_focus(focus_list)
+    return new_f
 
 
 # ---------------------------------------------------------------------------

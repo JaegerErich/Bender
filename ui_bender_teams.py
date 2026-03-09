@@ -44,6 +44,17 @@ try:
         FEEDBACK_TYPES,
         ASSIGNED_TO_TEAM,
         ASSIGNED_TO_PLAYER,
+        ASSIGNED_TO_SUBGROUP,
+        SUBGROUPS,
+        update_assignment,
+        get_assignment_completion_counts,
+        get_assignment_by_id,
+        get_team_focus,
+        set_team_focus,
+        ASSIGNMENT_TYPE_GENERATED,
+        ASSIGNMENT_TYPE_SPECIFIC,
+        ASSIGNMENT_TYPE_TEAM_FOCUS,
+        ASSIGNMENT_TYPE_CHALLENGE,
     )
 except ImportError:
     # Graceful fallback if module missing
@@ -64,7 +75,13 @@ except ImportError:
     is_team_coach = lambda *a: False
     mark_assignment_completed = lambda *a: False
     FEEDBACK_TYPES = ()
-    ASSIGNED_TO_TEAM = ASSIGNED_TO_PLAYER = ""
+    ASSIGNED_TO_TEAM = ASSIGNED_TO_PLAYER = ASSIGNED_TO_SUBGROUP = ""
+    SUBGROUPS = ()
+    update_assignment = lambda *a, **k: False
+    get_assignment_by_id = lambda *a, **k: None
+    get_assignment_completion_counts = lambda *a, **k: {}
+    get_team_focus = set_team_focus = lambda *a, **k: None
+    ASSIGNMENT_TYPE_GENERATED = ASSIGNMENT_TYPE_SPECIFIC = ASSIGNMENT_TYPE_TEAM_FOCUS = ASSIGNMENT_TYPE_CHALLENGE = ""
 
 
 def _add_team_to_player_profile(prof: dict, team: dict) -> dict:
@@ -423,57 +440,313 @@ def render_coach_player_profile(team_id: str, player_id: str, load_profile_fn: C
 
 
 # --- Coach: Assignments page ---
+# Focus area labels and engine mode mapping for Generate Workout
+FOCUS_OPTIONS = [
+    ("performance", "Performance"),
+    ("skating_mechanics", "Skating Mechanics"),
+    ("skills_only", "Puck Mastery"),
+    ("energy_systems", "Conditioning"),
+    ("mobility", "Mobility Recovery"),
+]
+DURATION_OPTIONS = [10, 20, 30, 45, 60]
+DIFFICULTY_OPTIONS = ["Easy", "Moderate", "Hard"]
+
+
+def _get_generate_session_fn():
+    """Lazy import of streamlit engine generator so Assignments can call it when available."""
+    try:
+        from ui_streamlit import _generate_via_engine
+        return _generate_via_engine
+    except Exception:
+        return None
+
+
+def _assignment_target_label(a: dict, load_profile_fn: Callable) -> str:
+    to_type = a.get("assigned_to_type", "")
+    to_id = (a.get("assigned_to_id") or "").strip()
+    if to_type == ASSIGNED_TO_PLAYER and to_id:
+        return (load_profile_fn(to_id) or {}).get("display_name") or to_id
+    if to_type == ASSIGNED_TO_SUBGROUP and to_id:
+        return to_id.capitalize()
+    return "Team"
+
+
+def _assignment_type_label(t: str) -> str:
+    if t == ASSIGNMENT_TYPE_GENERATED:
+        return "Generated"
+    if t == ASSIGNMENT_TYPE_SPECIFIC:
+        return "Specific"
+    if t == ASSIGNMENT_TYPE_TEAM_FOCUS:
+        return "Team focus"
+    if t == ASSIGNMENT_TYPE_CHALLENGE:
+        return "Challenge"
+    return t or "Assignment"
+
+
 def render_coach_assignments(team_id: str, load_profile_fn: Callable, generate_session_fn=None):
     st.subheader("Assignments")
     t = get_team_by_id(team_id)
     if not t:
         st.info("Share your invite code above so players can join. You can assign workouts once they join your team.")
         return
-    assignments = get_assignments_for_team(team_id)
-    if not assignments:
-        st.info("No assignments yet. Assign workouts to your team or individual players using the form below once they join.")
-    for a in reversed(assignments[-30:]):
-        due = a.get("due_date", "")
-        req = a.get("required_or_suggested", "required")
-        if a.get("assigned_to_type") == ASSIGNED_TO_PLAYER:
-            target = (load_profile_fn(a.get("assigned_to_id", "")) or {}).get("display_name") or a.get("assigned_to_id", "")
-        else:
-            target = "Full team"
-        completed = a.get("completed_by", [])
-        st.write(f"**{a.get('workout_title', 'Workout')}** — {req} · Due {due[:10] if due else '—'} · To: {target}")
-        st.caption(f"Completed by: {len(completed)}")
+    gen_fn = generate_session_fn or _get_generate_session_fn()
+    players_ext = get_team_players_extended(team_id)
+    def _get_players( tid ):
+        return players_ext if tid == team_id else []
+    # ----- Section 1: Active Assignments -----
+    st.markdown("#### Active Assignments")
+    all_assignments = get_assignments_for_team(team_id)
+    active = [a for a in all_assignments if a.get("is_active", True) and (a.get("status") or "active") == "active"]
+    if not active:
+        st.caption("No active assignments. Create one below.")
+    else:
+        for a in reversed(active):
+            counts = get_assignment_completion_counts(
+                a, team_id, _get_players, profile_loader=load_profile_fn
+            )
+            title = a.get("workout_title") or "Workout"
+            a_type = _assignment_type_label(a.get("assignment_type") or ASSIGNMENT_TYPE_SPECIFIC)
+            target = _assignment_target_label(a, load_profile_fn)
+            due_str = (a.get("due_date") or "")[:10]
+            req = a.get("required_or_suggested") or "required"
+            completed = counts.get("completed", 0)
+            pending = counts.get("pending", 0)
+            overdue = counts.get("overdue", 0)
+            total = counts.get("total", 0)
+            pct = counts.get("completion_pct", 0)
+            created = (a.get("created_at") or "")[:10]
+            with st.container():
+                row = st.columns([3, 1, 1, 1])
+                with row[0]:
+                    st.write(f"**{title}** · {a_type} · To: **{target}**")
+                    st.caption(f"Due {due_str or '—'} · {req} · Created {created}")
+                with row[1]:
+                    st.metric("Done", f"{completed}/{total}" if total else "—")
+                with row[2]:
+                    st.metric("Pending", pending)
+                with row[3]:
+                    if overdue:
+                        st.metric("Overdue", overdue)
+                    else:
+                        st.metric("Completion", f"{pct}%")
+                aid = a.get("assignment_id", "")
+                if st.button("View", key=f"assign_view_{aid}"):
+                    st.session_state[f"assign_detail_{aid}"] = True
+                    st.rerun()
+                if st.session_state.get(f"assign_detail_{aid}"):
+                    with st.expander("Details", expanded=True):
+                        st.text_area("Workout", value=a.get("workout_text") or "(no details)", key=f"assign_text_{aid}", height=120, disabled=True)
+                        if st.button("Close", key=f"assign_close_{aid}"):
+                            st.session_state[f"assign_detail_{aid}"] = False
+                            st.rerun()
     st.divider()
-    st.markdown("#### New assignment")
-    with st.expander("Assign to team or player"):
-        to_type = st.radio("Assign to", ["team", "player"], key="new_assign_to")
-        players = get_team_players_extended(team_id)
-        if to_type == "player":
-            if not players:
-                st.caption("No players on team yet. Invite players with your team code first.")
-                pid = None
-            else:
-                pid = st.selectbox("Player", [p.get("user_id") for p in players], format_func=lambda x: (load_profile_fn(x) or {}).get("display_name") or x, key="new_assign_player")
-        else:
-            pid = None
-        wt = st.text_input("Workout title", key="new_assign_title")
-        wtext = st.text_area("Workout details", key="new_assign_text")
-        due = st.date_input("Due date", key="new_assign_due", value=date.today() + timedelta(days=7))
-        req = st.radio("Type", ["required", "suggested"], key="new_assign_req")
-        note = st.text_input("Note", key="new_assign_note")
-        if st.button("Create assignment", key="new_assign_btn"):
-            if to_type == "player" and not pid:
-                st.warning("Select a player or assign to full team.")
-            else:
-                target_id = pid if to_type == "player" and pid else team_id
-                create_assignment(
-                    team_id, st.session_state.current_user_id,
-                    ASSIGNED_TO_PLAYER if to_type == "player" else ASSIGNED_TO_TEAM,
-                    target_id,
-                    workout_title=wt or "Workout", workout_text=wtext,
-                    due_date=due.isoformat(), required_or_suggested=req, note_from_coach=note,
-                )
-                st.success("Assignment created.")
+    # ----- Section 2: Create Assignment -----
+    st.markdown("#### Create Assignment")
+    create_choice = st.radio(
+        "How do you want to create an assignment?",
+        ["Generate Workout", "Assign Specific Workout", "Set Team Focus", "Create Team Challenge"],
+        key="assign_create_choice",
+        horizontal=True,
+    )
+    if create_choice == "Generate Workout":
+        _render_create_generate_workout(team_id, load_profile_fn, players_ext, gen_fn)
+    elif create_choice == "Assign Specific Workout":
+        _render_create_assign_specific(team_id, load_profile_fn, players_ext)
+    elif create_choice == "Set Team Focus":
+        _render_create_team_focus(team_id, load_profile_fn, players_ext)
+    else:
+        st.caption("Team challenges (e.g. complete 3 puck mastery workouts this week) — coming soon.")
+    st.divider()
+    # ----- Section 3: Assignment History -----
+    st.markdown("#### Assignment History")
+    inactive = [a for a in all_assignments if not a.get("is_active", True) or (a.get("status") or "") not in ("", "active")]
+    if not inactive:
+        st.caption("No past assignments.")
+    else:
+        for a in reversed(inactive[-20:]):
+            counts = get_assignment_completion_counts(a, team_id, _get_players, profile_loader=load_profile_fn)
+            title = a.get("workout_title") or "Workout"
+            target = _assignment_target_label(a, load_profile_fn)
+            due_str = (a.get("due_date") or "")[:10]
+            completed = counts.get("completed", 0)
+            total = counts.get("total", 0)
+            pct = counts.get("completion_pct", 0)
+            st.write(f"**{title}** · To: {target} · Due {due_str} · Completed {completed}/{total} ({pct}%)")
+            aid = a.get("assignment_id", "")
+            if st.button("Duplicate", key=f"hist_dup_{aid}"):
+                _duplicate_assignment(a, team_id)
                 st.rerun()
+
+
+def _duplicate_assignment(a: dict, team_id: str) -> None:
+    uid = st.session_state.get("current_user_id", "")
+    create_assignment(
+        team_id, uid,
+        a.get("assigned_to_type", ASSIGNED_TO_TEAM),
+        a.get("assigned_to_id", team_id),
+        workout_title=a.get("workout_title", "Workout"),
+        workout_text=a.get("workout_text", ""),
+        due_date=(date.today() + timedelta(days=7)).isoformat(),
+        required_or_suggested=a.get("required_or_suggested", "required"),
+        note_from_coach=a.get("note_from_coach", ""),
+        assignment_type=a.get("assignment_type", ASSIGNMENT_TYPE_SPECIFIC),
+        workout_id=a.get("workout_id"),
+        generated_session_id=a.get("generated_session_id"),
+        focus_primary=a.get("focus_primary") or None,
+        focus_secondary=a.get("focus_secondary") or None,
+    )
+
+
+def _render_create_generate_workout(team_id: str, load_profile_fn: Callable, players_ext: list, gen_fn: Callable | None) -> None:
+    st.caption("Use Bender to generate a workout, then assign it to the team, a subgroup, or a player.")
+    if not gen_fn:
+        st.warning("Workout generator is not available in this context. Use the main Bender app to generate, or assign a specific workout below.")
+    target_type = st.radio("Assign to", ["Entire Team", "Forwards", "Defense", "Goalies", "Individual Player"], key="gen_assign_to")
+    if target_type == "Individual Player":
+        if not players_ext:
+            st.caption("No players on team yet.")
+            pid = None
+        else:
+            pid = st.selectbox("Player", [p.get("user_id") for p in players_ext], format_func=lambda x: (load_profile_fn(x) or {}).get("display_name") or x, key="gen_player")
+    else:
+        pid = None
+    focus_label = st.selectbox("Focus area", [label for _, label in FOCUS_OPTIONS], key="gen_focus")
+    focus_mode = next(m for m, label in FOCUS_OPTIONS if label == focus_label)
+    duration = st.selectbox("Duration (min)", DURATION_OPTIONS, key="gen_duration")
+    difficulty = st.selectbox("Difficulty", DIFFICULTY_OPTIONS, key="gen_difficulty")
+    due = st.date_input("Due date", value=date.today() + timedelta(days=7), key="gen_due")
+    required = st.radio("Required or suggested", ["required", "suggested"], key="gen_req")
+    note = st.text_input("Coach note (optional)", key="gen_note")
+    if st.button("Generate workout", key="gen_btn"):
+        payload = {
+            "mode": focus_mode,
+            "minutes": duration,
+            "age": 14,
+            "athlete_id": f"team_{team_id}",
+        }
+        try:
+            with st.spinner("Generating..."):
+                resp = gen_fn(payload)
+            out_text = (resp or {}).get("output_text", "")
+            if not out_text or not out_text.strip():
+                st.error("Generation returned no content.")
+            else:
+                st.session_state.assign_gen_preview = out_text
+                st.session_state.assign_gen_params = {
+                    "team_id": team_id,
+                    "focus_mode": focus_mode,
+                    "duration": duration,
+                    "due": due,
+                    "required": required,
+                    "note": note,
+                    "target_type": target_type,
+                    "pid": pid,
+                    "session_id": (resp or {}).get("session_id", ""),
+                }
+                st.rerun()
+        except Exception as e:
+            st.error(str(e))
+    if st.session_state.get("assign_gen_preview"):
+        st.markdown("**Preview**")
+        st.text_area("Generated workout", value=st.session_state.assign_gen_preview, height=200, key="gen_preview_area", disabled=True)
+        params = st.session_state.get("assign_gen_params") or {}
+        if st.button("Assign this workout", key="gen_assign_btn"):
+            uid = st.session_state.get("current_user_id", "")
+            if params.get("target_type") == "Individual Player" and params.get("pid"):
+                to_type, to_id = ASSIGNED_TO_PLAYER, params["pid"]
+            elif params.get("target_type") == "Entire Team":
+                to_type, to_id = ASSIGNED_TO_TEAM, team_id
+            elif params.get("target_type") == "Forwards":
+                to_type, to_id = ASSIGNED_TO_SUBGROUP, "forwards"
+            elif params.get("target_type") == "Defense":
+                to_type, to_id = ASSIGNED_TO_SUBGROUP, "defense"
+            elif params.get("target_type") == "Goalies":
+                to_type, to_id = ASSIGNED_TO_SUBGROUP, "goalies"
+            else:
+                to_type, to_id = ASSIGNED_TO_TEAM, team_id
+            create_assignment(
+                team_id, uid, to_type, to_id,
+                workout_title=f"{next((label for m, label in FOCUS_OPTIONS if m == params.get('focus_mode')), params.get('focus_mode', ''))} — {params.get('duration', 30)} min",
+                workout_text=st.session_state.assign_gen_preview,
+                workout_params={"duration": params.get("duration"), "focus": params.get("focus_mode"), "session_id": params.get("session_id")},
+                due_date=params.get("due", date.today()).isoformat() if hasattr(params.get("due"), "isoformat") else (params.get("due") or ""),
+                required_or_suggested=params.get("required", "required"),
+                note_from_coach=params.get("note", ""),
+                assignment_type=ASSIGNMENT_TYPE_GENERATED,
+                generated_session_id=params.get("session_id", ""),
+            )
+            st.session_state.assign_gen_preview = None
+            st.session_state.assign_gen_params = None
+            st.success("Assignment created.")
+            st.rerun()
+        if st.button("Regenerate", key="gen_regen_btn"):
+            st.session_state.assign_gen_preview = None
+            st.session_state.assign_gen_params = None
+            st.rerun()
+
+
+def _render_create_assign_specific(team_id: str, load_profile_fn: Callable, players_ext: list) -> None:
+    st.caption("Choose an existing workout from the library and assign it.")
+    target_type = st.radio("Assign to", ["Team", "Forwards", "Defense", "Goalies", "Individual Player"], key="spec_assign_to")
+    if target_type == "Individual Player":
+        pid = st.selectbox("Player", [p.get("user_id") for p in players_ext], format_func=lambda x: (load_profile_fn(x) or {}).get("display_name") or x, key="spec_player") if players_ext else None
+    else:
+        pid = None
+    wt = st.text_input("Workout title", key="spec_title", placeholder="e.g. Puck Mastery Session")
+    wtext = st.text_area("Workout details", key="spec_text", placeholder="Paste or describe the workout.")
+    due = st.date_input("Due date", value=date.today() + timedelta(days=7), key="spec_due")
+    required = st.radio("Required or suggested", ["required", "suggested"], key="spec_req")
+    note = st.text_input("Coach note (optional)", key="spec_note")
+    if st.button("Create assignment", key="spec_btn"):
+        uid = st.session_state.get("current_user_id", "")
+        if target_type == "Individual Player" and pid:
+            to_type, to_id = ASSIGNED_TO_PLAYER, pid
+        elif target_type == "Team":
+            to_type, to_id = ASSIGNED_TO_TEAM, team_id
+        elif target_type == "Forwards":
+            to_type, to_id = ASSIGNED_TO_SUBGROUP, "forwards"
+        elif target_type == "Defense":
+            to_type, to_id = ASSIGNED_TO_SUBGROUP, "defense"
+        elif target_type == "Goalies":
+            to_type, to_id = ASSIGNED_TO_SUBGROUP, "goalies"
+        else:
+            to_type, to_id = ASSIGNED_TO_TEAM, team_id
+        create_assignment(
+            team_id, uid, to_type, to_id,
+            workout_title=wt or "Workout", workout_text=wtext,
+            due_date=due.isoformat(), required_or_suggested=required, note_from_coach=note,
+            assignment_type=ASSIGNMENT_TYPE_SPECIFIC,
+        )
+        st.success("Assignment created.")
+        st.rerun()
+
+
+def _render_create_team_focus(team_id: str, load_profile_fn: Callable, players_ext: list) -> None:
+    st.caption("Set a team or player focus so Bender can suggest relevant workouts and Signals can track priorities.")
+    primary = st.selectbox("Primary focus", [label for _, label in FOCUS_OPTIONS], key="focus_primary")
+    secondary = st.selectbox("Secondary focus (optional)", ["(none)"] + [label for _, label in FOCUS_OPTIONS], key="focus_secondary")
+    target = st.radio("Apply to", ["Entire team", "Individual player"], key="focus_target")
+    player_id = None
+    if target == "Individual player" and players_ext:
+        player_id = st.selectbox("Player", [p.get("user_id") for p in players_ext], format_func=lambda x: (load_profile_fn(x) or {}).get("display_name") or x, key="focus_player")
+    start = st.date_input("Start", value=date.today(), key="focus_start")
+    end = st.date_input("End (optional)", value=None, key="focus_end")
+    if st.button("Set focus", key="focus_btn"):
+        uid = st.session_state.get("current_user_id", "")
+        primary_key = next(m for m, label in FOCUS_OPTIONS if label == primary)
+        secondary_key = None
+        if secondary and secondary != "(none)":
+            secondary_key = next(m for m, label in FOCUS_OPTIONS if label == secondary)
+        end_date = end.isoformat() if end and hasattr(end, "isoformat") else None
+        set_team_focus(
+            team_id, uid, primary_key,
+            secondary_focus=secondary_key,
+            player_id=player_id,
+            start_date=start.isoformat() if hasattr(start, "isoformat") else None,
+            end_date=end_date,
+        )
+        st.success("Team focus set. Players will see this priority and Bender can use it for suggestions.")
+        st.rerun()
 
 
 # --- Coach: Feedback page ---
@@ -655,10 +928,61 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
             st.write(f"{best_val:.2f} ({best_name})")
 
 
+# --- Coach: Signals (Smart Coaching Signals placeholder) ---
+def _render_coach_signals_placeholder(team_id: str, load_profile_fn: Callable) -> None:
+    st.subheader("Signals")
+    st.caption("Smart Coaching Signals will appear here: inactive players, missed assignments, recovery neglect, and quick actions (Assign, Set Focus, Feedback).")
+    st.info("Coming soon: actionable signals based on team and player activity.")
+
+# --- Coach: Settings (Add Team, Join team, team setup) ---
+def _render_coach_settings(team_id: str, load_profile_fn: Callable, save_profile_fn: Callable, uid: str) -> None:
+    st.subheader("Settings")
+    st.markdown("#### Create another team")
+    st.caption("Submit a request to create a new team. An admin will review and approve.")
+    _prof = load_profile_fn(uid)
+    disp = (_prof or {}).get("display_name") or uid
+    with st.form("create_team_form_settings"):
+        c_name = st.text_input("Team name", placeholder="e.g. Eagles U14", key="add_team_name")
+        c_age = st.text_input("Age group (optional)", placeholder="e.g. U14", key="add_team_age")
+        c_level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College"], key="add_team_level")
+        c_season = st.text_input("Season (optional)", placeholder="e.g. 2024-25", key="add_team_season")
+        if st.form_submit_button("Submit request"):
+            name = (c_name or "").strip()
+            if not name:
+                st.error("Enter a team name.")
+            elif has_pending_team_request(uid, name):
+                st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
+            elif create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or ""):
+                st.success("The request has been submitted.")
+                st.rerun()
+    st.divider()
+    st.markdown("#### Join a team")
+    st.caption("Enter an invite code to join another team as a player.")
+    join_code = st.text_input("Invite code", key="teams_join_code_coach", placeholder="e.g. ABC123").strip().upper()
+    if st.button("Join team", key="teams_join_btn_coach"):
+        if not join_code:
+            st.error("Enter an invite code.")
+        else:
+            t = get_team_by_invite_code(join_code)
+            if not t:
+                st.error("Invalid invite code.")
+            else:
+                if add_member_to_team(t["team_id"], uid, "player"):
+                    prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
+                    save_profile_fn(prof)
+                    if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
+                        st.session_state.current_profile = prof
+                    st.success(f"You joined **{t.get('team_name', 'team')}**.")
+                    st.rerun()
+                else:
+                    st.info("You're already on this team.")
+
+
 # --- Main coach dashboard router ---
 def render_bender_teams_coach(
     load_profile_fn: Callable,
     save_profile_fn: Callable,
+    generate_session_fn: Callable | None = None,
 ):
     """Main entry for Bender Teams coach view. Renders team selector + sub-pages."""
     uid = st.session_state.current_user_id
@@ -675,74 +999,20 @@ def render_bender_teams_coach(
         return f"{name} - Invite code: {code}" if code else name
     team_names = [_team_label(t) for t in coached]
 
-    def _dropdown_label(i):
-        if i < len(team_ids):
-            return team_names[i]
-        if i == len(team_ids):
-            return "+ Add Team"
-        return "Join team"
-
     if "bender_teams_team_idx" not in st.session_state:
         st.session_state.bender_teams_team_idx = 0
-    # Team selector: teams + Add Team, Join team
     n_teams = len(team_ids)
     sel_idx = st.selectbox(
         "Team",
-        range(n_teams + 2),
-        index=min(st.session_state.bender_teams_team_idx, n_teams + 1),
-        format_func=_dropdown_label,
+        range(n_teams),
+        index=min(st.session_state.bender_teams_team_idx, n_teams - 1) if n_teams else 0,
+        format_func=lambda i: team_names[i],
         key="bender_teams_team_select",
     )
     st.session_state.bender_teams_team_idx = sel_idx
-
-    # Add Team or Join team selected from dropdown
-    if sel_idx == n_teams:
-        st.subheader("Create another team")
-        st.caption("Submit a request to create a new team. An admin will review and approve.")
-        _prof = load_profile_fn(uid)
-        disp = (_prof or {}).get("display_name") or uid
-        with st.form("create_team_form_add"):
-            c_name = st.text_input("Team name", placeholder="e.g. Eagles U14", key="add_team_name")
-            c_age = st.text_input("Age group (optional)", placeholder="e.g. U14", key="add_team_age")
-            c_level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College"], key="add_team_level")
-            c_season = st.text_input("Season (optional)", placeholder="e.g. 2024-25", key="add_team_season")
-            if st.form_submit_button("Submit request"):
-                name = (c_name or "").strip()
-                if not name:
-                    st.error("Enter a team name.")
-                elif has_pending_team_request(uid, name):
-                    st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
-                elif create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or ""):
-                    st.success("The request has been submitted.")
-                    st.rerun()
-        return
-    if sel_idx == n_teams + 1:
-        st.subheader("Join a team")
-        st.caption("Enter an invite code to join another team as a player.")
-        join_code = st.text_input("Invite code", key="teams_join_code_coach", placeholder="e.g. ABC123").strip().upper()
-        if st.button("Join team", key="teams_join_btn_coach"):
-            if not join_code:
-                st.error("Enter an invite code.")
-            else:
-                t = get_team_by_invite_code(join_code)
-                if not t:
-                    st.error("Invalid invite code.")
-                else:
-                    if add_member_to_team(t["team_id"], uid, "player"):
-                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
-                        save_profile_fn(prof)
-                        if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
-                            st.session_state.current_profile = prof
-                        st.success(f"You joined **{t.get('team_name', 'team')}**.")
-                        st.rerun()
-                    else:
-                        st.info("You're already on this team.")
-        return
-
-    # A team is selected — show tab bar and content
     team_id = team_ids[sel_idx]
     sub = st.session_state.get("bender_teams_sub", "Overview")
-    opts = ["Overview", "Team Performance", "Roster", "Assignments", "Feedback"]
+    opts = ["Overview", "Roster", "Team Performance", "Assignments", "Signals", "Feedback", "Settings"]
     st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
     _tab_cols = st.columns(len(opts))
     for _i, o in enumerate(opts):
@@ -754,8 +1024,6 @@ def render_bender_teams_coach(
     st.session_state.bender_teams_sub = sub
     if sub == "Overview":
         render_coach_overview(team_id, load_profile_fn)
-    elif sub == "Team Performance":
-        render_coach_team_performance(team_id, load_profile_fn)
     elif sub == "Roster":
         player_view = st.session_state.get("bender_teams_roster_player")
         if player_view:
@@ -767,10 +1035,16 @@ def render_bender_teams_coach(
             def on_select(pid):
                 st.session_state.bender_teams_roster_player = pid
             render_coach_roster(team_id, load_profile_fn, save_profile_fn, on_select)
+    elif sub == "Team Performance":
+        render_coach_team_performance(team_id, load_profile_fn)
     elif sub == "Assignments":
-        render_coach_assignments(team_id, load_profile_fn)
+        render_coach_assignments(team_id, load_profile_fn, generate_session_fn)
+    elif sub == "Signals":
+        _render_coach_signals_placeholder(team_id, load_profile_fn)
     elif sub == "Feedback":
         render_coach_feedback(team_id, load_profile_fn)
+    elif sub == "Settings":
+        _render_coach_settings(team_id, load_profile_fn, save_profile_fn, uid)
 
 
 # --- Player: Join flow ---
@@ -829,6 +1103,18 @@ def render_bender_teams_player_portal(
     # Header
     st.markdown(f"### {team_name}")
     st.caption("Your team locker room · Stay on track with your coach")
+    # Coach priority (team focus) when set
+    focus = get_team_focus(team_id)
+    if focus:
+        primary = focus.get("primary_focus", "")
+        secondary = focus.get("secondary_focus", "")
+        def _focus_label(key):
+            return next((label for m, label in FOCUS_OPTIONS if m == key), (key or "").replace("_", " ").title())
+        parts = [_focus_label(primary)] if primary else []
+        if secondary:
+            parts.append(_focus_label(secondary))
+        if parts:
+            st.info(f"**Coach priority this week:** {' · '.join(parts)}")
 
     # Sub-tabs
     opts = ["Assignments", "Team Progress", "Coach Feedback"]
@@ -860,6 +1146,18 @@ def _render_player_assignments_tab(
 ) -> None:
     """Assignments tab: Coach Assignments + Suggested Workouts combined."""
     st.markdown("#### Coach Assignments & Suggested Workouts")
+    # Show coach focus again in context of assignments
+    focus = get_team_focus(team_id)
+    if focus:
+        primary = focus.get("primary_focus", "")
+        secondary = focus.get("secondary_focus", "")
+        def _fl(key):
+            return next((label for m, label in FOCUS_OPTIONS if m == key), (key or "").replace("_", " ").title())
+        parts = [_fl(primary)] if primary else []
+        if secondary:
+            parts.append(_fl(secondary))
+        if parts:
+            st.caption(f"Coach priority: {' · '.join(parts)}")
     assignments = get_assignments_for_player(user_id, team_id)
     required = [a for a in assignments if (a.get("required_or_suggested") or "required") == "required"]
     suggested_assignments = [a for a in assignments if (a.get("required_or_suggested") or "") == "suggested"]
