@@ -35,6 +35,7 @@ try:
         get_team_weekly_targets,
         set_team_weekly_targets,
         get_team_mode_minutes,
+        get_team_volume_totals,
         TEAM_CATEGORY_ORDER,
         TEAM_CATEGORY_LABELS,
         is_team_coach,
@@ -56,7 +57,7 @@ except ImportError:
     get_player_activity_summary = get_team_activity_summary = get_recent_team_activity = lambda *a: {}
     get_team_weekly_targets = lambda *a: {}
     set_team_weekly_targets = lambda *a: False
-    get_team_mode_minutes = lambda *a: {}
+    get_team_mode_minutes = get_team_volume_totals = lambda *a: {}
     TEAM_CATEGORY_ORDER = []
     TEAM_CATEGORY_LABELS = {}
     is_team_coach = lambda *a: False
@@ -180,11 +181,8 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     summary = get_team_activity_summary(team_id, loader)
     players = get_team_players_extended(team_id)
     if not players:
-        st.caption(t.get("team_name", "Team"))
         st.info("Share your invite code above so players can join. Activity and metrics will appear here once they start training.")
         return
-    st.caption(t.get("team_name", "Team"))
-    st.caption(f"{t.get('age_group', '')} {t.get('level', '')} {t.get('season', '')}".strip() or "—")
     st.markdown("")  # spacer
     # Highlight: total training time
     total_all = int(summary.get("total_training_minutes_all_time", 0))
@@ -246,12 +244,35 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
         if st.button("Save targets", key=f"save_targets_{team_id}"):
             set_team_weekly_targets(team_id, new_targets)
             st.rerun()
-    st.markdown("**Season totals (all players)**")
-    for cat in TEAM_CATEGORY_ORDER:
-        label = TEAM_CATEGORY_LABELS.get(cat, cat)
-        tot = int(season_mins.get(cat, 0))
-        h, m = divmod(tot, 60)
-        st.caption(f"{label}: {h}h {m}m" if h > 0 else f"{label}: {m}m")
+
+    # Team volume by mode (Bender Board style)
+    st.markdown("#### Team volume by mode")
+    week_vol = get_team_volume_totals(team_id, loader, period="week")
+    season_vol = get_team_volume_totals(team_id, loader, period="season")
+    vol_cats = [
+        ("Shots", "shots", "{:,}"),
+        ("Stickhandling time", "stickhandling_hours", "{:.1f} h"),
+        ("Skating mechanics time", "skating_hours", "{:.1f} h"),
+        ("Conditioning time", "conditioning_hours", "{:.1f} h"),
+        ("Gym time", "gym_hours", "{:.1f} h"),
+        ("Mobility / recovery time", "mobility_hours", "{:.1f} h"),
+    ]
+    c1, c2, c3 = st.columns([2, 1, 1])
+    with c1:
+        st.caption("**Category**")
+    with c2:
+        st.caption("**This week**")
+    with c3:
+        st.caption("**Season**")
+    for label, key, fmt in vol_cats:
+        with c1:
+            st.write(label)
+        with c2:
+            v = week_vol.get(key, 0)
+            st.write(fmt.format(v))
+        with c3:
+            v = season_vol.get(key, 0)
+            st.write(fmt.format(v))
 
     st.divider()
     # Roster snapshot + attention
@@ -321,7 +342,7 @@ def render_coach_roster(team_id: str, load_profile_fn: Callable, save_profile_fn
         else:
             status = "—"
         with st.container():
-            cols = st.columns([3, 1, 1, 1, 1])
+            cols = st.columns([3, 1, 1, 1, 0.9])
             with cols[0]:
                 st.write(f"**{name}**")
                 st.caption(f"{pos} · {status}")
@@ -339,13 +360,14 @@ def render_coach_roster(team_id: str, load_profile_fn: Callable, save_profile_fn
                     on_select_player(uid)
                     st.rerun()
                 if save_profile_fn and st.button("Remove", key=f"roster_remove_{uid}"):
-                    remove_member_from_team(team_id, uid)
-                    prof = load_profile_fn(uid) or {}
-                    remaining = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
-                    prof = _remove_team_from_player_profile(prof, team_id, remaining)
+                        remove_member_from_team(team_id, uid)
+                        prof = load_profile_fn(uid) or {}
+                        remaining = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
+                        prof = _remove_team_from_player_profile(prof, team_id, remaining)
                     save_profile_fn(prof)
                     st.rerun()
-            st.divider()
+            if m != players[-1]:
+                st.markdown("<hr style='margin: 0.25rem 0; opacity: 0.4;'>", unsafe_allow_html=True)
 
 
 # --- Coach: Player profile view ---

@@ -243,6 +243,82 @@ TEAM_CATEGORY_LABELS = {
 TEAM_CATEGORY_ORDER = ["performance", "skating_mechanics", "puck_mastery", "energy_systems", "mobility"]
 
 
+def _volume_from_entry(entry: dict) -> dict:
+    """Derive Bender Board-style volume from a completion_history entry. Uses detail fields when present, else mode+minutes."""
+    mode = (entry.get("mode") or "").strip().lower()
+    minutes = max(0, int(entry.get("minutes") or 0))
+    hours = minutes / 60.0
+    out = {
+        "shots": int(entry.get("shots", 0) or 0),
+        "stickhandling_hours": float(entry.get("stickhandling_hours", 0) or 0),
+        "skating_hours": float(entry.get("skating_hours", 0) or 0),
+        "conditioning_hours": float(entry.get("conditioning_hours", 0) or 0),
+        "gym_hours": float(entry.get("gym_hours", 0) or 0),
+        "mobility_hours": float(entry.get("mobility_hours", 0) or 0),
+    }
+    if any(out.values()):
+        return out
+    if mode == "performance":
+        out["gym_hours"] = hours
+        out["mobility_hours"] = 5 / 60.0
+    elif mode == "stickhandling":
+        out["stickhandling_hours"] = hours
+    elif mode == "shooting":
+        out["shots"] = max(0, int(minutes * 8))
+    elif mode in ("skills_only", "puck_mastery"):
+        shoot_min = minutes // 2
+        stick_min = minutes - shoot_min
+        out["stickhandling_hours"] = stick_min / 60.0
+        out["shots"] = max(0, int(shoot_min * 8))
+    elif mode == "skating_mechanics":
+        out["skating_hours"] = hours
+    elif mode == "energy_systems":
+        out["conditioning_hours"] = hours
+    elif mode == "mobility":
+        out["mobility_hours"] = hours
+    return out
+
+
+def get_team_volume_totals(
+    team_id: str,
+    profile_loader,
+    *,
+    period: str = "week",
+) -> dict[str, float]:
+    """Bender Board-style volume totals for team. period='week' or 'season'."""
+    players = get_team_players_extended(team_id)
+    today = date.today()
+    cutoff = today - timedelta(days=7) if period == "week" else None
+    totals = {
+        "shots": 0,
+        "stickhandling_hours": 0.0,
+        "skating_hours": 0.0,
+        "conditioning_hours": 0.0,
+        "gym_hours": 0.0,
+        "mobility_hours": 0.0,
+    }
+    for m in players:
+        uid = m.get("user_id")
+        prof = profile_loader(uid) if uid else None
+        if not prof:
+            continue
+        for e in prof.get("completion_history") or []:
+            d = e.get("date") or ""
+            try:
+                dt = date.fromisoformat(d[:10]) if d else None
+            except (ValueError, TypeError):
+                dt = None
+            if period == "season" or (dt and cutoff and dt >= cutoff):
+                v = _volume_from_entry(e)
+                totals["shots"] += v["shots"]
+                totals["stickhandling_hours"] += v["stickhandling_hours"]
+                totals["skating_hours"] += v["skating_hours"]
+                totals["conditioning_hours"] += v["conditioning_hours"]
+                totals["gym_hours"] += v["gym_hours"]
+                totals["mobility_hours"] += v["mobility_hours"]
+    return totals
+
+
 def get_team_mode_minutes(
     team_id: str,
     profile_loader,
