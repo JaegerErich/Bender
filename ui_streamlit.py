@@ -3905,12 +3905,10 @@ if _admin:
     except Exception:
         _team_req_pending = 0
     _team_req_label = f"Admin: Team Requests ({_team_req_pending})" if _team_req_pending > 0 else "Admin: Team Requests"
-    _admin_regular_tabs = ["Workout Generator", "Performance Dashboard", "Bender Board"]
-    if _is_coach:
-        _admin_regular_tabs.append("Bender Teams")
+    _admin_regular_tabs = ["Workout Generator", "Performance Dashboard", "Bender Board", "Bender Teams"]
     _admin_special_tabs = ["Admin: Plan Builder", "Admin: Highscores", _custom_req_tab_label, _team_req_label]
     _admin_tab_names = _admin_regular_tabs + _admin_special_tabs
-    _admin_default_tab = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else ("Bender Teams" if _is_coach else "Workout Generator")
+    _admin_default_tab = "Admin: Plan Builder" if st.session_state.get("admin_pending_integration") else "Workout Generator"
     if "admin_tab" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab = _admin_default_tab
     if "admin_tab_idx" in st.session_state:
@@ -5049,8 +5047,8 @@ if _admin and st.session_state.get("admin_tab") == "Bender Board":
         _render_bender_board()
 
 
-# Bender Teams tab (admin/coach only)
-if _admin and _is_coach and st.session_state.get("admin_tab") == "Bender Teams":
+# Bender Teams tab (admin — always on top row)
+if _admin and st.session_state.get("admin_tab") == "Bender Teams":
     if st.session_state.get("bender_teams_join_success"):
         st.success(st.session_state.bender_teams_join_success)
         st.session_state.bender_teams_join_success = None
