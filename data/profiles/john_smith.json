@@ -1,0 +1,11 @@
+{
+  "user_id": "john_smith",
+  "display_name": "John Smith",
+  "age": 38,
+  "equipment": ["None"],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-01T10:00:00",
+  "updated_at": "2026-03-09T12:00:00"
+}

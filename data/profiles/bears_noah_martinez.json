@@ -1,0 +1,110 @@
+{
+  "user_id": "bears_noah_martinez",
+  "display_name": "Noah Martinez",
+  "age": 15,
+  "position": "LW",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:32:00",
+      "mode": "mobility",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-22",
+      "completed_at": "2026-02-22T18:05:00",
+      "mode": "stickhandling",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-17",
+      "completed_at": "2026-02-17T18:02:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:40:00",
+      "mode": "stickhandling",
+      "minutes": 25
+    },
+    {
+      "date": "2026-03-01",
+      "completed_at": "2026-03-01T18:28:00",
+      "mode": "skating_mechanics",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-20",
+      "completed_at": "2026-02-20T18:35:00",
+      "mode": "mobility",
+      "minutes": 35
+    },
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:56:00",
+      "mode": "performance",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:02:00",
+      "mode": "skating_mechanics",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-11",
+      "completed_at": "2026-02-11T18:35:00",
+      "mode": "stickhandling",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-05",
+      "completed_at": "2026-03-05T18:02:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-28",
+      "completed_at": "2026-02-28T18:57:00",
+      "mode": "stickhandling",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-26",
+      "completed_at": "2026-02-26T18:15:00",
+      "mode": "skating_mechanics",
+      "minutes": 45
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 1.3333333333333333,
+    "shots": 25,
+    "gym_hours": 0.3333333333333333,
+    "skating_hours": 2.1666666666666665,
+    "conditioning_hours": 0,
+    "mobility_hours": 1.0833333333333335,
+    "completions_count": 12
+  },
+  "total_xp": 159,
+  "level": 2,
+  "level_title": "Rookie",
+  "total_workouts": 12,
+  "workout_streak": 2,
+  "longest_streak": 9,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}

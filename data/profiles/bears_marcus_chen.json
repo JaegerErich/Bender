@@ -1,0 +1,98 @@
+{
+  "user_id": "bears_marcus_chen",
+  "display_name": "Marcus Chen",
+  "age": 15,
+  "position": "C",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:15:00",
+      "mode": "mobility",
+      "minutes": 30
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:06:00",
+      "mode": "skating_mechanics",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:05:00",
+      "mode": "mobility",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-19",
+      "completed_at": "2026-02-19T18:01:00",
+      "mode": "shooting",
+      "minutes": 20
+    },
+    {
+      "date": "2026-03-07",
+      "completed_at": "2026-03-07T18:32:00",
+      "mode": "skating_mechanics",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-18",
+      "completed_at": "2026-02-18T18:12:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:34:00",
+      "mode": "mobility",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-24",
+      "completed_at": "2026-02-24T18:37:00",
+      "mode": "skating_mechanics",
+      "minutes": 35
+    },
+    {
+      "date": "2026-03-01",
+      "completed_at": "2026-03-01T18:44:00",
+      "mode": "performance",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-24",
+      "completed_at": "2026-02-24T18:09:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 0.41666666666666663,
+    "shots": 8,
+    "gym_hours": 1.0833333333333333,
+    "skating_hours": 1.75,
+    "conditioning_hours": 0,
+    "mobility_hours": 1.9166666666666665,
+    "completions_count": 10
+  },
+  "total_xp": 137,
+  "level": 2,
+  "level_title": "Rookie",
+  "total_workouts": 10,
+  "workout_streak": 2,
+  "longest_streak": 2,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}

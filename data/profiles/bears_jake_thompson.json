@@ -1,0 +1,44 @@
+{
+  "user_id": "bears_jake_thompson",
+  "display_name": "Jake Thompson",
+  "age": 16,
+  "position": "RW",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-02-25",
+      "completed_at": "2026-02-25T18:54:00",
+      "mode": "performance",
+      "minutes": 30
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 0,
+    "shots": 0,
+    "gym_hours": 0.5,
+    "skating_hours": 0,
+    "conditioning_hours": 0,
+    "mobility_hours": 0,
+    "completions_count": 1
+  },
+  "total_xp": 16,
+  "level": 1,
+  "level_title": "Initiate",
+  "total_workouts": 1,
+  "workout_streak": 1,
+  "longest_streak": 1,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}

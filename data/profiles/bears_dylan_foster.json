@@ -1,0 +1,188 @@
+{
+  "user_id": "bears_dylan_foster",
+  "display_name": "Dylan Foster",
+  "age": 16,
+  "position": "C",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-03-05",
+      "completed_at": "2026-03-05T18:01:00",
+      "mode": "energy_systems",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-25",
+      "completed_at": "2026-02-25T18:42:00",
+      "mode": "energy_systems",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:27:00",
+      "mode": "performance",
+      "minutes": 45
+    },
+    {
+      "date": "2026-03-05",
+      "completed_at": "2026-03-05T18:03:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-03-01",
+      "completed_at": "2026-03-01T18:13:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-23",
+      "completed_at": "2026-02-23T18:48:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-09",
+      "completed_at": "2026-02-09T18:48:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-11",
+      "completed_at": "2026-02-11T18:53:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-03-07",
+      "completed_at": "2026-03-07T18:47:00",
+      "mode": "shooting",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-20",
+      "completed_at": "2026-02-20T18:14:00",
+      "mode": "performance",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-17",
+      "completed_at": "2026-02-17T18:02:00",
+      "mode": "performance",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-13",
+      "completed_at": "2026-02-13T18:12:00",
+      "mode": "performance",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-11",
+      "completed_at": "2026-02-11T18:09:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:42:00",
+      "mode": "skating_mechanics",
+      "minutes": 35
+    },
+    {
+      "date": "2026-03-06",
+      "completed_at": "2026-03-06T18:29:00",
+      "mode": "energy_systems",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:10:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-18",
+      "completed_at": "2026-02-18T18:45:00",
+      "mode": "energy_systems",
+      "minutes": 45
+    },
+    {
+      "date": "2026-03-06",
+      "completed_at": "2026-03-06T18:06:00",
+      "mode": "skating_mechanics",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-19",
+      "completed_at": "2026-02-19T18:36:00",
+      "mode": "performance",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:45:00",
+      "mode": "shooting",
+      "minutes": 35
+    },
+    {
+      "date": "2026-03-03",
+      "completed_at": "2026-03-03T18:44:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-11",
+      "completed_at": "2026-02-11T18:06:00",
+      "mode": "mobility",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:38:00",
+      "mode": "stickhandling",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-12",
+      "completed_at": "2026-02-12T18:50:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-08",
+      "completed_at": "2026-03-08T18:27:00",
+      "mode": "stickhandling",
+      "minutes": 40
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 2.6250000000000004,
+    "shots": 50,
+    "gym_hours": 4.916666666666667,
+    "skating_hours": 1.0833333333333335,
+    "conditioning_hours": 2.5,
+    "mobility_hours": 0.4166666666666667,
+    "completions_count": 25
+  },
+  "total_xp": 372,
+  "level": 3,
+  "level_title": "Prospect",
+  "total_workouts": 25,
+  "workout_streak": 0,
+  "longest_streak": 9,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}

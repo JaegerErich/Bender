@@ -1,0 +1,74 @@
+{
+  "user_id": "bears_ethan_park",
+  "display_name": "Ethan Park",
+  "age": 16,
+  "position": "LW",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:48:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-25",
+      "completed_at": "2026-02-25T18:47:00",
+      "mode": "shooting",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-14",
+      "completed_at": "2026-02-14T18:57:00",
+      "mode": "energy_systems",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:17:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-24",
+      "completed_at": "2026-02-24T18:24:00",
+      "mode": "shooting",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-27",
+      "completed_at": "2026-02-27T18:51:00",
+      "mode": "mobility",
+      "minutes": 45
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 0.9583333333333333,
+    "shots": 18,
+    "gym_hours": 0,
+    "skating_hours": 0,
+    "conditioning_hours": 0.6666666666666666,
+    "mobility_hours": 0.75,
+    "completions_count": 6
+  },
+  "total_xp": 71,
+  "level": 1,
+  "level_title": "Initiate",
+  "total_workouts": 6,
+  "workout_streak": 5,
+  "longest_streak": 2,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}

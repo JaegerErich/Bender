@@ -1,0 +1,338 @@
+{
+  "user_id": "bears_ryan_obrien",
+  "display_name": "Ryan O'Brien",
+  "age": 15,
+  "position": "C",
+  "equipment": [
+    "None"
+  ],
+  "equipment_setup_done": true,
+  "password_salt": "a4f44bea8bdac1de7089930365aaeda5",
+  "password_hash": "c6669de43bff8c1715cdc70c80c5b0155ccd278878609f2d4b1c7de209b8903c",
+  "created_at": "2026-02-15T10:00:00",
+  "updated_at": "2026-03-09T12:00:00",
+  "completion_history": [
+    {
+      "date": "2026-03-07",
+      "completed_at": "2026-03-07T18:03:00",
+      "mode": "mobility",
+      "minutes": 45
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:55:00",
+      "mode": "performance",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-27",
+      "completed_at": "2026-02-27T18:15:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-01",
+      "completed_at": "2026-03-01T18:13:00",
+      "mode": "mobility",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-20",
+      "completed_at": "2026-02-20T18:59:00",
+      "mode": "skating_mechanics",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-09",
+      "completed_at": "2026-02-09T18:30:00",
+      "mode": "energy_systems",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:12:00",
+      "mode": "shooting",
+      "minutes": 35
+    },
+    {
+      "date": "2026-03-06",
+      "completed_at": "2026-03-06T18:27:00",
+      "mode": "performance",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-26",
+      "completed_at": "2026-02-26T18:29:00",
+      "mode": "shooting",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-10",
+      "completed_at": "2026-02-10T18:43:00",
+      "mode": "mobility",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-17",
+      "completed_at": "2026-02-17T18:03:00",
+      "mode": "mobility",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-25",
+      "completed_at": "2026-02-25T18:51:00",
+      "mode": "mobility",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-10",
+      "completed_at": "2026-02-10T18:12:00",
+      "mode": "performance",
+      "minutes": 25
+    },
+    {
+      "date": "2026-03-03",
+      "completed_at": "2026-03-03T18:08:00",
+      "mode": "energy_systems",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-24",
+      "completed_at": "2026-02-24T18:29:00",
+      "mode": "skating_mechanics",
+      "minutes": 30
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:51:00",
+      "mode": "performance",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-10",
+      "completed_at": "2026-02-10T18:03:00",
+      "mode": "energy_systems",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-17",
+      "completed_at": "2026-02-17T18:05:00",
+      "mode": "energy_systems",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-13",
+      "completed_at": "2026-02-13T18:26:00",
+      "mode": "skating_mechanics",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-22",
+      "completed_at": "2026-02-22T18:55:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-25",
+      "completed_at": "2026-02-25T18:24:00",
+      "mode": "performance",
+      "minutes": 25
+    },
+    {
+      "date": "2026-03-09",
+      "completed_at": "2026-03-09T18:59:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-12",
+      "completed_at": "2026-02-12T18:27:00",
+      "mode": "shooting",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:42:00",
+      "mode": "mobility",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-15",
+      "completed_at": "2026-02-15T18:12:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-28",
+      "completed_at": "2026-02-28T18:37:00",
+      "mode": "skating_mechanics",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-14",
+      "completed_at": "2026-02-14T18:47:00",
+      "mode": "energy_systems",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-27",
+      "completed_at": "2026-02-27T18:37:00",
+      "mode": "performance",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-22",
+      "completed_at": "2026-02-22T18:10:00",
+      "mode": "energy_systems",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-08",
+      "completed_at": "2026-03-08T18:54:00",
+      "mode": "energy_systems",
+      "minutes": 20
+    },
+    {
+      "date": "2026-03-04",
+      "completed_at": "2026-03-04T18:04:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:07:00",
+      "mode": "skating_mechanics",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-09",
+      "completed_at": "2026-02-09T18:37:00",
+      "mode": "energy_systems",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-18",
+      "completed_at": "2026-02-18T18:05:00",
+      "mode": "performance",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-24",
+      "completed_at": "2026-02-24T18:36:00",
+      "mode": "mobility",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-21",
+      "completed_at": "2026-02-21T18:13:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:15:00",
+      "mode": "mobility",
+      "minutes": 30
+    },
+    {
+      "date": "2026-03-01",
+      "completed_at": "2026-03-01T18:42:00",
+      "mode": "shooting",
+      "minutes": 25
+    },
+    {
+      "date": "2026-02-17",
+      "completed_at": "2026-02-17T18:20:00",
+      "mode": "stickhandling",
+      "minutes": 35
+    },
+    {
+      "date": "2026-02-13",
+      "completed_at": "2026-02-13T18:29:00",
+      "mode": "performance",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-18",
+      "completed_at": "2026-02-18T18:04:00",
+      "mode": "energy_systems",
+      "minutes": 20
+    },
+    {
+      "date": "2026-02-20",
+      "completed_at": "2026-02-20T18:16:00",
+      "mode": "skating_mechanics",
+      "minutes": 40
+    },
+    {
+      "date": "2026-03-05",
+      "completed_at": "2026-03-05T18:56:00",
+      "mode": "stickhandling",
+      "minutes": 20
+    },
+    {
+      "date": "2026-03-02",
+      "completed_at": "2026-03-02T18:10:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-23",
+      "completed_at": "2026-02-23T18:19:00",
+      "mode": "energy_systems",
+      "minutes": 45
+    },
+    {
+      "date": "2026-02-18",
+      "completed_at": "2026-02-18T18:00:00",
+      "mode": "mobility",
+      "minutes": 40
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:59:00",
+      "mode": "energy_systems",
+      "minutes": 30
+    },
+    {
+      "date": "2026-02-16",
+      "completed_at": "2026-02-16T18:16:00",
+      "mode": "performance",
+      "minutes": 25
+    },
+    {
+      "date": "2026-03-06",
+      "completed_at": "2026-03-06T18:35:00",
+      "mode": "performance",
+      "minutes": 45
+    },
+    {
+      "date": "2026-03-05",
+      "completed_at": "2026-03-05T18:38:00",
+      "mode": "stickhandling",
+      "minutes": 30
+    }
+  ],
+  "private_victory_stats": {
+    "stickhandling_hours": 2.9166666666666665,
+    "shots": 55,
+    "gym_hours": 6.333333333333334,
+    "skating_hours": 3.25,
+    "conditioning_hours": 5.25,
+    "mobility_hours": 5.0,
+    "completions_count": 50
+  },
+  "total_xp": 608,
+  "level": 5,
+  "level_title": "Grinder",
+  "total_workouts": 50,
+  "workout_streak": 5,
+  "longest_streak": 6,
+  "player_teams_cache": [
+    {
+      "team_id": "t_bears_u16_001",
+      "team_name": "U16 Bears",
+      "role": "player"
+    }
+  ]
+}
