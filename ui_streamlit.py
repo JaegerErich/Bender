@@ -237,7 +237,7 @@ def _apply_custom_request_to_plan_builder(req: dict) -> None:
 
 
 POSITION_OPTIONS = ["Forward", "Defense", "Goalie"]
-CURRENT_LEVEL_OPTIONS = ["Youth", "HS", "AA", "AAA", "Junior", "College", "Beer League"]
+CURRENT_LEVEL_OPTIONS = ["Youth", "HS", "AA", "AAA", "Junior", "College", "Beer League", "Coach"]
 
 
 def _equipment_setup_done(profile: dict) -> bool:
