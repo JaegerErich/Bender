@@ -1432,6 +1432,7 @@ def _render_your_work_stats():
     _pt_items = [
         ("Vertical Jump", "vertical_jump"),
         ("5-10-5 Agility", "agility_5_10_5"),
+        ("Pull-ups", "pull_ups"),
         ("Shooting Tests", "shooting_tests"),
         ("Stickhandling Tests", "stickhandling_tests"),
         ("Conditioning Test", "conditioning_test"),

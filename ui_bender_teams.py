@@ -765,6 +765,53 @@ def render_coach_feedback(team_id: str, load_profile_fn: Callable):
         st.write(f.get("message", ""))
 
 
+# --- NHL combine bests (for Team Performance comparison) ---
+def _load_nhl_combine_bests() -> dict:
+    """Load NHL combine results and return best (or best-for-lower) per test key. Keys: vertical_jump, agility_5_10_5, pull_ups."""
+    out = {}
+    try:
+        path = Path(__file__).resolve().parent / "data" / "nhl_combine" / "nhl_combine_results.json"
+        if not path.exists():
+            return out
+        with open(path, encoding="utf-8") as f:
+            import json
+            data = json.load(f)
+    except Exception:
+        return out
+    if not isinstance(data, list):
+        return out
+
+    def _num(val):
+        if val is None:
+            return None
+        try:
+            return float(val)
+        except (TypeError, ValueError):
+            return None
+
+    vj_vals = []
+    agil_vals = []
+    pull_vals = []
+    for row in data:
+        v = _num(row.get("vertical_jump_in"))
+        if v is not None:
+            vj_vals.append(v)
+        al, ar = _num(row.get("pro_agility_left_sec")), _num(row.get("pro_agility_right_sec"))
+        for t in (al, ar):
+            if t is not None:
+                agil_vals.append(t)
+        p = _num(row.get("pull_ups"))
+        if p is not None:
+            pull_vals.append(p)
+    if vj_vals:
+        out["vertical_jump"] = max(vj_vals)
+    if agil_vals:
+        out["agility_5_10_5"] = min(agil_vals)
+    if pull_vals:
+        out["pull_ups"] = max(pull_vals)
+    return out
+
+
 # --- Coach: Team Performance page ---
 def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
     st.subheader("Team Performance")
@@ -812,15 +859,19 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
     test_defs = [
         ("Vertical Jump (in)", "vertical_jump", "higher"),
         ("5-10-5 Agility (s)", "agility_5_10_5", "lower"),
+        ("Pull-ups", "pull_ups", "higher"),
         ("Shooting Test", "shooting_tests", "higher"),
         ("Stickhandling Tests", "stickhandling_tests", "higher"),
         ("Conditioning Test", "conditioning_test", "lower"),
     ]
-    c1, c2 = st.columns([2, 1])
+    nhl_bests = _load_nhl_combine_bests()
+    c1, c2, c3 = st.columns([2, 1, 1])
     with c1:
         st.caption("**Test**")
     with c2:
         st.caption("**Team average**")
+    with c3:
+        st.caption("**NHL combine best**")
     for label, key, _dir in test_defs:
         vals: list[float] = []
         for row in roster:
@@ -833,6 +884,12 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
             if vals:
                 avg = sum(vals) / len(vals)
                 st.write(f"{avg:.2f}")
+            else:
+                st.write("—")
+        with c3:
+            nhl_val = nhl_bests.get(key)
+            if nhl_val is not None:
+                st.write(f"{nhl_val:.0f}" if key == "pull_ups" else f"{nhl_val:.2f}")
             else:
                 st.write("—")
 
