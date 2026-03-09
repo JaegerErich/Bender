@@ -111,14 +111,21 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
 
 # --- Coach: Overview dashboard ---
 def render_coach_overview(team_id: str, load_profile_fn: Callable):
+    st.subheader("Overview")
     t = get_team_by_id(team_id)
     if not t:
-        st.warning("Team not found.")
+        st.info("Share your invite code above so players can join. Activity and metrics will appear here once they start training.")
         return
     loader = _profile_loader(load_profile_fn)
     summary = get_team_activity_summary(team_id, loader)
-    st.subheader(t.get("team_name", "Team"))
+    players = get_team_players(team_id)
+    if not players:
+        st.caption(t.get("team_name", "Team"))
+        st.info("Share your invite code above so players can join. Activity and metrics will appear here once they start training.")
+        return
+    st.caption(t.get("team_name", "Team"))
     st.caption(f"{t.get('age_group', '')} {t.get('level', '')} {t.get('season', '')}".strip() or "—")
+    st.markdown("")  # spacer
     # Top metrics
     m1, m2, m3, m4 = st.columns(4)
     with m1:
@@ -129,7 +136,6 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
         st.metric("Completion %", f"{summary.get('completion_percentage', 0)}%")
     with m4:
         st.metric("Avg minutes", f"{int(summary.get('avg_minutes_per_player', 0))}")
-    st.divider()
     # Roster snapshot + attention
     col_roster, col_attention = st.columns([2, 1])
     with col_roster:
@@ -167,12 +173,15 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
 
 # --- Coach: Roster page ---
 def render_coach_roster(team_id: str, load_profile_fn: Callable, on_select_player: Callable[[str], None]):
+    st.subheader("Roster")
     t = get_team_by_id(team_id)
     if not t:
-        st.warning("Team not found.")
+        st.info("Share your invite code above so players can join. The roster will appear here once they join your team.")
         return
-    st.subheader("Roster")
     players = get_team_players(team_id)
+    if not players:
+        st.info("Share your invite code above so players can join. The roster will appear here once they join your team.")
+        return
     for m in players:
         uid = m.get("user_id")
         prof = load_profile_fn(uid)
@@ -270,12 +279,14 @@ def render_coach_player_profile(team_id: str, player_id: str, load_profile_fn: C
 
 # --- Coach: Assignments page ---
 def render_coach_assignments(team_id: str, load_profile_fn: Callable, generate_session_fn=None):
+    st.subheader("Assignments")
     t = get_team_by_id(team_id)
     if not t:
-        st.warning("Team not found.")
+        st.info("Share your invite code above so players can join. You can assign workouts once they join your team.")
         return
-    st.subheader("Assignments")
     assignments = get_assignments_for_team(team_id)
+    if not assignments:
+        st.info("No assignments yet. Assign workouts to your team or individual players using the form below once they join.")
     for a in reversed(assignments[-30:]):
         due = a.get("due_date", "")
         req = a.get("required_or_suggested", "required")
@@ -322,12 +333,14 @@ def render_coach_assignments(team_id: str, load_profile_fn: Callable, generate_s
 
 # --- Coach: Feedback page ---
 def render_coach_feedback(team_id: str, load_profile_fn: Callable):
+    st.subheader("Feedback")
     t = get_team_by_id(team_id)
     if not t:
-        st.warning("Team not found.")
+        st.info("Share your invite code above so players can join. Feedback you leave will appear here.")
         return
-    st.subheader("Feedback")
     feed = get_feedback_for_team(team_id, 30)
+    if not feed:
+        st.info("No feedback yet. Visit the Roster tab, click View on a player, and leave feedback from their profile.")
     for f in feed:
         pname = (load_profile_fn(f.get("player_id")) or {}).get("display_name") or f.get("player_id")
         st.caption(f"To **{pname}** · {f.get('feedback_type', '')} · {f.get('created_at', '')[:10]}")
