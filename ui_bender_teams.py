@@ -572,6 +572,7 @@ def _render_player_assignments_tab(
     save_profile_fn: Callable,
 ) -> None:
     """Assignments tab: Coach Assignments + Suggested Workouts combined."""
+    st.markdown("#### Coach Assignments & Suggested Workouts")
     assignments = get_assignments_for_player(user_id, team_id)
     required = [a for a in assignments if (a.get("required_or_suggested") or "required") == "required"]
     suggested_assignments = [a for a in assignments if (a.get("required_or_suggested") or "") == "suggested"]
@@ -589,8 +590,6 @@ def _render_player_assignments_tab(
             for a in suggested_assignments:
                 _render_assignment_card(a, user_id, load_profile_fn, save_profile_fn, completed_ids)
 
-    st.markdown("#### Coach Assignments & Suggested Workouts")
-
 
 def _render_player_team_progress_tab(
     user_id: str,
@@ -600,17 +599,8 @@ def _render_player_team_progress_tab(
     team_name: str,
     load_profile_fn: Callable,
 ) -> None:
+    """Team Progress tab: Team Activity + Your Progress + Team Info at bottom."""
     team_id = team.get("team_id", "")
-    st.markdown("#### Team Activity")
-    feed = get_recent_team_activity(team_id, loader, 15)
-    if not feed:
-        st.caption("No recent activity yet.")
-    else:
-        st.caption("Your coach’s recommendations are listed above under **Coach Assignments** with a **Suggested** badge.")
-
-    st.divider()
-
-    # --- 3. Team Activity ---
     st.markdown("#### Team Activity")
     feed = get_recent_team_activity(team_id, loader, 15)
     if not feed:
@@ -629,8 +619,7 @@ def _render_player_team_progress_tab(
 
     st.divider()
 
-    # --- 4. Your Team Progress ---
-    st.markdown("#### Your Team Progress")
+    st.markdown("#### Your Progress")
     summary = get_team_activity_summary(team_id, loader)
     my_act = get_player_activity_summary(profile, 7)
     workouts_this_week = my_act.get("workouts_this_period", 0)
@@ -663,7 +652,19 @@ def _render_player_team_progress_tab(
 
     st.divider()
 
-    # --- 5. Coach Feedback ---
+    # Team Info at bottom of Team Progress tab
+
+    st.markdown("#### Team Info")
+    coach_name = team.get("coach_name") or (load_profile_fn(team.get("coach_user_id")) or {}).get("display_name") or "—"
+    season = team.get("season", "") or "—"
+    pos = profile.get("position", "") or "—"
+    st.caption(f"**Team:** {team_name}")
+    st.caption(f"**Coach:** {coach_name}")
+    st.caption(f"**Season:** {season}")
+    st.caption(f"**Your position:** {pos}")
+
+
+def _render_player_feedback_tab(user_id: str, load_profile_fn: Callable) -> None:
     st.markdown("#### Coach Feedback")
     feedbacks = get_feedback_for_player(user_id)
     if not feedbacks:
@@ -675,18 +676,6 @@ def _render_player_team_progress_tab(
             st.markdown(f"**{f.get('feedback_type', 'Note').replace('_', ' ').title()}** — {coach_name} · {ts}")
             st.write(f.get("message", ""))
             st.caption("---")
-
-    st.divider()
-
-    # --- 6. Team Info ---
-    st.markdown("#### Team Info")
-    coach_name = team.get("coach_name") or (load_profile_fn(team.get("coach_user_id")) or {}).get("display_name") or "—"
-    season = team.get("season", "") or "—"
-    pos = profile.get("position", "") or "—"
-    st.caption(f"**Team:** {team_name}")
-    st.caption(f"**Coach:** {coach_name}")
-    st.caption(f"**Season:** {season}")
-    st.caption(f"**Your position:** {pos}")
 
 
 def _render_assignment_card(
