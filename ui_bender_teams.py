@@ -31,6 +31,7 @@ try:
         get_team_activity_summary,
         get_recent_team_activity,
         is_team_coach,
+        mark_assignment_completed,
         FEEDBACK_TYPES,
         ASSIGNED_TO_TEAM,
         ASSIGNED_TO_PLAYER,
@@ -46,6 +47,7 @@ except ImportError:
     get_team_members = get_team_players = get_teams_for_user = get_teams_coached_by = lambda *a: []
     get_player_activity_summary = get_team_activity_summary = get_recent_team_activity = lambda *a: {}
     is_team_coach = lambda *a: False
+    mark_assignment_completed = lambda *a: False
     FEEDBACK_TYPES = ()
     ASSIGNED_TO_TEAM = ASSIGNED_TO_PLAYER = ""
 
@@ -54,6 +56,37 @@ def _profile_loader(load_profile_fn: Callable) -> Callable:
     def load(uid):
         return load_profile_fn(uid) if uid else None
     return load
+
+
+# --- Join team only (for players not on a team) ---
+def render_team_join_only(load_profile_fn: Callable, save_callback: Callable[[dict], None]):
+    """Show join UI when player has no team (player portal entry point)."""
+    st.info("You are not currently on a team. Join a team with an invite code.")
+    with st.expander("Join a team", expanded=True):
+        join_code = st.text_input("Invite code", key="teams_join_code_portal", placeholder="e.g. ABC123").strip().upper()
+        if st.button("Join team", key="teams_join_btn_portal"):
+            if not join_code:
+                st.error("Enter an invite code.")
+            else:
+                t = get_team_by_invite_code(join_code)
+                if not t:
+                    st.error("Invalid invite code.")
+                else:
+                    uid = st.session_state.current_user_id
+                    if add_member_to_team(t["team_id"], uid, "player"):
+                        prof = load_profile_fn(uid) or {}
+                        ids = list(prof.get("bender_team_ids") or [])
+                        if t["team_id"] not in ids:
+                            ids.append(t["team_id"])
+                        prof["bender_team_ids"] = ids
+                        prof["team"] = t.get("team_name", "").strip()
+                        save_callback(prof)
+                        if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
+                            st.session_state.current_profile = prof
+                        st.success(f"You joined **{t.get('team_name', 'team')}**.")
+                        st.rerun()
+                    else:
+                        st.info("You're already on this team.")
 
 
 # --- Team creation + Join ---
@@ -467,6 +500,200 @@ def handle_join_flow(join_code: str, current_user_id: str, load_profile_fn: Call
             save_profile_fn(prof)
         return True, f"You joined **{t.get('team_name', 'team')}**."
     return False, "You're already on this team."
+
+
+# --- Assignment category display (from workout_params or title) ---
+_ASSIGNMENT_CATEGORIES = {
+    "performance": "Performance",
+    "skating_mechanics": "Skating Mechanics",
+    "stickhandling": "Puck Mastery",
+    "shooting": "Puck Mastery",
+    "skills_only": "Puck Mastery",
+    "energy_systems": "Conditioning",
+    "mobility": "Mobility Recovery",
+}
+
+
+def _assignment_category(a: dict) -> str:
+    params = a.get("workout_params") or {}
+    mode = (params.get("mode") or "").strip().lower()
+    if mode:
+        return _ASSIGNMENT_CATEGORIES.get(mode, mode.replace("_", " ").title())
+    title = (a.get("workout_title") or "").lower()
+    for key, label in _ASSIGNMENT_CATEGORIES.items():
+        if key in title:
+            return label
+    return "Workout"
+
+
+# --- Player Portal: full team locker room / development board ---
+def render_bender_teams_player_portal(
+    user_id: str,
+    team: dict,
+    load_profile_fn: Callable,
+    save_profile_fn: Callable,
+):
+    """Player portal: assignments, suggested workouts, team activity, progress, feedback, team info."""
+    team_id = team.get("team_id", "")
+    loader = _profile_loader(load_profile_fn)
+    profile = load_profile_fn(user_id) or {}
+
+    # Header: team name as portal title
+    team_name = team.get("team_name", "Team")
+    st.markdown(f"### {team_name}")
+    st.caption("Your team locker room · Stay on track with your coach")
+    st.divider()
+
+    # --- 1. Coach Assignments (required first, then suggested) ---
+    st.markdown("#### Coach Assignments")
+    assignments = get_assignments_for_player(user_id, team_id)
+    required = [a for a in assignments if (a.get("required_or_suggested") or "required") == "required"]
+    suggested_assignments = [a for a in assignments if (a.get("required_or_suggested") or "") == "suggested"]
+    completed_ids = set()
+    for a in assignments:
+        completed_ids.update(a.get("completed_by") or [])
+
+    if not assignments:
+        st.caption("No assignments yet. Your coach will assign workouts here.")
+    else:
+        for a in required:
+            _render_assignment_card(a, user_id, load_profile_fn, save_profile_fn, completed_ids)
+        if suggested_assignments:
+            st.markdown("**Suggested by coach**")
+            for a in suggested_assignments:
+                _render_assignment_card(a, user_id, load_profile_fn, save_profile_fn, completed_ids)
+
+    st.divider()
+
+    # --- 2. Suggested Workouts (same as suggested in Coach Assignments above) ---
+    st.markdown("#### Suggested Workouts")
+    if not suggested_assignments:
+        st.caption("No suggested workouts right now. Your coach may add recommendations above.")
+    else:
+        st.caption("Your coach’s recommendations are listed above under **Coach Assignments** with a **Suggested** badge.")
+
+    st.divider()
+
+    # --- 3. Team Activity ---
+    st.markdown("#### Team Activity")
+    feed = get_recent_team_activity(team_id, loader, 15)
+    if not feed:
+        st.caption("No recent activity yet.")
+    else:
+        for item in feed[:12]:
+            tpe = item.get("type", "")
+            if tpe == "workout_completed":
+                name = item.get("display_name", "Teammate")
+                mode = (item.get("mode") or "workout").replace("_", " ").title()
+                st.caption(f"· **{name}** completed a {mode} workout")
+            elif tpe == "assignment":
+                st.caption(f"· Coach assigned **{item.get('workout_title', 'a workout')}**")
+            elif tpe == "feedback":
+                st.caption("· Coach left feedback for a player")
+
+    st.divider()
+
+    # --- 4. Your Team Progress ---
+    st.markdown("#### Your Team Progress")
+    summary = get_team_activity_summary(team_id, loader)
+    my_act = get_player_activity_summary(profile, 7)
+    workouts_this_week = my_act.get("workouts_this_period", 0)
+    team_avg = (summary.get("workouts_this_week", 0) / summary.get("total_players", 1)) if summary.get("total_players") else 0
+    streak = my_act.get("streak", 0)
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.metric("Workouts this week", workouts_this_week)
+    with c2:
+        st.metric("Team average", f"{team_avg:.1f}")
+    with c3:
+        st.metric("Current streak", f"{streak} days")
+
+    # Category progress from completion_history
+    hist = profile.get("completion_history") or []
+    cats = {}
+    for e in hist:
+        m = (e.get("mode") or "").lower()
+        if m in _ASSIGNMENT_CATEGORIES:
+            label = _ASSIGNMENT_CATEGORIES[m]
+            cats[label] = cats.get(label, 0) + 1
+        else:
+            cats["Other"] = cats.get("Other", 0) + 1
+    if cats:
+        st.caption("Category overview (all time)")
+        for label in ["Performance", "Skating Mechanics", "Puck Mastery", "Conditioning", "Mobility Recovery"]:
+            count = cats.get(label, 0)
+            st.progress(min(1.0, count / 15), text=f"{label}: {count} workouts")
+
+    st.divider()
+
+    # --- 5. Coach Feedback ---
+    st.markdown("#### Coach Feedback")
+    feedbacks = get_feedback_for_player(user_id)
+    if not feedbacks:
+        st.caption("No feedback yet. Keep training — your coach may leave notes after workouts.")
+    else:
+        for f in feedbacks[:10]:
+            coach_name = (load_profile_fn(f.get("coach_id")) or {}).get("display_name") or f.get("coach_id", "Coach")
+            ts = (f.get("created_at") or "")[:10]
+            st.markdown(f"**{f.get('feedback_type', 'Note').replace('_', ' ').title()}** — {coach_name} · {ts}")
+            st.write(f.get("message", ""))
+            st.caption("---")
+
+    st.divider()
+
+    # --- 6. Team Info ---
+    st.markdown("#### Team Info")
+    coach_name = team.get("coach_name") or (load_profile_fn(team.get("coach_user_id")) or {}).get("display_name") or "—"
+    season = team.get("season", "") or "—"
+    pos = profile.get("position", "") or "—"
+    st.caption(f"**Team:** {team_name}")
+    st.caption(f"**Coach:** {coach_name}")
+    st.caption(f"**Season:** {season}")
+    st.caption(f"**Your position:** {pos}")
+
+
+def _render_assignment_card(
+    a: dict,
+    user_id: str,
+    load_profile_fn: Callable,
+    save_profile_fn: Callable,
+    completed_ids: set,
+) -> None:
+    req = a.get("required_or_suggested", "required")
+    is_required = req == "required"
+    done = user_id in (a.get("completed_by") or [])
+    due = a.get("due_date", "")
+    overdue = False
+    if due and not done:
+        try:
+            overdue = date.fromisoformat(due[:10]) < date.today()
+        except (ValueError, TypeError):
+            pass
+    with st.container():
+        badge = "Required" if is_required else "Suggested"
+        due_str = f" · Due {due[:10]}" if due else ""
+        if overdue:
+            due_str += " · **Overdue**"
+        st.markdown(f"**{a.get('workout_title', 'Workout')}** — {badge}{due_str}")
+        st.caption(_assignment_category(a))
+        if a.get("note_from_coach"):
+            st.caption(f"Coach note: {a['note_from_coach']}")
+        if a.get("workout_text"):
+            with st.expander("View workout"):
+                st.markdown((a.get("workout_text") or "")[:3000])
+        if done:
+            st.caption("Completed")
+        else:
+            col_a, col_b = st.columns(2)
+            with col_a:
+                if st.button("Start workout", key=f"assign_btn_{a.get('assignment_id', '')}"):
+                    st.session_state.player_tab = "Training Session"
+                    st.rerun()
+            with col_b:
+                if st.button("Mark complete", key=f"assign_done_{a.get('assignment_id', '')}"):
+                    mark_assignment_completed(a.get("assignment_id"), user_id)
+                    st.rerun()
 
 
 # --- Player: Assigned workouts + feedback display ---

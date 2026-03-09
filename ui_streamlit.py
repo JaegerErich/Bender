@@ -3604,6 +3604,7 @@ if _join_code and st.session_state.current_user_id and st.session_state.get("ben
         if ok:
             st.session_state.bender_teams_join_success = msg
             st.session_state.current_profile = load_profile(st.session_state.current_user_id)
+            st.session_state.player_tab = "Bender Teams"
         st.rerun()
     except Exception:
         st.session_state.bender_teams_join_processed = _join_code
@@ -4554,8 +4555,17 @@ else:
             st.success(st.session_state.bender_teams_join_success)
             st.session_state.bender_teams_join_success = None
         try:
-            from ui_bender_teams import render_bender_teams_coach
-            render_bender_teams_coach(load_profile, save_profile)
+            if _is_coach:
+                from ui_bender_teams import render_bender_teams_coach
+                render_bender_teams_coach(load_profile, save_profile)
+            elif _on_team:
+                from ui_bender_teams import render_bender_teams_player_portal
+                _uid = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id
+                _player_team = _teams_as_member[0]
+                render_bender_teams_player_portal(_uid, _player_team, load_profile, save_profile)
+            else:
+                from ui_bender_teams import render_team_join_only
+                render_team_join_only(load_profile, save_profile)
         except Exception as e:
             st.error(f"Bender Teams: {e}")
 
