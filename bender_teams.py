@@ -209,14 +209,38 @@ def get_team_by_invite_code(code: str) -> dict | None:
     return None
 
 
-def get_teams_for_user(user_id: str) -> list[dict]:
-    """Teams where user is a member (any role)."""
+def get_teams_for_user(user_id: str, profile_loader=None) -> list[dict]:
+    """Teams where user is a member (any role). Uses teams.json first, then profile bender_team_ids + player_teams_cache (survives app restarts)."""
+    if not user_id:
+        return []
     out = []
+    seen = set()
+    # 1. From teams.json
     for t in load_teams():
+        tid = t.get("team_id")
+        if tid in seen:
+            continue
         for m in t.get("members", []):
             if m.get("user_id") == user_id:
                 out.append(t)
+                seen.add(tid)
                 break
+    # 2. From profile bender_team_ids (resolve via teams.json)
+    if profile_loader:
+        for tid in (profile_loader(user_id) or {}).get("bender_team_ids") or []:
+            if tid in seen:
+                continue
+            t = get_team_by_id(tid)
+            if t:
+                out.append(t)
+                seen.add(tid)
+    # 3. From profile player_teams_cache (when teams.json was wiped - e.g. Streamlit Cloud restart)
+    if profile_loader:
+        for t in (profile_loader(user_id) or {}).get("player_teams_cache") or []:
+            tid = t.get("team_id")
+            if tid and tid not in seen:
+                out.append(t)
+                seen.add(tid)
     return out
 
 
@@ -300,6 +324,21 @@ def add_member_to_team(team_id: str, user_id: str, role: str = "player") -> bool
             if m.get("user_id") == user_id:
                 return False
         members.append({"user_id": user_id, "role": role, "joined_at": datetime.now().isoformat()})
+        t["members"] = members
+        save_teams(teams)
+        return True
+    return False
+
+
+def remove_member_from_team(team_id: str, user_id: str) -> bool:
+    """Remove user from team. Returns True if removed."""
+    teams = load_teams()
+    for t in teams:
+        if t.get("team_id") != team_id:
+            continue
+        members = [m for m in t.get("members", []) if m.get("user_id") != user_id]
+        if len(members) == len(t.get("members", [])):
+            return False
         t["members"] = members
         save_teams(teams)
         return True

@@ -27,6 +27,7 @@ try:
         get_team_players,
         get_teams_coached_by,
         get_teams_for_user,
+        remove_member_from_team,
         get_player_activity_summary,
         get_team_activity_summary,
         get_recent_team_activity,
@@ -44,12 +45,37 @@ except ImportError:
     has_pending_team_request = lambda *a: False
     get_assignments_for_player = get_assignments_for_team = get_feedback_for_player = get_feedback_for_team = lambda *a: []
     get_team_by_id = get_team_by_invite_code = lambda *a: None
+    remove_member_from_team = lambda *a: False
     get_team_members = get_team_players = get_teams_for_user = get_teams_coached_by = lambda *a: []
     get_player_activity_summary = get_team_activity_summary = get_recent_team_activity = lambda *a: {}
     is_team_coach = lambda *a: False
     mark_assignment_completed = lambda *a: False
     FEEDBACK_TYPES = ()
     ASSIGNED_TO_TEAM = ASSIGNED_TO_PLAYER = ""
+
+
+def _add_team_to_player_profile(prof: dict, team: dict) -> dict:
+    """Update profile with team membership + player_teams_cache. Returns updated profile."""
+    ids = list(prof.get("bender_team_ids") or [])
+    tid = team.get("team_id")
+    if tid and tid not in ids:
+        ids.append(tid)
+    prof["bender_team_ids"] = ids
+    prof["team"] = (team.get("team_name") or "").strip()
+    cache = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != tid]
+    cache.append(dict(team))
+    prof["player_teams_cache"] = cache[-20:]
+    return prof
+
+
+def _remove_team_from_player_profile(prof: dict, team_id: str, remaining_teams: list[dict] | None = None) -> dict:
+    """Remove team from profile. Returns updated profile."""
+    ids = [x for x in (prof.get("bender_team_ids") or []) if x != team_id]
+    prof["bender_team_ids"] = ids
+    cache = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
+    prof["player_teams_cache"] = cache
+    prof["team"] = (remaining_teams[0].get("team_name", "").strip() if remaining_teams else "") or ""
+    return prof
 
 
 def _profile_loader(load_profile_fn: Callable) -> Callable:
@@ -74,12 +100,7 @@ def render_team_join_only(load_profile_fn: Callable, save_callback: Callable[[di
                 else:
                     uid = st.session_state.current_user_id
                     if add_member_to_team(t["team_id"], uid, "player"):
-                        prof = load_profile_fn(uid) or {}
-                        ids = list(prof.get("bender_team_ids") or [])
-                        if t["team_id"] not in ids:
-                            ids.append(t["team_id"])
-                        prof["bender_team_ids"] = ids
-                        prof["team"] = t.get("team_name", "").strip()
+                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
                         save_callback(prof)
                         if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
                             st.session_state.current_profile = prof
@@ -106,12 +127,7 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
                 else:
                     uid = st.session_state.current_user_id
                     if add_member_to_team(t["team_id"], uid, "player"):
-                        prof = load_profile_fn(uid) or {}
-                        ids = list(prof.get("bender_team_ids") or [])
-                        if t["team_id"] not in ids:
-                            ids.append(t["team_id"])
-                        prof["bender_team_ids"] = ids
-                        prof["team"] = t.get("team_name", "").strip()
+                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
                         save_callback(prof)
                         if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
                             st.session_state.current_profile = prof
@@ -205,7 +221,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
 
 
 # --- Coach: Roster page ---
-def render_coach_roster(team_id: str, load_profile_fn: Callable, on_select_player: Callable[[str], None]):
+def render_coach_roster(team_id: str, load_profile_fn: Callable, save_profile_fn: Callable | None, on_select_player: Callable[[str], None]):
     st.subheader("Roster")
     t = get_team_by_id(team_id)
     if not t:
@@ -252,6 +268,13 @@ def render_coach_roster(team_id: str, load_profile_fn: Callable, on_select_playe
             with cols[4]:
                 if st.button("View", key=f"roster_view_{uid}"):
                     on_select_player(uid)
+                    st.rerun()
+                if save_profile_fn and st.button("Remove", key=f"roster_remove_{uid}"):
+                    remove_member_from_team(team_id, uid)
+                    prof = load_profile_fn(uid) or {}
+                    remaining = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
+                    prof = _remove_team_from_player_profile(prof, team_id, remaining)
+                    save_profile_fn(prof)
                     st.rerun()
             st.divider()
 
@@ -429,7 +452,7 @@ def render_bender_teams_coach(
         else:
             def on_select(pid):
                 st.session_state.bender_teams_roster_player = pid
-            render_coach_roster(team_id, load_profile_fn, on_select)
+            render_coach_roster(team_id, load_profile_fn, save_profile_fn, on_select)
     elif sub == "Assignments":
         render_coach_assignments(team_id, load_profile_fn)
     elif sub == "Feedback":
@@ -466,12 +489,7 @@ def render_bender_teams_coach(
                     st.error("Invalid invite code.")
                 else:
                     if add_member_to_team(t["team_id"], uid, "player"):
-                        prof = load_profile_fn(uid) or {}
-                        ids = list(prof.get("bender_team_ids") or [])
-                        if t["team_id"] not in ids:
-                            ids.append(t["team_id"])
-                        prof["bender_team_ids"] = ids
-                        prof["team"] = t.get("team_name", "").strip()
+                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
                         save_profile_fn(prof)
                         if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
                             st.session_state.current_profile = prof
@@ -491,12 +509,7 @@ def handle_join_flow(join_code: str, current_user_id: str, load_profile_fn: Call
         return False, "Invalid invite code."
     if add_member_to_team(t["team_id"], current_user_id, "player"):
         if save_profile_fn:
-            prof = load_profile_fn(current_user_id) or {}
-            ids = list(prof.get("bender_team_ids") or [])
-            if t["team_id"] not in ids:
-                ids.append(t["team_id"])
-            prof["bender_team_ids"] = ids
-            prof["team"] = t.get("team_name", "").strip()
+            prof = _add_team_to_player_profile(load_profile_fn(current_user_id) or {}, t)
             save_profile_fn(prof)
         return True, f"You joined **{t.get('team_name', 'team')}**."
     return False, "You're already on this team."
@@ -560,7 +573,7 @@ def render_bender_teams_player_portal(
     if sub == "Assignments":
         _render_player_assignments_tab(user_id, team_id, load_profile_fn, save_profile_fn)
     elif sub == "Team Progress":
-        _render_player_team_progress_tab(user_id, team, profile, loader, team_name, load_profile_fn)
+        _render_player_team_progress_tab(user_id, team, profile, loader, team_name, load_profile_fn, save_profile_fn)
     elif sub == "Coach Feedback":
         _render_player_feedback_tab(user_id, load_profile_fn)
 
@@ -598,6 +611,7 @@ def _render_player_team_progress_tab(
     loader: Callable,
     team_name: str,
     load_profile_fn: Callable,
+    save_profile_fn: Callable | None = None,
 ) -> None:
     """Team Progress tab: Team Activity + Your Progress + Team Info at bottom."""
     team_id = team.get("team_id", "")
@@ -662,6 +676,16 @@ def _render_player_team_progress_tab(
     st.caption(f"**Coach:** {coach_name}")
     st.caption(f"**Season:** {season}")
     st.caption(f"**Your position:** {pos}")
+    if save_profile_fn:
+        if st.button("Leave team", key="player_leave_team_btn"):
+            remove_member_from_team(team_id, user_id)
+            remaining = [c for c in (profile.get("player_teams_cache") or []) if c.get("team_id") != team_id]
+            prof = _remove_team_from_player_profile(load_profile_fn(user_id) or {}, team_id, remaining)
+            save_profile_fn(prof)
+            if st.session_state.get("current_user_id") == user_id and "current_profile" in st.session_state:
+                st.session_state.current_profile = prof
+            st.session_state.bender_teams_player_sub = "Assignments"
+            st.rerun()
 
 
 def _render_player_feedback_tab(user_id: str, load_profile_fn: Callable) -> None:
@@ -729,7 +753,7 @@ def render_player_assignments_and_feedback(
     on_complete_workout_callback=None,
 ):
     """Render assigned workouts and coach feedback for player in their main view."""
-    teams = get_teams_for_user(user_id)
+    teams = get_teams_for_user(user_id, load_profile_fn)
     if not teams:
         return
     team_id = team_id or (teams[0]["team_id"] if teams else None)

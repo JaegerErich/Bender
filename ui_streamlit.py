@@ -3904,7 +3904,7 @@ try:
     from bender_teams import get_teams_coached_by, get_teams_for_user
     _cu = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id or ""
     _coached_teams = get_teams_coached_by(_cu, load_profile)
-    _teams_as_member = get_teams_for_user(_cu)
+    _teams_as_member = get_teams_for_user(_cu, load_profile)
     _is_coach = bool(_coached_teams)
     _on_team = bool(_teams_as_member)
 except Exception:
@@ -4055,7 +4055,7 @@ def _render_training_session():
     if _uid:
         try:
             from bender_teams import get_teams_for_user, get_assignments_for_player, get_feedback_for_player
-            _teams = get_teams_for_user(_uid)
+            _teams = get_teams_for_user(_uid, load_profile)
             _tid = _teams[0]["team_id"] if _teams else None
             _assigns = get_assignments_for_player(_uid, _tid)
             _feedbacks = get_feedback_for_player(_uid)
@@ -4588,6 +4588,9 @@ else:
                                             _ids.append(_t["team_id"])
                                         _prof["bender_team_ids"] = _ids
                                         _prof["team"] = _t.get("team_name", "").strip()
+                                        _cache = [c for c in (_prof.get("player_teams_cache") or []) if c.get("team_id") != _t["team_id"]]
+                                        _cache.append(dict(_t))
+                                        _prof["player_teams_cache"] = _cache[-20:]
                                         save_profile(_prof)
                                         if st.session_state.get("current_user_id") == _uid and "current_profile" in st.session_state:
                                             st.session_state.current_profile = _prof
