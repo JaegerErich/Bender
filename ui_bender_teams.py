@@ -25,6 +25,7 @@ try:
         get_team_by_invite_code,
         get_team_members,
         get_team_players,
+        get_team_players_extended,
         get_teams_coached_by,
         get_teams_for_user,
         remove_member_from_team,
@@ -46,7 +47,7 @@ except ImportError:
     get_assignments_for_player = get_assignments_for_team = get_feedback_for_player = get_feedback_for_team = lambda *a: []
     get_team_by_id = get_team_by_invite_code = lambda *a: None
     remove_member_from_team = lambda *a: False
-    get_team_members = get_team_players = get_teams_for_user = get_teams_coached_by = lambda *a: []
+    get_team_members = get_team_players = get_team_players_extended = get_teams_for_user = get_teams_coached_by = lambda *a: []
     get_player_activity_summary = get_team_activity_summary = get_recent_team_activity = lambda *a: {}
     is_team_coach = lambda *a: False
     mark_assignment_completed = lambda *a: False
@@ -167,7 +168,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
         return
     loader = _profile_loader(load_profile_fn)
     summary = get_team_activity_summary(team_id, loader)
-    players = get_team_players(team_id)
+    players = get_team_players_extended(team_id)
     if not players:
         st.caption(t.get("team_name", "Team"))
         st.info("Share your invite code above so players can join. Activity and metrics will appear here once they start training.")
@@ -175,6 +176,19 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     st.caption(t.get("team_name", "Team"))
     st.caption(f"{t.get('age_group', '')} {t.get('level', '')} {t.get('season', '')}".strip() or "—")
     st.markdown("")  # spacer
+    # Highlight: total training time
+    total_all = int(summary.get("total_training_minutes_all_time", 0))
+    total_week = int(summary.get("total_training_minutes", 0))
+    if total_all > 0 or total_week > 0:
+        parts = []
+        if total_all > 0:
+            h_all, m_all = divmod(total_all, 60)
+            parts.append(f"{h_all}h {m_all}m total" if h_all > 0 else f"{m_all}m total")
+        if total_week > 0:
+            h_week, m_week = divmod(total_week, 60)
+            parts.append(f"{h_week}h {m_week}m this week" if h_week > 0 else f"{m_week}m this week")
+        st.info(f"**Team training time:** {' · '.join(parts)}")
+    st.markdown("")
     # Top metrics
     m1, m2, m3, m4 = st.columns(4)
     with m1:
@@ -189,7 +203,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     col_roster, col_attention = st.columns([2, 1])
     with col_roster:
         st.markdown("#### Roster snapshot")
-        players = get_team_players(team_id)
+        players = get_team_players_extended(team_id)
         for m in players[:15]:
             uid = m.get("user_id")
             prof = load_profile_fn(uid)
@@ -227,7 +241,7 @@ def render_coach_roster(team_id: str, load_profile_fn: Callable, save_profile_fn
     if not t:
         st.info("Share your invite code above so players can join. The roster will appear here once they join your team.")
         return
-    players = get_team_players(team_id)
+    players = get_team_players_extended(team_id)
     if not players:
         st.info("Share your invite code above so players can join. The roster will appear here once they join your team.")
         return
@@ -357,7 +371,7 @@ def render_coach_assignments(team_id: str, load_profile_fn: Callable, generate_s
     st.markdown("#### New assignment")
     with st.expander("Assign to team or player"):
         to_type = st.radio("Assign to", ["team", "player"], key="new_assign_to")
-        players = get_team_players(team_id)
+        players = get_team_players_extended(team_id)
         if to_type == "player":
             if not players:
                 st.caption("No players on team yet. Invite players with your team code first.")

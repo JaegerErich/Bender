@@ -345,12 +345,44 @@ def remove_member_from_team(team_id: str, user_id: str) -> bool:
     return False
 
 
+PROFILE_DIR = DATA_DIR / "profiles"
+
+
 def get_team_players(team_id: str) -> list[dict]:
-    """Members with role=player."""
+    """Members with role=player (from teams.json only)."""
     t = get_team_by_id(team_id)
     if not t:
         return []
     return [m for m in t.get("members", []) if m.get("role") == "player"]
+
+
+def get_team_players_extended(team_id: str) -> list[dict]:
+    """Members with role=player, including those in profile bender_team_ids (survives teams.json reset)."""
+    seen: set[str] = set()
+    out: list[dict] = []
+    for m in get_team_players(team_id):
+        uid = m.get("user_id")
+        if uid and uid not in seen:
+            out.append(m)
+            seen.add(uid)
+    if PROFILE_DIR.exists():
+        try:
+            for path in PROFILE_DIR.glob("*.json"):
+                try:
+                    with open(path, encoding="utf-8") as f:
+                        prof = json.load(f)
+                except Exception:
+                    continue
+                uid = (prof.get("user_id") or "").strip()
+                if not uid or uid in seen:
+                    continue
+                if team_id not in (prof.get("bender_team_ids") or []):
+                    continue
+                out.append({"user_id": uid, "role": "player", "joined_at": ""})
+                seen.add(uid)
+        except Exception:
+            pass
+    return out
 
 
 def get_team_members(team_id: str) -> list[dict]:
@@ -491,10 +523,9 @@ def get_feedback_for_player(player_id: str, visible_only: bool = True) -> list[d
 
 def get_feedback_for_team(team_id: str, limit: int = 50) -> list[dict]:
     """Recent feedback for players in this team (for activity feed)."""
-    t = get_team_by_id(team_id)
-    if not t:
+    if not get_team_by_id(team_id):
         return []
-    player_ids = {m["user_id"] for m in t.get("members", []) if m.get("role") == "player"}
+    player_ids = {m["user_id"] for m in get_team_players_extended(team_id)}
     out = [x for x in load_feedback() if x.get("player_id") in player_ids]
     out = sorted(out, key=lambda e: e.get("created_at", ""), reverse=True)
     return out[:limit]
@@ -535,13 +566,14 @@ def get_player_activity_summary(profile: dict, days: int = 7) -> dict:
 
 
 def get_team_activity_summary(team_id: str, profile_loader) -> dict:
-    """Aggregate activity for team members. profile_loader(user_id) -> profile dict."""
-    players = get_team_players(team_id)
+    """Aggregate activity for team members. profile_loader(user_id) -> profile dict. Uses extended roster."""
+    players = get_team_players_extended(team_id)
     today = date.today()
     week_start = today - timedelta(days=7)
     active_count = 0
     total_workouts = 0
     total_minutes = 0.0
+    total_minutes_all_time = 0.0
     inactive_7_days: list[str] = []
     for m in players:
         uid = m.get("user_id")
@@ -551,6 +583,7 @@ def get_team_activity_summary(team_id: str, profile_loader) -> dict:
         hist = prof.get("completion_history") or []
         workouts_this_week = 0
         mins_this_week = 0.0
+        mins_all_time = 0.0
         last_date = None
         for e in hist:
             d = e.get("date") or ""
@@ -559,11 +592,14 @@ def get_team_activity_summary(team_id: str, profile_loader) -> dict:
             except (ValueError, TypeError):
                 dt = None
             if dt:
+                m_ent = float(e.get("minutes", 0) or 0)
+                mins_all_time += m_ent
                 if dt >= week_start:
                     workouts_this_week += 1
-                    mins_this_week += float(e.get("minutes", 0) or 0)
+                    mins_this_week += m_ent
                 if last_date is None or dt > last_date:
                     last_date = dt
+        total_minutes_all_time += mins_all_time
         if workouts_this_week > 0:
             active_count += 1
         total_workouts += workouts_this_week
@@ -584,6 +620,7 @@ def get_team_activity_summary(team_id: str, profile_loader) -> dict:
         "total_players": len(players),
         "workouts_this_week": total_workouts,
         "total_training_minutes": total_minutes,
+        "total_training_minutes_all_time": total_minutes_all_time,
         "avg_minutes_per_player": total_minutes / active_count if active_count else 0,
         "completion_percentage": round(completion_pct, 1),
         "inactive_7_days": inactive_7_days,
@@ -596,7 +633,8 @@ def get_recent_team_activity(team_id: str, profile_loader, limit: int = 20) -> l
     t = get_team_by_id(team_id)
     if not t:
         return []
-    player_ids = {m["user_id"]: m for m in t.get("members", [])}
+    players = get_team_players_extended(team_id)
+    player_ids = {m["user_id"]: m for m in players}
     for uid in player_ids:
         prof = profile_loader(uid)
         if not prof:
