@@ -197,7 +197,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
             parts.append(f"{h_week}h {m_week}m this week" if h_week > 0 else f"{m_week}m this week")
         st.info(f"**Team training time:** {' · '.join(parts)}")
     st.markdown("")
-    # Top metrics — Active this week & Workouts this week
+    # Top metrics — Active players this week & Workouts this week
     _metric_style = "border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem 1.25rem; background: rgba(255,255,255,0.05);"
     _metric_label = "font-size: 0.85rem; color: rgba(255,255,255,0.7);"
     _metric_val = "font-size: 1.5rem; font-weight: 700; color: #fff;"
@@ -206,7 +206,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     workouts = summary.get("workouts_this_week", 0)
     st.markdown(
         '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">'
-        f'<div style="{_metric_style} flex: 1; min-width: 140px;"><div style="{_metric_label}">Active this week</div><div style="{_metric_val}">{active} / {total}</div></div>'
+        f'<div style="{_metric_style} flex: 1; min-width: 140px;"><div style="{_metric_label}">Active players this week</div><div style="{_metric_val}">{active} / {total}</div></div>'
         f'<div style="{_metric_style} flex: 1; min-width: 140px;"><div style="{_metric_label}">Workouts this week</div><div style="{_metric_val}">{workouts}</div></div>'
         "</div>",
         unsafe_allow_html=True,
@@ -227,14 +227,14 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
         f'<div style="{_tw_header}"><span style="{_tw_cat}">Category</span><span style="{_tw_target}">Target (min/week)</span><span style="{_tw_avg}">Avg this week</span></div>',
         unsafe_allow_html=True,
     )
+    tw_cols = st.columns([2, 1, 1])
     new_targets = {}
     for cat in TEAM_CATEGORY_ORDER:
         label = TEAM_CATEGORY_LABELS.get(cat, cat)
         avg_week = week_mins.get(cat, 0) / n_players
-        r1, r2, r3 = st.columns([2, 1, 1])
-        with r1:
+        with tw_cols[0]:
             st.markdown(f"**{label}**")
-        with r2:
+        with tw_cols[1]:
             v = st.number_input(
                 f"Target {cat}",
                 min_value=0,
@@ -245,7 +245,7 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
                 label_visibility="collapsed",
             )
             new_targets[cat] = int(v)
-        with r3:
+        with tw_cols[2]:
             st.markdown(f"{int(avg_week)} min")
     if st.button("Save targets", key=f"save_targets_{team_id}"):
         set_team_weekly_targets(team_id, new_targets)
