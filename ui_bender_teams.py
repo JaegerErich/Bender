@@ -522,7 +522,7 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
         tests = prof.get("performance_tests") or {}
         roster.append({"user_id": uid, "name": name, "profile": prof, "tests": tests})
 
-    # --- Average level per mode category ---
+    # --- Average level per mode category (card style) ---
     categories = [
         ("puck_mastery", "Puck Mastery"),
         ("skating_mechanics", "Skating Mechanics"),
@@ -540,18 +540,25 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
             if rank > 0:
                 level_sums[key] += rank
                 level_counts[key] += 1
+
     st.markdown("#### Average category level")
-    cols = st.columns(len(categories))
-    for (key, label), col in zip(categories, cols):
-        with col:
-            if level_counts[key]:
-                avg = level_sums[key] / level_counts[key]
-                st.metric(label, f"{avg:.1f}")
-            else:
-                st.metric(label, "—")
+    _card_style = "border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; background: rgba(255,255,255,0.05);"
+    _row_style = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.08);"
+    _row_last = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;"
+    _label_style = "font-weight: 500; color: rgba(255,255,255,0.9);"
+    _val_style = "font-weight: 700; color: #fff; font-size: 1.05rem;"
+    avg_rows = []
+    for key, label in categories:
+        if level_counts[key]:
+            avg = level_sums[key] / level_counts[key]
+            val = f"{avg:.1f}"
+        else:
+            val = "—"
+        avg_rows.append(f'<div style="{_row_style}"><span style="{_label_style}">{label}</span><span style="{_val_style}">{val}</span></div>')
+    avg_rows[-1] = avg_rows[-1].replace(_row_style, _row_last)
+    st.markdown(f'<div style="{_card_style}">' + "".join(avg_rows) + "</div>", unsafe_allow_html=True)
 
     # --- Performance tests: team averages ---
-    st.markdown("")
     st.markdown("#### Performance tests (team averages)")
 
     def _parse_float(val) -> float | None:
@@ -594,9 +601,12 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
             else:
                 st.write("—")
 
-    # --- Player lookup and ranking ---
-    st.markdown("")
+    # --- Separate section: Player lookup and rankings ---
+    st.divider()
+    st.markdown("---")
     st.markdown("#### Player lookup & rankings")
+    st.caption("Select a player to see their category levels and where their performance test scores rank on the team.")
+    st.markdown("")
     name_to_row = {row["name"]: row for row in roster}
     selected_name = st.selectbox(
         "Select a player",
@@ -609,13 +619,18 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
     prof = sel_row["profile"]
     tests = sel_row["tests"]
 
-    # Show this player's levels by category
+    # Show this player's category levels (same card format as team averages)
     st.markdown(f"**{selected_name} — Category levels**")
-    lvl_cols = st.columns(len(categories))
-    for (key, label), col in zip(categories, lvl_cols):
-        with col:
-            cp = get_category_progress(prof, key)
-            st.metric(label, f"Level {int(cp.get('rank') or 0)}")
+    _row_style_p = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.08);"
+    _row_last_p = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;"
+    player_rows = []
+    for i, (key, label) in enumerate(categories):
+        cp = get_category_progress(prof, key)
+        rank = int(cp.get("rank") or 0)
+        val = str(rank) if rank else "—"
+        style = _row_last_p if i == len(categories) - 1 else _row_style_p
+        player_rows.append(f'<div style="{style}"><span style="{_label_style}">{label}</span><span style="{_val_style}">{val}</span></div>')
+    st.markdown(f'<div style="{_card_style}">' + "".join(player_rows) + "</div>", unsafe_allow_html=True)
 
     # Rank this player's performance tests within team
     st.markdown("")
@@ -694,7 +709,7 @@ def render_bender_teams_coach(
     st.session_state.bender_teams_team_idx = min(sel_idx, len(team_ids) - 1)
     team_id = team_ids[sel_idx]
     sub = st.session_state.get("bender_teams_sub", "Overview")
-    opts = ["Overview", "Roster", "Team Performance", "Assignments", "Feedback", "Add Team", "Join team"]
+    opts = ["Overview", "Team Performance", "Roster", "Assignments", "Feedback", "Add Team", "Join team"]
     st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
     _tab_cols = st.columns(len(opts))
     for _i, o in enumerate(opts):
@@ -706,6 +721,8 @@ def render_bender_teams_coach(
     st.session_state.bender_teams_sub = sub
     if sub == "Overview":
         render_coach_overview(team_id, load_profile_fn)
+    elif sub == "Team Performance":
+        render_coach_team_performance(team_id, load_profile_fn)
     elif sub == "Roster":
         player_view = st.session_state.get("bender_teams_roster_player")
         if player_view:
@@ -717,8 +734,6 @@ def render_bender_teams_coach(
             def on_select(pid):
                 st.session_state.bender_teams_roster_player = pid
             render_coach_roster(team_id, load_profile_fn, save_profile_fn, on_select)
-    elif sub == "Team Performance":
-        render_coach_team_performance(team_id, load_profile_fn)
     elif sub == "Assignments":
         render_coach_assignments(team_id, load_profile_fn)
     elif sub == "Feedback":
