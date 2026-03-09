@@ -418,6 +418,9 @@ def _render_plan_view(plan: list | dict, completed: dict, profile: dict, on_comp
 
     _, day_data = flat_days[sel_idx]
     dt_display = day_data["date"].strftime("%A, %b %d") if hasattr(day_data["date"], "strftime") else str(day_data["date"])
+    equip = profile.get("equipment") or []
+    if not equip or (len(equip) == 1 and (equip[0] or "").lower() in ("none", "minimal")):
+        st.caption("⚠️ Workout effectiveness limited due to lack of equipment. Add your equipment in the sidebar for better workouts.")
     st.markdown(f"### Day {sel_idx + 1}: {dt_display}")
     _completed_for_day = completed.get(sel_idx) or completed.get(str(sel_idx)) or []
     _completed_set = set(_completed_for_day) if isinstance(_completed_for_day, list) else _completed_for_day
@@ -2202,8 +2205,8 @@ def _generate_via_engine(payload: dict) -> dict:
         session_len_min=minutes,
         athlete_id=athlete_id,
         use_memory=True,
-        memory_sessions=6,
-        recent_penalty=0.25,
+        memory_sessions=8,
+        recent_penalty=0.12,
         strength_emphasis=strength_emphasis,
         shooting_shots=shooting_shots,
         stickhandling_min=stickhandling_min,
@@ -3741,6 +3744,13 @@ with st.sidebar:
         except Exception:
             equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
         prof = st.session_state.current_profile or {}
+        # Restore equipment from disk when in-memory profile lost it (e.g. session clear, rerun)
+        _uid = prof.get("user_id") or st.session_state.get("current_user_id")
+        if _uid:
+            _disk_prof = load_profile(str(_uid))
+            if _disk_prof and (_disk_prof.get("equipment") or []) and not (prof.get("equipment") or []):
+                prof["equipment"] = _disk_prof["equipment"]
+                st.session_state.current_profile = prof
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
         current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
         _equip_prefix = "sidebar_" + (str(st.session_state.get("current_user_id") or "default").replace(" ", "_")[:80])
