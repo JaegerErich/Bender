@@ -2732,11 +2732,15 @@ st.markdown("""
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
     }
-    /* Player tabs: grouped like segmented control, 12px gap, left-aligned (exclude plan-day-grid) */
+    /* Player tabs and Bender Teams sub-tabs: same classic tab design */
     div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"],
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"],
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] {
@@ -2751,6 +2755,8 @@ st.markdown("""
     [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"] > div,
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + [data-testid="stVerticalBlock"] > [data-testid="stHorizontalBlock"] > div,
@@ -2764,6 +2770,8 @@ st.markdown("""
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
         background: #2e2e2e !important; border: 1px solid #3a3a3a !important; border-radius: 8px 8px 0 0 !important;
@@ -2777,6 +2785,8 @@ st.markdown("""
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
         background: #383838 !important; color: #dddddd !important; border-color: #444444 !important;
@@ -2785,6 +2795,8 @@ st.markdown("""
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #e0e0e0 !important; color: #333333 !important; font-weight: 600 !important;
@@ -2798,6 +2810,8 @@ st.markdown("""
             gap: 8px !important;
         }
         div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"],
+        div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"],
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] {
             gap: 12px !important;
@@ -2806,6 +2820,8 @@ st.markdown("""
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
+        [data-testid="stMarkdown"]:has(#bender-teams-sub-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
             padding: 0.22rem 0.4rem !important; font-size: 0.75rem !important;

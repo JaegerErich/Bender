@@ -362,10 +362,14 @@ def render_bender_teams_coach(
         st.info(f"**Invite code for players:** `{_invite_code}` — Share this code so players can join **{_cur_team.get('team_name', 'your team')}**.")
     sub = st.session_state.get("bender_teams_sub", "Overview")
     opts = ["Overview", "Roster", "Assignments", "Feedback", "Add Team", "Join team"]
-    for o in opts:
-        if st.button(o, key=f"teams_sub_{o}", type="primary" if sub == o else "secondary"):
-            st.session_state.bender_teams_sub = o
-            st.rerun()
+    st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
+    _tab_cols = st.columns(len(opts))
+    for _i, o in enumerate(opts):
+        with _tab_cols[_i]:
+            _is_sel = sub == o
+            if st.button(o, key=f"teams_sub_{o.replace(' ', '_')}", type="primary" if _is_sel else "secondary"):
+                st.session_state.bender_teams_sub = o
+                st.rerun()
     st.session_state.bender_teams_sub = sub
     if sub == "Overview":
         render_coach_overview(team_id, load_profile_fn)
