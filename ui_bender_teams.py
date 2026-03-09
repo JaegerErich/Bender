@@ -674,14 +674,75 @@ def render_bender_teams_coach(
         code = (t.get("invite_code") or "").strip()
         return f"{name} - Invite code: {code}" if code else name
     team_names = [_team_label(t) for t in coached]
+
+    def _dropdown_label(i):
+        if i < len(team_ids):
+            return team_names[i]
+        if i == len(team_ids):
+            return "+ Add Team"
+        return "Join team"
+
     if "bender_teams_team_idx" not in st.session_state:
         st.session_state.bender_teams_team_idx = 0
-    # Team selector row
-    sel_idx = st.selectbox("Team", range(len(team_ids)), index=st.session_state.bender_teams_team_idx, format_func=lambda i: team_names[i], key="bender_teams_team_select")
-    st.session_state.bender_teams_team_idx = min(sel_idx, len(team_ids) - 1)
+    # Team selector: teams + Add Team, Join team
+    n_teams = len(team_ids)
+    sel_idx = st.selectbox(
+        "Team",
+        range(n_teams + 2),
+        index=min(st.session_state.bender_teams_team_idx, n_teams + 1),
+        format_func=_dropdown_label,
+        key="bender_teams_team_select",
+    )
+    st.session_state.bender_teams_team_idx = sel_idx
+
+    # Add Team or Join team selected from dropdown
+    if sel_idx == n_teams:
+        st.subheader("Create another team")
+        st.caption("Submit a request to create a new team. An admin will review and approve.")
+        _prof = load_profile_fn(uid)
+        disp = (_prof or {}).get("display_name") or uid
+        with st.form("create_team_form_add"):
+            c_name = st.text_input("Team name", placeholder="e.g. Eagles U14", key="add_team_name")
+            c_age = st.text_input("Age group (optional)", placeholder="e.g. U14", key="add_team_age")
+            c_level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College"], key="add_team_level")
+            c_season = st.text_input("Season (optional)", placeholder="e.g. 2024-25", key="add_team_season")
+            if st.form_submit_button("Submit request"):
+                name = (c_name or "").strip()
+                if not name:
+                    st.error("Enter a team name.")
+                elif has_pending_team_request(uid, name):
+                    st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
+                elif create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or ""):
+                    st.success("The request has been submitted.")
+                    st.rerun()
+        return
+    if sel_idx == n_teams + 1:
+        st.subheader("Join a team")
+        st.caption("Enter an invite code to join another team as a player.")
+        join_code = st.text_input("Invite code", key="teams_join_code_coach", placeholder="e.g. ABC123").strip().upper()
+        if st.button("Join team", key="teams_join_btn_coach"):
+            if not join_code:
+                st.error("Enter an invite code.")
+            else:
+                t = get_team_by_invite_code(join_code)
+                if not t:
+                    st.error("Invalid invite code.")
+                else:
+                    if add_member_to_team(t["team_id"], uid, "player"):
+                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
+                        save_profile_fn(prof)
+                        if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
+                            st.session_state.current_profile = prof
+                        st.success(f"You joined **{t.get('team_name', 'team')}**.")
+                        st.rerun()
+                    else:
+                        st.info("You're already on this team.")
+        return
+
+    # A team is selected — show tab bar and content
     team_id = team_ids[sel_idx]
     sub = st.session_state.get("bender_teams_sub", "Overview")
-    opts = ["Overview", "Team Performance", "Roster", "Assignments", "Feedback", "Add Team", "Join team"]
+    opts = ["Overview", "Team Performance", "Roster", "Assignments", "Feedback"]
     st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
     _tab_cols = st.columns(len(opts))
     for _i, o in enumerate(opts):
@@ -710,46 +771,6 @@ def render_bender_teams_coach(
         render_coach_assignments(team_id, load_profile_fn)
     elif sub == "Feedback":
         render_coach_feedback(team_id, load_profile_fn)
-    elif sub == "Add Team":
-        _prof = load_profile_fn(uid)
-        disp = (_prof or {}).get("display_name") or uid
-        st.subheader("Create another team")
-        st.caption("Submit a request to create a new team. An admin will review and approve.")
-        with st.form("create_team_form_add_tab"):
-            c_name = st.text_input("Team name", placeholder="e.g. Eagles U14", key="add_team_name")
-            c_age = st.text_input("Age group (optional)", placeholder="e.g. U14", key="add_team_age")
-            c_level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College"], key="add_team_level")
-            c_season = st.text_input("Season (optional)", placeholder="e.g. 2024-25", key="add_team_season")
-            if st.form_submit_button("Submit request"):
-                name = (c_name or "").strip()
-                if not name:
-                    st.error("Enter a team name.")
-                elif has_pending_team_request(uid, name):
-                    st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
-                elif create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or ""):
-                    st.success("The request has been submitted.")
-                    st.rerun()
-    elif sub == "Join team":
-        st.subheader("Join a team")
-        st.caption("Enter an invite code to join another team as a player.")
-        join_code = st.text_input("Invite code", key="teams_join_code_coach", placeholder="e.g. ABC123").strip().upper()
-        if st.button("Join team", key="teams_join_btn_coach"):
-            if not join_code:
-                st.error("Enter an invite code.")
-            else:
-                t = get_team_by_invite_code(join_code)
-                if not t:
-                    st.error("Invalid invite code.")
-                else:
-                    if add_member_to_team(t["team_id"], uid, "player"):
-                        prof = _add_team_to_player_profile(load_profile_fn(uid) or {}, t)
-                        save_profile_fn(prof)
-                        if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
-                            st.session_state.current_profile = prof
-                        st.success(f"You joined **{t.get('team_name', 'team')}**.")
-                        st.rerun()
-                    else:
-                        st.info("You're already on this team.")
 
 
 # --- Player: Join flow ---
