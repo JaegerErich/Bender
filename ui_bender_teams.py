@@ -360,10 +360,10 @@ def render_coach_roster(team_id: str, load_profile_fn: Callable, save_profile_fn
                     on_select_player(uid)
                     st.rerun()
                 if save_profile_fn and st.button("Remove", key=f"roster_remove_{uid}"):
-                        remove_member_from_team(team_id, uid)
-                        prof = load_profile_fn(uid) or {}
-                        remaining = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
-                        prof = _remove_team_from_player_profile(prof, team_id, remaining)
+                    remove_member_from_team(team_id, uid)
+                    prof = load_profile_fn(uid) or {}
+                    remaining = [c for c in (prof.get("player_teams_cache") or []) if c.get("team_id") != team_id]
+                    prof = _remove_team_from_player_profile(prof, team_id, remaining)
                     save_profile_fn(prof)
                     st.rerun()
             if m != players[-1]:
@@ -494,6 +494,180 @@ def render_coach_feedback(team_id: str, load_profile_fn: Callable):
         st.write(f.get("message", ""))
 
 
+# --- Coach: Team Performance page ---
+def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
+    st.subheader("Team Performance")
+    t = get_team_by_id(team_id)
+    if not t:
+        st.info("Share your invite code above so players can join. Performance data will appear here once players are training.")
+        return
+    players = get_team_players_extended(team_id)
+    if not players:
+        st.info("Share your invite code above so players can join. Performance data will appear here once players are training.")
+        return
+
+    try:
+        from bender_leveling import ensure_leveling_defaults, get_category_progress
+    except Exception:
+        st.info("Leveling data is not available right now.")
+        return
+
+    # Load profiles and cache basic data
+    roster: list[dict] = []
+    for m in players:
+        uid = m.get("user_id")
+        prof = load_profile_fn(uid) or {}
+        prof = ensure_leveling_defaults(prof)
+        name = (prof.get("display_name") or uid) or uid
+        tests = prof.get("performance_tests") or {}
+        roster.append({"user_id": uid, "name": name, "profile": prof, "tests": tests})
+
+    # --- Average level per mode category ---
+    categories = [
+        ("puck_mastery", "Puck Mastery"),
+        ("skating_mechanics", "Skating Mechanics"),
+        ("performance", "Performance (Strength)"),
+        ("conditioning", "Conditioning"),
+        ("mobility", "Mobility & Recovery"),
+    ]
+    level_sums: dict[str, int] = {k: 0 for k, _ in categories}
+    level_counts: dict[str, int] = {k: 0 for k, _ in categories}
+    for row in roster:
+        prof = row["profile"]
+        for key, _label in categories:
+            cp = get_category_progress(prof, key)
+            rank = int(cp.get("rank") or 0)
+            if rank > 0:
+                level_sums[key] += rank
+                level_counts[key] += 1
+    st.markdown("#### Average category level")
+    cols = st.columns(len(categories))
+    for (key, label), col in zip(categories, cols):
+        with col:
+            if level_counts[key]:
+                avg = level_sums[key] / level_counts[key]
+                st.metric(label, f"{avg:.1f}")
+            else:
+                st.metric(label, "—")
+
+    # --- Performance tests: team averages ---
+    st.markdown("")
+    st.markdown("#### Performance tests (team averages)")
+
+    def _parse_float(val) -> float | None:
+        if val is None:
+            return None
+        s = str(val).strip()
+        if not s:
+            return None
+        # Take first token to ignore units like \"in\" or \"s\"
+        token = s.split()[0]
+        try:
+            return float(token)
+        except ValueError:
+            return None
+
+    test_defs = [
+        ("Vertical Jump (in)", "vertical_jump", "higher"),
+        ("5-10-5 Agility (s)", "agility_5_10_5", "lower"),
+        ("Shooting Test", "shooting_tests", "higher"),
+        ("Stickhandling Tests", "stickhandling_tests", "higher"),
+        ("Conditioning Test", "conditioning_test", "lower"),
+    ]
+    c1, c2 = st.columns([2, 1])
+    with c1:
+        st.caption("**Test**")
+    with c2:
+        st.caption("**Team average**")
+    for label, key, _dir in test_defs:
+        vals: list[float] = []
+        for row in roster:
+            v = _parse_float(row["tests"].get(key))
+            if v is not None:
+                vals.append(v)
+        with c1:
+            st.write(label)
+        with c2:
+            if vals:
+                avg = sum(vals) / len(vals)
+                st.write(f"{avg:.2f}")
+            else:
+                st.write("—")
+
+    # --- Player lookup and ranking ---
+    st.markdown("")
+    st.markdown("#### Player lookup & rankings")
+    name_to_row = {row["name"]: row for row in roster}
+    selected_name = st.selectbox(
+        "Select a player",
+        sorted(name_to_row.keys()),
+        key="team_perf_player_select",
+    )
+    sel_row = name_to_row.get(selected_name)
+    if not sel_row:
+        return
+    prof = sel_row["profile"]
+    tests = sel_row["tests"]
+
+    # Show this player's levels by category
+    st.markdown(f"**{selected_name} — Category levels**")
+    lvl_cols = st.columns(len(categories))
+    for (key, label), col in zip(categories, lvl_cols):
+        with col:
+            cp = get_category_progress(prof, key)
+            st.metric(label, f"Level {int(cp.get('rank') or 0)}")
+
+    # Rank this player's performance tests within team
+    st.markdown("")
+    st.markdown("**Performance test ranking vs team**")
+    h1, h2, h3, h4 = st.columns([2, 1, 1, 1])
+    with h1:
+        st.caption("**Test**")
+    with h2:
+        st.caption("**Player**")
+    with h3:
+        st.caption("**Rank**")
+    with h4:
+        st.caption("**Team best**")
+
+    for label, key, direction in test_defs:
+        player_val = _parse_float(tests.get(key))
+        all_vals: list[tuple[str, float]] = []
+        for row in roster:
+            v = _parse_float(row["tests"].get(key))
+            if v is not None:
+                all_vals.append((row["name"], v))
+        with h1:
+            st.write(label)
+        if player_val is None or not all_vals:
+            with h2:
+                st.write("—")
+            with h3:
+                st.write("—")
+            with h4:
+                st.write("—")
+            continue
+        # Sort according to better direction
+        reverse = direction == "higher"
+        all_vals_sorted = sorted(all_vals, key=lambda x: x[1], reverse=reverse)
+        names_only = [n for n, _ in all_vals_sorted]
+        try:
+            idx = names_only.index(selected_name)
+        except ValueError:
+            idx = None
+        with h2:
+            st.write(f"{player_val:.2f}")
+        with h3:
+            if idx is not None:
+                rank = idx + 1
+                st.write(f"{rank} of {len(all_vals_sorted)}")
+            else:
+                st.write("—")
+        with h4:
+            best_name, best_val = all_vals_sorted[0]
+            st.write(f"{best_val:.2f} ({best_name})")
+
+
 # --- Main coach dashboard router ---
 def render_bender_teams_coach(
     load_profile_fn: Callable,
@@ -520,7 +694,7 @@ def render_bender_teams_coach(
     st.session_state.bender_teams_team_idx = min(sel_idx, len(team_ids) - 1)
     team_id = team_ids[sel_idx]
     sub = st.session_state.get("bender_teams_sub", "Overview")
-    opts = ["Overview", "Roster", "Assignments", "Feedback", "Add Team", "Join team"]
+    opts = ["Overview", "Roster", "Team Performance", "Assignments", "Feedback", "Add Team", "Join team"]
     st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
     _tab_cols = st.columns(len(opts))
     for _i, o in enumerate(opts):
@@ -543,6 +717,8 @@ def render_bender_teams_coach(
             def on_select(pid):
                 st.session_state.bender_teams_roster_player = pid
             render_coach_roster(team_id, load_profile_fn, save_profile_fn, on_select)
+    elif sub == "Team Performance":
+        render_coach_team_performance(team_id, load_profile_fn)
     elif sub == "Assignments":
         render_coach_assignments(team_id, load_profile_fn)
     elif sub == "Feedback":
