@@ -4564,8 +4564,38 @@ else:
                 _player_team = _teams_as_member[0]
                 render_bender_teams_player_portal(_uid, _player_team, load_profile, save_profile)
             else:
-                from ui_bender_teams import render_team_join_only
-                render_team_join_only(load_profile, save_profile)
+                try:
+                    from ui_bender_teams import render_team_join_only
+                    render_team_join_only(load_profile, save_profile)
+                except ImportError:
+                    st.info("You are not currently on a team. Join a team with an invite code.")
+                    with st.expander("Join a team", expanded=True):
+                        _jc = st.text_input("Invite code", key="teams_join_code_portal", placeholder="e.g. ABC123").strip().upper()
+                        if st.button("Join team", key="teams_join_btn_portal"):
+                            if not _jc:
+                                st.error("Enter an invite code.")
+                            else:
+                                from bender_teams import get_team_by_invite_code, add_member_to_team
+                                _t = get_team_by_invite_code(_jc)
+                                if not _t:
+                                    st.error("Invalid invite code.")
+                                else:
+                                    _uid = st.session_state.current_user_id
+                                    if add_member_to_team(_t["team_id"], _uid, "player"):
+                                        _prof = load_profile(_uid) or {}
+                                        _ids = list(_prof.get("bender_team_ids") or [])
+                                        if _t["team_id"] not in _ids:
+                                            _ids.append(_t["team_id"])
+                                        _prof["bender_team_ids"] = _ids
+                                        _prof["team"] = _t.get("team_name", "").strip()
+                                        save_profile(_prof)
+                                        if st.session_state.get("current_user_id") == _uid and "current_profile" in st.session_state:
+                                            st.session_state.current_profile = _prof
+                                        st.success(f"You joined **{_t.get('team_name', 'team')}**.")
+                                        st.session_state.player_tab = "Bender Teams"
+                                        st.rerun()
+                                    else:
+                                        st.info("You're already on this team.")
         except Exception as e:
             st.error(f"Bender Teams: {e}")
 
