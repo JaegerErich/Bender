@@ -4111,8 +4111,16 @@ def _render_training_session():
                 STRENGTH_DAY_TO_TYPE = {"Lower": "heavy_leg", "Upper": "upper_core_stability"}
                 day_label = st.selectbox("Strength day", STRENGTH_DAY_OPTIONS, index=0)
                 strength_day_type = STRENGTH_DAY_TO_TYPE[day_label]
-                em_label = st.selectbox("Strength emphasis", EMPHASIS_DISPLAY, index=EMPHASIS_KEYS.index("power"))
-                strength_emphasis = EMPHASIS_LABEL_TO_KEY[em_label]
+                # Upper body day: no Explosiveness (it gives lower-body exercises)
+                if strength_day_type == "upper_core_stability":
+                    _emphasis_keys = [k for k in EMPHASIS_KEYS if k != "explosiveness"]
+                    _emphasis_display = [STRENGTH_EMPHASIS_LABELS[k] for k in _emphasis_keys]
+                else:
+                    _emphasis_keys = list(EMPHASIS_KEYS)
+                    _emphasis_display = list(EMPHASIS_DISPLAY)
+                _default_idx = _emphasis_keys.index("power") if "power" in _emphasis_keys else 0
+                em_label = st.selectbox("Strength emphasis", _emphasis_display, index=_default_idx)
+                strength_emphasis = _emphasis_keys[_emphasis_display.index(em_label)] if em_label in _emphasis_display else "power"
                 _is_explosive_day = strength_emphasis == "explosiveness"
                 with st.expander("Rep range guide", expanded=False):
                     st.markdown("""**Power (Explosive)**
