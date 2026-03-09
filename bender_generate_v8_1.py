@@ -5053,12 +5053,18 @@ def extract_ids_from_plan(plan_text: str) -> List[str]:
 
 
 # Equipment to exclude from workout card display (assumed base / not "necessary" extra)
-# Show necessary extra equipment (Bosu, bands, 2 extra sticks, etc.) — exclude assumed base items
+# Show necessary extra equipment (BOSU, metal plate, 2 extra sticks, resistance band) — exclude assumed base items
+# Use minimal only when plan needs just stickhandling ball / shooting pad & net.
 _EQUIPMENT_DISPLAY_EXCLUDE = {
     "none", "no equipment", "bodyweight",
     "stickhandling ball", "shooting pad", "shooting pad & net", "stick & puck",
-    "hockey stick", "puck", "pucks", "chair", "stick obstacle", "wall", "wood stick",
+    "hockey stick", "stick", "puck", "pucks", "chair", "stick obstacle", "wall", "wood stick",
 }
+
+# Puck Mastery special equipment: always show when drills require it (never exclude)
+_EQUIPMENT_PUCK_MASTERY_ALWAYS_SHOW = frozenset(
+    x.lower() for x in ("BOSU ball", "metal plate", "2 extra sticks", "Resistance band")
+)
 
 
 def extract_equipment_from_plan(plan_text: str, data: Dict[str, List[Dict[str, Any]]]) -> List[str]:
@@ -5079,15 +5085,22 @@ def extract_equipment_from_plan(plan_text: str, data: Dict[str, List[Dict[str, A
             if did and did in ids:
                 for raw in drill_equipment_list(d):
                     r = norm(raw)
-                    if not r or r in _EQUIPMENT_DISPLAY_EXCLUDE:
+                    if not r:
                         continue
                     key = r.lower()
+                    can = leg2can.get(key, raw)
+                    can_lower = norm(can).lower() if can else ""
+                    # Always include Puck Mastery special equipment (BOSU, metal plate, 2 extra sticks, resistance band)
+                    if can_lower in _EQUIPMENT_PUCK_MASTERY_ALWAYS_SHOW:
+                        if key not in seen_raw:
+                            seen_raw[key] = can or raw
+                        continue
+                    if r in _EQUIPMENT_DISPLAY_EXCLUDE:
+                        continue
                     if any(ex in key for ex in _EQUIPMENT_DISPLAY_EXCLUDE):
                         continue
-                    if key not in seen_raw:
-                        can = leg2can.get(key, raw)
-                        if can and norm(can).lower() not in _EQUIPMENT_DISPLAY_EXCLUDE:
-                            seen_raw[key] = can
+                    if key not in seen_raw and can and can_lower not in _EQUIPMENT_DISPLAY_EXCLUDE:
+                        seen_raw[key] = can
     for cid in circuit_ids:
         for circ in (data.get("circuits") or []) if isinstance(data.get("circuits"), list) else []:
             if norm(get(circ, "id", "")) == cid:
