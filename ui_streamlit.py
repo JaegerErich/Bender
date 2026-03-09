@@ -150,7 +150,8 @@ def _sanitize_user_id(name: str) -> str:
 
 
 def _profile_path(user_id: str) -> Path:
-    return PROFILE_DIR / f"{user_id}.json"
+    canonical = (user_id or "").strip().lower()
+    return PROFILE_DIR / f"{canonical}.json"
 
 
 def load_profile(user_id: str) -> dict | None:
@@ -176,6 +177,18 @@ def save_profile(profile: dict) -> None:
         return
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     path = _profile_path(user_id)
+    # Merge with disk: preserve any field missing or None so we never drop equipment etc.
+    if path.exists():
+        try:
+            with open(path, encoding="utf-8") as f:
+                existing = json.load(f)
+            for key in list(existing.keys()):
+                if key == "updated_at":
+                    continue
+                if key not in profile or profile[key] is None:
+                    profile[key] = existing[key]
+        except Exception:
+            pass
     profile["updated_at"] = datetime.now().isoformat()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2)
@@ -3800,15 +3813,21 @@ with st.sidebar:
         except Exception:
             equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
         prof = st.session_state.current_profile or {}
-        # Restore equipment from disk when in-memory profile lost it (e.g. session clear, rerun)
+        # Always prefer disk equipment as source of truth (prevents stale session state from showing unchecked)
         _uid = prof.get("user_id") or st.session_state.get("current_user_id")
         if _uid:
             _disk_prof = load_profile(str(_uid))
-            if _disk_prof and (_disk_prof.get("equipment") or []) and not (prof.get("equipment") or []):
-                prof["equipment"] = _disk_prof["equipment"]
-                st.session_state.current_profile = prof
+            if _disk_prof and (_disk_prof.get("equipment") or []):
+                if not (prof.get("equipment") or []):
+                    prof["equipment"] = _disk_prof["equipment"]
+                    st.session_state.current_profile = prof
+                current_equip_source = _disk_prof["equipment"]
+            else:
+                current_equip_source = prof.get("equipment") or []
+        else:
+            current_equip_source = prof.get("equipment") or []
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
-        current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
+        current_equip = set(_canonicalize(current_equip_source) if _canonicalize else current_equip_source)
         _equip_prefix = "sidebar_" + (str(st.session_state.get("current_user_id") or "default").replace(" ", "_")[:80])
         _render_equipment_dropdowns(equipment_by_mode, current_equip, _equip_prefix)
         if st.button("Save equipment", key="sidebar_save"):

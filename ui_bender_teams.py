@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Callable
 
+import pandas as pd
 import streamlit as st
 
 # Import bender_teams data layer (profile loading passed from ui_streamlit)
@@ -217,37 +218,28 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     st.markdown("#### Weekly targets & progress")
     targets = get_team_weekly_targets(team_id)
     week_mins = get_team_mode_minutes(team_id, loader, period="week")
-    season_mins = get_team_mode_minutes(team_id, loader, period="season")
     n_players = max(1, len(players))
-    _tw_header = "display: flex; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 0.5rem;"
-    _tw_cat = "flex: 2; min-width: 120px; font-weight: 500;"
-    _tw_target = "flex: 1; min-width: 80px; text-align: right; color: rgba(255,255,255,0.8);"
-    _tw_avg = "flex: 1; min-width: 80px; text-align: right; color: rgba(255,255,255,0.8);"
-    st.markdown(
-        f'<div style="{_tw_header}"><span style="{_tw_cat}">Category</span><span style="{_tw_target}">Target (min/week)</span><span style="{_tw_avg}">Avg this week</span></div>',
-        unsafe_allow_html=True,
-    )
-    tw_cols = st.columns([2, 1, 1])
-    new_targets = {}
+    rows = []
     for cat in TEAM_CATEGORY_ORDER:
         label = TEAM_CATEGORY_LABELS.get(cat, cat)
-        avg_week = week_mins.get(cat, 0) / n_players
-        with tw_cols[0]:
-            st.markdown(f"**{label}**")
-        with tw_cols[1]:
-            v = st.number_input(
-                f"Target {cat}",
-                min_value=0,
-                max_value=600,
-                value=int(targets.get(cat, 0)),
-                step=15,
-                key=f"target_{team_id}_{cat}",
-                label_visibility="collapsed",
-            )
-            new_targets[cat] = int(v)
-        with tw_cols[2]:
-            st.markdown(f"{int(avg_week)} min")
+        avg_week = int(week_mins.get(cat, 0) / n_players)
+        rows.append({"Category": label, "Target (min/week)": int(targets.get(cat, 0)), "Avg this week": f"{avg_week} min"})
+    df = pd.DataFrame(rows)
+    edited = st.data_editor(
+        df,
+        column_config={
+            "Category": st.column_config.TextColumn("Category", disabled=True, width="medium"),
+            "Target (min/week)": st.column_config.NumberColumn("Target (min/week)", min_value=0, max_value=600, step=15, width="small"),
+            "Avg this week": st.column_config.TextColumn("Avg this week", disabled=True, width="small"),
+        },
+        hide_index=True,
+        key=f"weekly_targets_{team_id}",
+    )
     if st.button("Save targets", key=f"save_targets_{team_id}"):
+        new_targets = {}
+        for i, cat in enumerate(TEAM_CATEGORY_ORDER):
+            if i < len(edited):
+                new_targets[cat] = int(edited.iloc[i]["Target (min/week)"])
         set_team_weekly_targets(team_id, new_targets)
         st.rerun()
 
@@ -874,26 +866,8 @@ def _render_player_team_progress_tab(
     load_profile_fn: Callable,
     save_profile_fn: Callable | None = None,
 ) -> None:
-    """Team Progress tab: Team Activity + Your Progress + Team Info at bottom."""
+    """Team Progress tab: Your Progress + Team Activity + Team Info at bottom."""
     team_id = team.get("team_id", "")
-    st.markdown("#### Team Activity")
-    feed = get_recent_team_activity(team_id, loader, 15)
-    if not feed:
-        st.caption("No recent activity yet.")
-    else:
-        for item in feed[:12]:
-            tpe = item.get("type", "")
-            if tpe == "workout_completed":
-                name = item.get("display_name", "Teammate")
-                mode = (item.get("mode") or "workout").replace("_", " ").title()
-                st.caption(f"· **{name}** completed a {mode} workout")
-            elif tpe == "assignment":
-                st.caption(f"· Coach assigned **{item.get('workout_title', 'a workout')}**")
-            elif tpe == "feedback":
-                st.caption("· Coach left feedback for a player")
-
-    st.divider()
-
     st.markdown("#### Your Progress")
     summary = get_team_activity_summary(team_id, loader)
     my_act = get_player_activity_summary(profile, 7)
@@ -927,7 +901,23 @@ def _render_player_team_progress_tab(
 
     st.divider()
 
-    # Team Info at bottom of Team Progress tab
+    st.markdown("#### Team Activity")
+    feed = get_recent_team_activity(team_id, loader, 15)
+    if not feed:
+        st.caption("No recent activity yet.")
+    else:
+        for item in feed[:12]:
+            tpe = item.get("type", "")
+            if tpe == "workout_completed":
+                name = item.get("display_name", "Teammate")
+                mode = (item.get("mode") or "workout").replace("_", " ").title()
+                st.caption(f"· **{name}** completed a {mode} workout")
+            elif tpe == "assignment":
+                st.caption(f"· Coach assigned **{item.get('workout_title', 'a workout')}**")
+            elif tpe == "feedback":
+                st.caption("· Coach left feedback for a player")
+
+    st.divider()
 
     st.markdown("#### Team Info")
     coach_name = team.get("coach_name") or (load_profile_fn(team.get("coach_user_id")) or {}).get("display_name") or "—"

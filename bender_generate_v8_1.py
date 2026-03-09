@@ -1738,11 +1738,13 @@ def build_stickhandling_blocks_session(
             current_block = block
             lines.append("")
             lines.append(block_labels.get(block, block))
+        did = norm(get(d, "id", ""))
         name = _display_name(d)
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
-        lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
+        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
+        lines.append(f"- {prefix}{name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
         eq = _stickhandling_special_equipment(d) or "Puck & stick"
         lines.append(f"  Equipment: {eq}")
         if cue:
@@ -2051,12 +2053,14 @@ def build_shooting_blocks_session(
         if section != current_section:
             current_section = section
             lines.append(f"\n{block_labels.get(section, section.upper())}")
+        did = norm(get(d, "id", ""))
         reps = _parse_default_reps(d)
         equip = _equipment_display(d)
         cues = norm(get(d, "coaching_cues", ""))
         steps = norm(get(d, "step_by_step", ""))
         name = _display_name(d)
-        line = f"- {name} | {sets} x {reps}"
+        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
+        line = f"- {prefix}{name} | {sets} x {reps}"
         line += f"\n  Equipment: {equip or 'None'}"
         if cues:
             line += f"\n  Cues: {cues}"
@@ -2418,13 +2422,15 @@ def build_conditioning_single_block(
 
     mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
 
+    did = norm(get(drill, "id", ""))
     name = _display_name(drill)
+    prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
     cue = norm(get(drill, "coaching_cues", ""))
     wrp = norm(get(drill, "work_rest_profile", "")).lower()
 
     lines: List[str] = []
     lines.append(f"Conditioning ({minutes} min) | {mode_label}")
-    lines.append(f"- {name}")
+    lines.append(f"- {prefix}{name}")
 
     if _is_hill_or_stairs_conditioning(drill):
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
@@ -3924,7 +3930,7 @@ def build_heavy_leg_session(
                 if vm_s:
                     lines.append(vm_s.strip())
                 # Block 2: explosive exercise with bracket, directions before cues, video
-                lines.append(f"- └ {explosive_name} (bodyweight) | 6 reps")
+                lines.append(f"- └ {explosive_name} | 6 reps")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
                 equip_e = _equipment_display(explosive_d) or "None"
                 lines.append(f"  Equipment: {equip_e}")
@@ -5159,7 +5165,7 @@ _EQUIPMENT_DISPLAY_EXCLUDE = {
 
 # Puck Mastery special equipment: always show when drills require it (never exclude)
 _EQUIPMENT_PUCK_MASTERY_ALWAYS_SHOW = frozenset(
-    x.lower() for x in ("BOSU ball", "metal plate", "2 extra sticks", "Resistance band")
+    x.lower() for x in ("BOSU ball", "metal plate", "2 extra sticks", "Resistance band", "Partner")
 )
 
 
