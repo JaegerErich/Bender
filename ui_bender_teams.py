@@ -341,7 +341,7 @@ def render_bender_teams_coach(
 ):
     """Main entry for Bender Teams coach view. Renders team selector + sub-pages."""
     uid = st.session_state.current_user_id
-    coached = get_teams_coached_by(uid)
+    coached = get_teams_coached_by(uid, load_profile_fn)
     if not coached:
         st.subheader("Bender Teams")
         st.caption("Create a team to get started.")

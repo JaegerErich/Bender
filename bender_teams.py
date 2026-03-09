@@ -220,14 +220,34 @@ def get_teams_for_user(user_id: str) -> list[dict]:
     return out
 
 
-def get_teams_coached_by(user_id: str) -> list[dict]:
-    """Teams where user is coach or assistant_coach."""
+def get_teams_coached_by(user_id: str, profile_loader=None) -> list[dict]:
+    """Teams where user is coach or assistant_coach. Uses members, then coach_user_id, then coached_team_ids in profile as fallback."""
+    if not user_id:
+        return []
     out = []
+    seen = set()
     for t in load_teams():
+        tid = t.get("team_id")
+        if tid in seen:
+            continue
         for m in t.get("members", []):
             if m.get("user_id") == user_id and m.get("role") in COACH_ROLES:
                 out.append(t)
+                seen.add(tid)
                 break
+        else:
+            if t.get("coach_user_id") == user_id:
+                out.append(t)
+                seen.add(tid)
+    if not out and profile_loader:
+        ids = (profile_loader(user_id) or {}).get("coached_team_ids") or []
+        for tid in ids:
+            if tid in seen:
+                continue
+            t = get_team_by_id(tid)
+            if t:
+                out.append(t)
+                seen.add(tid)
     return out
 
 

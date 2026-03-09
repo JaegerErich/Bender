@@ -3864,7 +3864,7 @@ _has_valid_plan = bool(_weeks and len(_weeks) > 0)
 try:
     from bender_teams import get_teams_coached_by, get_teams_for_user
     _cu = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id or ""
-    _coached_teams = get_teams_coached_by(_cu)
+    _coached_teams = get_teams_coached_by(_cu, load_profile)
     _teams_as_member = get_teams_for_user(_cu)
     _is_coach = bool(_coached_teams)
     _on_team = bool(_teams_as_member)
@@ -3886,7 +3886,7 @@ if _admin:
     _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label, _team_req_label]
     if _is_coach:
         _admin_tab_names.append("Bender Teams")
-    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
+    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else (7 if _is_coach else 0)
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
     _tab_plan = None
@@ -4453,7 +4453,7 @@ if _admin:
 else:
     # Player: button-based tabs (no radio circles); only render selected tab's content
     if "player_tab" not in st.session_state:
-        st.session_state.player_tab = "Training Session"
+        st.session_state.player_tab = "Bender Teams" if _is_coach else "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Performance Dashboard", "Bender Board"] if _has_valid_plan else ["Training Session", "Performance Dashboard", "Bender Board"]
     _tab_opts.append("Bender Teams")  # All players can create/join teams or view coach dashboard
     with st.container():
@@ -4947,6 +4947,15 @@ if _admin and st.session_state.get("admin_tab_idx") == 6:
                             if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
                                 team = approve_team_request(req.get("request_id"))
                                 if team:
+                                    requester_uid = req.get("requester_user_id")
+                                    if requester_uid:
+                                        prof = load_profile(requester_uid)
+                                        if prof:
+                                            ids = list(prof.get("coached_team_ids") or [])
+                                            if team["team_id"] not in ids:
+                                                ids.append(team["team_id"])
+                                                prof["coached_team_ids"] = ids
+                                                save_profile(prof)
                                     st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
                                 st.rerun()
                         with _ar2:
