@@ -197,16 +197,21 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
             parts.append(f"{h_week}h {m_week}m this week" if h_week > 0 else f"{m_week}m this week")
         st.info(f"**Team training time:** {' · '.join(parts)}")
     st.markdown("")
-    # Top metrics
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.metric("Active this week", f"{summary.get('active_players_this_week', 0)} / {summary.get('total_players', 0)}")
-    with m2:
-        st.metric("Workouts this week", summary.get("workouts_this_week", 0))
-    with m3:
-        st.metric("Completion %", f"{summary.get('completion_percentage', 0)}%")
-    with m4:
-        st.metric("Avg minutes", f"{int(summary.get('avg_minutes_per_player', 0))}")
+    # Top metrics — Active this week & Workouts this week
+    _metric_style = "border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem 1.25rem; background: rgba(255,255,255,0.05);"
+    _metric_label = "font-size: 0.85rem; color: rgba(255,255,255,0.7);"
+    _metric_val = "font-size: 1.5rem; font-weight: 700; color: #fff;"
+    active = summary.get("active_players_this_week", 0)
+    total = summary.get("total_players", 0)
+    workouts = summary.get("workouts_this_week", 0)
+    st.markdown(
+        '<div style="display: flex; gap: 1rem; flex-wrap: wrap;">'
+        f'<div style="{_metric_style} flex: 1; min-width: 140px;"><div style="{_metric_label}">Active this week</div><div style="{_metric_val}">{active} / {total}</div></div>'
+        f'<div style="{_metric_style} flex: 1; min-width: 140px;"><div style="{_metric_label}">Workouts this week</div><div style="{_metric_val}">{workouts}</div></div>'
+        "</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
 
     # Weekly targets, current week avg, season totals
     st.markdown("#### Weekly targets & progress")
@@ -214,36 +219,37 @@ def render_coach_overview(team_id: str, load_profile_fn: Callable):
     week_mins = get_team_mode_minutes(team_id, loader, period="week")
     season_mins = get_team_mode_minutes(team_id, loader, period="season")
     n_players = max(1, len(players))
-    with st.container():
-        cols = st.columns([2, 1, 1])
-        with cols[0]:
-            st.caption("**Category**")
-        with cols[1]:
-            st.caption("**Target (min/week)**")
-        with cols[2]:
-            st.caption("**Avg this week**")
-        new_targets = {}
-        for cat in TEAM_CATEGORY_ORDER:
-            label = TEAM_CATEGORY_LABELS.get(cat, cat)
-            with cols[0]:
-                st.write(label)
-            with cols[1]:
-                v = st.number_input(
-                    f"Target {cat}",
-                    min_value=0,
-                    max_value=600,
-                    value=int(targets.get(cat, 0)),
-                    step=15,
-                    key=f"target_{team_id}_{cat}",
-                    label_visibility="collapsed",
-                )
-                new_targets[cat] = int(v)
-            with cols[2]:
-                avg_week = week_mins.get(cat, 0) / n_players
-                st.write(f"{int(avg_week)} min")
-        if st.button("Save targets", key=f"save_targets_{team_id}"):
-            set_team_weekly_targets(team_id, new_targets)
-            st.rerun()
+    _tw_header = "display: flex; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.2); margin-bottom: 0.5rem;"
+    _tw_cat = "flex: 2; min-width: 120px; font-weight: 500;"
+    _tw_target = "flex: 1; min-width: 80px; text-align: right; color: rgba(255,255,255,0.8);"
+    _tw_avg = "flex: 1; min-width: 80px; text-align: right; color: rgba(255,255,255,0.8);"
+    st.markdown(
+        f'<div style="{_tw_header}"><span style="{_tw_cat}">Category</span><span style="{_tw_target}">Target (min/week)</span><span style="{_tw_avg}">Avg this week</span></div>',
+        unsafe_allow_html=True,
+    )
+    new_targets = {}
+    for cat in TEAM_CATEGORY_ORDER:
+        label = TEAM_CATEGORY_LABELS.get(cat, cat)
+        avg_week = week_mins.get(cat, 0) / n_players
+        r1, r2, r3 = st.columns([2, 1, 1])
+        with r1:
+            st.markdown(f"**{label}**")
+        with r2:
+            v = st.number_input(
+                f"Target {cat}",
+                min_value=0,
+                max_value=600,
+                value=int(targets.get(cat, 0)),
+                step=15,
+                key=f"target_{team_id}_{cat}",
+                label_visibility="collapsed",
+            )
+            new_targets[cat] = int(v)
+        with r3:
+            st.markdown(f"{int(avg_week)} min")
+    if st.button("Save targets", key=f"save_targets_{team_id}"):
+        set_team_weekly_targets(team_id, new_targets)
+        st.rerun()
 
     # Team volume by mode (Bender Board style)
     st.markdown("#### Team volume by mode")
@@ -522,42 +528,6 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
         tests = prof.get("performance_tests") or {}
         roster.append({"user_id": uid, "name": name, "profile": prof, "tests": tests})
 
-    # --- Average level per mode category (card style) ---
-    categories = [
-        ("puck_mastery", "Puck Mastery"),
-        ("skating_mechanics", "Skating Mechanics"),
-        ("performance", "Performance (Strength)"),
-        ("conditioning", "Conditioning"),
-        ("mobility", "Mobility & Recovery"),
-    ]
-    level_sums: dict[str, int] = {k: 0 for k, _ in categories}
-    level_counts: dict[str, int] = {k: 0 for k, _ in categories}
-    for row in roster:
-        prof = row["profile"]
-        for key, _label in categories:
-            cp = get_category_progress(prof, key)
-            rank = int(cp.get("rank") or 0)
-            if rank > 0:
-                level_sums[key] += rank
-                level_counts[key] += 1
-
-    st.markdown("#### Average category level")
-    _card_style = "border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; background: rgba(255,255,255,0.05);"
-    _row_style = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.08);"
-    _row_last = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;"
-    _label_style = "font-weight: 500; color: rgba(255,255,255,0.9);"
-    _val_style = "font-weight: 700; color: #fff; font-size: 1.05rem;"
-    avg_rows = []
-    for key, label in categories:
-        if level_counts[key]:
-            avg = level_sums[key] / level_counts[key]
-            val = f"{avg:.1f}"
-        else:
-            val = "—"
-        avg_rows.append(f'<div style="{_row_style}"><span style="{_label_style}">{label}</span><span style="{_val_style}">{val}</span></div>')
-    avg_rows[-1] = avg_rows[-1].replace(_row_style, _row_last)
-    st.markdown(f'<div style="{_card_style}">' + "".join(avg_rows) + "</div>", unsafe_allow_html=True)
-
     # --- Performance tests: team averages ---
     st.markdown("#### Performance tests (team averages)")
 
@@ -619,8 +589,18 @@ def render_coach_team_performance(team_id: str, load_profile_fn: Callable):
     prof = sel_row["profile"]
     tests = sel_row["tests"]
 
-    # Show this player's category levels (same card format as team averages)
+    # Show this player's category levels (card format)
     st.markdown(f"**{selected_name} — Category levels**")
+    categories = [
+        ("puck_mastery", "Puck Mastery"),
+        ("skating_mechanics", "Skating Mechanics"),
+        ("performance", "Performance (Strength)"),
+        ("conditioning", "Conditioning"),
+        ("mobility", "Mobility & Recovery"),
+    ]
+    _card_style = "border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem; background: rgba(255,255,255,0.05);"
+    _label_style = "font-weight: 500; color: rgba(255,255,255,0.9);"
+    _val_style = "font-weight: 700; color: #fff; font-size: 1.05rem;"
     _row_style_p = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px solid rgba(255,255,255,0.08);"
     _row_last_p = "display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0;"
     player_rows = []
