@@ -5020,45 +5020,73 @@ if _admin and (st.session_state.get("admin_tab") or "").startswith("Admin: Team 
         if not requests_list:
             st.info("No team creation requests yet. Users submit requests from **Bender Teams** → Create a team.")
         else:
-            for req in reversed(requests_list):
-                status = req.get("status", "pending")
-                status_icon = "⏳" if status == "pending" else ("✓" if status == "approved" else "✗")
-                _req_title = f"{status_icon} **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
-                _pending_first = next((r for r in reversed(requests_list) if r.get("status") == "pending"), None)
-                with st.expander(_req_title, expanded=(status == "pending" and req.get("request_id") == (_pending_first or {}).get("request_id"))):
-                    st.markdown(f"**Requester:** {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
-                    st.markdown(f"**Team name:** {req.get('team_name', '—')}")
-                    st.markdown(f"**Age group:** {req.get('age_group', '—')} | **Level:** {req.get('level', '—')} | **Season:** {req.get('season', '—')}")
-                    st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
-                    st.markdown(f"**Status:** {status}")
-                    if status == "approved" and req.get("invite_code"):
-                        st.caption(f"Invite code: **{req['invite_code']}**")
-                    if status == "pending":
-                        _ar1, _ar2 = st.columns(2)
-                        with _ar1:
-                            if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
-                                team = approve_team_request(req.get("request_id"))
-                                if team:
-                                    requester_uid = req.get("requester_user_id")
-                                    if requester_uid:
-                                        prof = load_profile(requester_uid)
-                                        if prof:
-                                            ids = list(prof.get("coached_team_ids") or [])
-                                            if team["team_id"] not in ids:
-                                                ids.append(team["team_id"])
-                                                prof["coached_team_ids"] = ids
-                                            cache = list(prof.get("coached_teams_cache") or [])
-                                            existing_ids = {t.get("team_id") for t in cache}
-                                            if team["team_id"] not in existing_ids:
-                                                cache.append(dict(team))
-                                                prof["coached_teams_cache"] = cache
-                                            save_profile(prof)
-                                    st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
-                                st.rerun()
-                        with _ar2:
-                            if st.button("Deny", key=f"deny_team_{req.get('request_id')}", type="secondary", use_container_width=True):
-                                deny_team_request(req.get("request_id"), (st.session_state.current_profile or {}).get("display_name"))
-                                st.rerun()
+            _pending = [r for r in requests_list if r.get("status") == "pending"]
+            _approved = [r for r in requests_list if r.get("status") == "approved"]
+            _denied = [r for r in requests_list if r.get("status") == "denied"]
+
+            def _render_request_detail(req, show_actions=False):
+                st.markdown(f"**Requester:** {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
+                st.markdown(f"**Team name:** {req.get('team_name', '—')}")
+                st.markdown(f"**Age group:** {req.get('age_group', '—')} | **Level:** {req.get('level', '—')} | **Season:** {req.get('season', '—')}")
+                st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
+                if req.get("status") == "approved" and req.get("invite_code"):
+                    st.caption(f"Invite code: **{req['invite_code']}**")
+                if show_actions:
+                    _ar1, _ar2 = st.columns(2)
+                    with _ar1:
+                        if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
+                            team = approve_team_request(req.get("request_id"))
+                            if team:
+                                requester_uid = req.get("requester_user_id")
+                                if requester_uid:
+                                    prof = load_profile(requester_uid)
+                                    if prof:
+                                        ids = list(prof.get("coached_team_ids") or [])
+                                        if team["team_id"] not in ids:
+                                            ids.append(team["team_id"])
+                                            prof["coached_team_ids"] = ids
+                                        cache = list(prof.get("coached_teams_cache") or [])
+                                        existing_ids = {t.get("team_id") for t in cache}
+                                        if team["team_id"] not in existing_ids:
+                                            cache.append(dict(team))
+                                            prof["coached_teams_cache"] = cache
+                                        save_profile(prof)
+                                st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
+                            st.rerun()
+                    with _ar2:
+                        if st.button("Deny", key=f"deny_team_{req.get('request_id')}", type="secondary", use_container_width=True):
+                            deny_team_request(req.get("request_id"), (st.session_state.current_profile or {}).get("display_name"))
+                            st.rerun()
+
+            # 1. Pending requests (first, no dropdown)
+            st.markdown("**Pending requests**")
+            if not _pending:
+                st.caption("No pending requests.")
+            else:
+                for req in reversed(_pending):
+                    _req_title = f"⏳ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
+                    with st.expander(_req_title, expanded=True):
+                        _render_request_detail(req, show_actions=True)
+
+            # 2. Accepted requests (dropdown)
+            with st.expander(f"**Accepted requests** ({len(_approved)})", expanded=False):
+                if not _approved:
+                    st.caption("No accepted requests yet.")
+                else:
+                    for req in reversed(_approved):
+                        _req_title = f"✓ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
+                        with st.expander(_req_title, expanded=False):
+                            _render_request_detail(req, show_actions=False)
+
+            # 3. Denied requests (dropdown)
+            with st.expander(f"**Denied requests** ({len(_denied)})", expanded=False):
+                if not _denied:
+                    st.caption("No denied requests.")
+                else:
+                    for req in reversed(_denied):
+                        _req_title = f"✗ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
+                        with st.expander(_req_title, expanded=False):
+                            _render_request_detail(req, show_actions=False)
     except Exception as e:
         st.error(f"Team Requests: {e}")
 

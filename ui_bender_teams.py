@@ -533,19 +533,45 @@ def render_bender_teams_player_portal(
     load_profile_fn: Callable,
     save_profile_fn: Callable,
 ):
-    """Player portal: assignments, suggested workouts, team activity, progress, feedback, team info."""
+    """Player portal: tabs for Assignments, Team Progress, Coach Feedback."""
     team_id = team.get("team_id", "")
     loader = _profile_loader(load_profile_fn)
     profile = load_profile_fn(user_id) or {}
-
-    # Header: team name as portal title
     team_name = team.get("team_name", "Team")
+
+    # Header
     st.markdown(f"### {team_name}")
     st.caption("Your team locker room · Stay on track with your coach")
+
+    # Sub-tabs
+    opts = ["Assignments", "Team Progress", "Coach Feedback"]
+    sub = st.session_state.get("bender_teams_player_sub", "Assignments")
+    st.markdown('<div id="bender-teams-sub-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
+    _tab_cols = st.columns(len(opts))
+    for _i, o in enumerate(opts):
+        with _tab_cols[_i]:
+            _is_sel = sub == o
+            if st.button(o, key=f"teams_player_sub_{o.replace(' ', '_')}", type="primary" if _is_sel else "secondary"):
+                st.session_state.bender_teams_player_sub = o
+                st.rerun()
+    sub = st.session_state.get("bender_teams_player_sub", "Assignments")
     st.divider()
 
-    # --- 1. Coach Assignments (required first, then suggested) ---
-    st.markdown("#### Coach Assignments")
+    if sub == "Assignments":
+        _render_player_assignments_tab(user_id, team_id, load_profile_fn, save_profile_fn)
+    elif sub == "Team Progress":
+        _render_player_team_progress_tab(user_id, team, profile, loader, team_name, load_profile_fn)
+    elif sub == "Coach Feedback":
+        _render_player_feedback_tab(user_id, load_profile_fn)
+
+
+def _render_player_assignments_tab(
+    user_id: str,
+    team_id: str,
+    load_profile_fn: Callable,
+    save_profile_fn: Callable,
+) -> None:
+    """Assignments tab: Coach Assignments + Suggested Workouts combined."""
     assignments = get_assignments_for_player(user_id, team_id)
     required = [a for a in assignments if (a.get("required_or_suggested") or "required") == "required"]
     suggested_assignments = [a for a in assignments if (a.get("required_or_suggested") or "") == "suggested"]
@@ -563,12 +589,22 @@ def render_bender_teams_player_portal(
             for a in suggested_assignments:
                 _render_assignment_card(a, user_id, load_profile_fn, save_profile_fn, completed_ids)
 
-    st.divider()
+    st.markdown("#### Coach Assignments & Suggested Workouts")
 
-    # --- 2. Suggested Workouts (same as suggested in Coach Assignments above) ---
-    st.markdown("#### Suggested Workouts")
-    if not suggested_assignments:
-        st.caption("No suggested workouts right now. Your coach may add recommendations above.")
+
+def _render_player_team_progress_tab(
+    user_id: str,
+    team: dict,
+    profile: dict,
+    loader: Callable,
+    team_name: str,
+    load_profile_fn: Callable,
+) -> None:
+    team_id = team.get("team_id", "")
+    st.markdown("#### Team Activity")
+    feed = get_recent_team_activity(team_id, loader, 15)
+    if not feed:
+        st.caption("No recent activity yet.")
     else:
         st.caption("Your coach’s recommendations are listed above under **Coach Assignments** with a **Suggested** badge.")
 
