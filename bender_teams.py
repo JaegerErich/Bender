@@ -221,11 +221,12 @@ def get_teams_for_user(user_id: str) -> list[dict]:
 
 
 def get_teams_coached_by(user_id: str, profile_loader=None) -> list[dict]:
-    """Teams where user is coach or assistant_coach. Uses members, then coach_user_id, then coached_team_ids in profile as fallback."""
+    """Teams where user is coach or assistant_coach. Uses teams.json first, then coached_teams_cache in profile (survives app restarts)."""
     if not user_id:
         return []
     out = []
     seen = set()
+    # 1. From teams.json
     for t in load_teams():
         tid = t.get("team_id")
         if tid in seen:
@@ -239,15 +240,42 @@ def get_teams_coached_by(user_id: str, profile_loader=None) -> list[dict]:
             if t.get("coach_user_id") == user_id:
                 out.append(t)
                 seen.add(tid)
-    if not out and profile_loader:
-        ids = (profile_loader(user_id) or {}).get("coached_team_ids") or []
-        for tid in ids:
+    # 2. From profile coached_team_ids (resolve via teams.json)
+    if profile_loader:
+        for tid in (profile_loader(user_id) or {}).get("coached_team_ids") or []:
             if tid in seen:
                 continue
             t = get_team_by_id(tid)
             if t:
                 out.append(t)
                 seen.add(tid)
+    # 3. From profile coached_teams_cache (when teams.json was wiped - e.g. Streamlit Cloud restart)
+    if profile_loader:
+        for t in (profile_loader(user_id) or {}).get("coached_teams_cache") or []:
+            tid = t.get("team_id")
+            if tid and tid not in seen:
+                out.append(t)
+                seen.add(tid)
+    # 4. Backfill from approved team_creation_requests (for coaches approved before coached_teams_cache existed)
+    if not out and profile_loader:
+        for r in load_team_requests():
+            if r.get("status") != "approved" or r.get("requester_user_id") != user_id:
+                continue
+            tid = r.get("team_id")
+            if not tid or tid in seen:
+                continue
+            t = {
+                "team_id": tid,
+                "team_name": r.get("team_name", "Team"),
+                "age_group": r.get("age_group", ""),
+                "level": r.get("level", ""),
+                "season": r.get("season", ""),
+                "coach_user_id": user_id,
+                "invite_code": r.get("invite_code", ""),
+                "members": [{"user_id": user_id, "role": "coach", "joined_at": r.get("reviewed_at", "")}],
+            }
+            out.append(t)
+            seen.add(tid)
     return out
 
 

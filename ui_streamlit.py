@@ -2725,7 +2725,9 @@ st.markdown("""
 
     /* Classic tab style: sleek, simple — words fit in each tab, light grey line, even spacing */
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
-    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
+    div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
+    [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"],
+    div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] {
         display: flex !important; gap: 8px !important; margin-bottom: 1rem !important;
         border-bottom: 1px solid #888888 !important; padding-bottom: 0 !important; flex-wrap: wrap !important;
         align-items: flex-end !important; justify-content: flex-start !important;
@@ -2746,6 +2748,8 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] > div,
+    [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] > div,
+    div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] > div,
     div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] > div,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + * [data-testid="stHorizontalBlock"] > div,
@@ -2758,6 +2762,8 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+    [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
+    div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
         background: #2e2e2e !important; border: 1px solid #3a3a3a !important; border-radius: 8px 8px 0 0 !important;
@@ -2769,12 +2775,16 @@ st.markdown("""
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
+    div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover,
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button:hover {
         background: #383838 !important; color: #dddddd !important; border-color: #444444 !important;
     }
     [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
+    div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"],
     div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button[kind="primary"] {
         background: #e0e0e0 !important; color: #333333 !important; font-weight: 600 !important;
@@ -2782,7 +2792,9 @@ st.markdown("""
     }
     @media (max-width: 640px) {
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
-        div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] {
+        div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"],
+        [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"],
+        div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] {
             gap: 8px !important;
         }
         div:has(#player-tab-bar):not(:has(#plan-day-grid)) [data-testid="stHorizontalBlock"],
@@ -2792,6 +2804,8 @@ st.markdown("""
         }
         [data-testid="stMarkdown"]:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#admin-tab-bar) + div [data-testid="stHorizontalBlock"] .stButton button,
+        [data-testid="stMarkdown"]:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
+        div:has(#admin-tab-bar-row2) + div [data-testid="stHorizontalBlock"] .stButton button,
         [data-testid="stMarkdown"]:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button,
         div:has(#player-tab-bar[data-tab-style="classic"]) + div [data-testid="stHorizontalBlock"] .stButton button {
             padding: 0.22rem 0.4rem !important; font-size: 0.75rem !important;
@@ -3891,10 +3905,12 @@ if _admin:
     except Exception:
         _team_req_pending = 0
     _team_req_label = f"Admin: Team Requests ({_team_req_pending})" if _team_req_pending > 0 else "Admin: Team Requests"
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label, _team_req_label]
+    _admin_regular_tabs = ["Workout Generator", "Admin: Plan Builder", "Performance Dashboard", "Bender Board"]
     if _is_coach:
-        _admin_tab_names.append("Bender Teams")
-    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else (7 if _is_coach else 0)
+        _admin_regular_tabs.append("Bender Teams")
+    _admin_special_tabs = ["Admin: Highscores", _custom_req_tab_label, _team_req_label]
+    _admin_tab_names = _admin_regular_tabs + _admin_special_tabs
+    _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else (4 if _is_coach else 0)
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
     _tab_plan = None
@@ -4449,12 +4465,21 @@ def _render_training_session():
 # Admin: button-based tabs (independent rendering). Player: same style, different tabs.
 if _admin:
     st.markdown('<div id="admin-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
-    _admin_cols = st.columns(len(_admin_tab_names))
-    for _ai, _aname in enumerate(_admin_tab_names):
-        with _admin_cols[_ai]:
+    _admin_row1_cols = st.columns(len(_admin_regular_tabs))
+    for _ai, _aname in enumerate(_admin_regular_tabs):
+        with _admin_row1_cols[_ai]:
             _a_selected = st.session_state.admin_tab_idx == _ai
             if st.button(_aname, key=f"admin_tab_{_ai}", type="primary" if _a_selected else "secondary"):
                 st.session_state.admin_tab_idx = _ai
+                st.rerun()
+    st.markdown('<div id="admin-tab-bar-row2" aria-hidden="true"></div>', unsafe_allow_html=True)
+    _admin_row2_cols = st.columns(len(_admin_special_tabs))
+    for _ai, _aname in enumerate(_admin_special_tabs):
+        _idx = len(_admin_regular_tabs) + _ai
+        with _admin_row2_cols[_ai]:
+            _a_selected = st.session_state.admin_tab_idx == _idx
+            if st.button(_aname, key=f"admin_tab_{_idx}", type="primary" if _a_selected else "secondary"):
+                st.session_state.admin_tab_idx = _idx
                 st.rerun()
     if st.session_state.admin_tab_idx == 0:
         _render_training_session()
@@ -4927,7 +4952,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
                 st.caption("No other profiles found. Create accounts for players first.")
 
 # Admin: Team Requests tab (approve/deny team creation requests)
-if _admin and st.session_state.get("admin_tab_idx") == 6:
+if _admin and st.session_state.get("admin_tab_idx") == 7:
     try:
         from bender_teams import load_team_requests, approve_team_request, deny_team_request
         st.subheader("Admin: Team creation requests")
@@ -4963,7 +4988,12 @@ if _admin and st.session_state.get("admin_tab_idx") == 6:
                                             if team["team_id"] not in ids:
                                                 ids.append(team["team_id"])
                                                 prof["coached_team_ids"] = ids
-                                                save_profile(prof)
+                                            cache = list(prof.get("coached_teams_cache") or [])
+                                            existing_ids = {t.get("team_id") for t in cache}
+                                            if team["team_id"] not in existing_ids:
+                                                cache.append(dict(team))
+                                                prof["coached_teams_cache"] = cache
+                                            save_profile(prof)
                                     st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
                                 st.rerun()
                         with _ar2:
@@ -4974,7 +5004,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 6:
         st.error(f"Team Requests: {e}")
 
 # Custom Plan Requester tab (admin only)
-if _admin and st.session_state.get("admin_tab_idx") == 5:
+if _admin and st.session_state.get("admin_tab_idx") == 6:
         st.subheader("Admin: Custom Plan Request")
         st.caption("Submitted custom plan intake requests from athletes.")
         requests_list = load_custom_plan_requests()
@@ -5006,16 +5036,16 @@ if _admin and st.session_state.get("admin_tab_idx") == 5:
 
 
 # Performance Dashboard tab — admin only (players get it via player tabs)
-if _admin and st.session_state.get("admin_tab_idx") == 3:
+if _admin and st.session_state.get("admin_tab_idx") == 2:
         _render_your_work_stats()
 
 # Bender Board tab — visible to all (admin and player)
-if _admin and st.session_state.get("admin_tab_idx") == 4:
+if _admin and st.session_state.get("admin_tab_idx") == 3:
         _render_bender_board()
 
 
 # Bender Teams tab (admin/coach only)
-if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 7:
+if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 4:
     if st.session_state.get("bender_teams_join_success"):
         st.success(st.session_state.bender_teams_join_success)
         st.session_state.bender_teams_join_success = None
@@ -5026,7 +5056,7 @@ if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 7:
         st.error(f"Bender Teams: {e}")
 
 # Admin: Highscores tab (admin only)
-if _admin and st.session_state.get("admin_tab_idx") == 2:
+if _admin and st.session_state.get("admin_tab_idx") == 5:
         st.subheader("Admin: Highscores")
         st.caption("Lifetime completions across all players. Data from **Workout Complete** (Training Session) and plan completions (My Plan).")
         all_profs = list_profiles()
