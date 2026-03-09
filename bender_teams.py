@@ -69,6 +69,16 @@ def save_team_requests(requests: list[dict]) -> None:
     _save_json(TEAM_REQUESTS_PATH, requests)
 
 
+def has_pending_team_request(requester_user_id: str, team_name: str) -> bool:
+    """True if this user already has a pending request for this team name."""
+    name_norm = (team_name or "").strip().lower()
+    for r in load_team_requests():
+        if r.get("status") == "pending" and r.get("requester_user_id") == requester_user_id:
+            if (r.get("team_name") or "").strip().lower() == name_norm:
+                return True
+    return False
+
+
 def create_team_request(
     requester_user_id: str,
     requester_display_name: str,
@@ -77,8 +87,10 @@ def create_team_request(
     age_group: str = "",
     level: str = "",
     season: str = "",
-) -> dict:
-    """Submit a team creation request. Requires admin approval."""
+) -> dict | None:
+    """Submit a team creation request. Requires admin approval. Returns None if duplicate pending request."""
+    if has_pending_team_request(requester_user_id, team_name):
+        return None
     requests = load_team_requests()
     req_id = f"tr_{secrets.token_hex(6)}"
     req = {

@@ -3561,10 +3561,11 @@ _join_code = st.query_params.get("join", "").strip().upper()
 if _join_code and st.session_state.current_user_id and st.session_state.get("bender_teams_join_processed") != _join_code:
     try:
         from ui_bender_teams import handle_join_flow
-        ok, msg = handle_join_flow(_join_code, st.session_state.current_user_id, load_profile)
+        ok, msg = handle_join_flow(_join_code, st.session_state.current_user_id, load_profile, save_profile)
         st.session_state.bender_teams_join_processed = _join_code
         if ok:
             st.session_state.bender_teams_join_success = msg
+            st.session_state.current_profile = load_profile(st.session_state.current_user_id)
         st.rerun()
     except Exception:
         st.session_state.bender_teams_join_processed = _join_code

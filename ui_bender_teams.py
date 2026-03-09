@@ -16,6 +16,7 @@ try:
         create_feedback,
         create_team,
         create_team_request,
+        has_pending_team_request,
         get_assignments_for_player,
         get_assignments_for_team,
         get_feedback_for_player,
@@ -39,6 +40,7 @@ except ImportError:
     def _noop(*a, **k):
         return [] if "team" in str(a) + str(k) else None
     add_member_to_team = create_assignment = create_feedback = create_team = create_team_request = _noop
+    has_pending_team_request = lambda *a: False
     get_assignments_for_player = get_assignments_for_team = get_feedback_for_player = get_feedback_for_team = lambda *a: []
     get_team_by_id = get_team_by_invite_code = lambda *a: None
     get_team_members = get_team_players = get_teams_for_user = get_teams_coached_by = lambda *a: []
@@ -71,6 +73,15 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
                 else:
                     uid = st.session_state.current_user_id
                     if add_member_to_team(t["team_id"], uid, "player"):
+                        prof = load_profile_fn(uid) or {}
+                        ids = list(prof.get("bender_team_ids") or [])
+                        if t["team_id"] not in ids:
+                            ids.append(t["team_id"])
+                        prof["bender_team_ids"] = ids
+                        prof["team"] = t.get("team_name", "").strip()
+                        save_callback(prof)
+                        if st.session_state.get("current_user_id") == uid and "current_profile" in st.session_state:
+                            st.session_state.current_profile = prof
                         st.success(f"You joined **{t.get('team_name', 'team')}**.")
                         st.rerun()
                     else:
@@ -91,9 +102,11 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
                 prof = load_profile_fn(st.session_state.current_user_id)
                 uid = (prof or {}).get("user_id") or st.session_state.current_user_id
                 disp = (prof or {}).get("display_name") or uid
-                create_team_request(uid, disp, name, age_group=age_group or "", level=level or "", season=season or "")
-                st.success("Team creation request submitted. An admin will review it. You'll see your team in Bender Teams once approved.")
-                st.rerun()
+                if has_pending_team_request(uid, name):
+                    st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
+                elif create_team_request(uid, disp, name, age_group=age_group or "", level=level or "", season=season or ""):
+                    st.success("The request has been submitted.")
+                    st.rerun()
 
 
 # --- Coach: Overview dashboard ---
@@ -362,13 +375,14 @@ def render_bender_teams_coach(
                 with _fc1:
                     if st.form_submit_button("Submit request"):
                         name = (c_name or "").strip()
-                        if name:
-                            create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or "")
-                            st.session_state.bender_teams_show_create = False
-                            st.success("Team creation request submitted. An admin will review it. You'll see your new team in the dropdown once approved.")
-                            st.rerun()
-                        else:
+                        if not name:
                             st.error("Enter a team name.")
+                        elif has_pending_team_request(uid, name):
+                            st.error("You already have a pending request for this team name. Wait for admin approval before submitting again.")
+                        elif create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or ""):
+                            st.session_state.bender_teams_show_create = False
+                            st.success("The request has been submitted.")
+                            st.rerun()
                 with _fc2:
                     if st.form_submit_button("Cancel"):
                         st.session_state.bender_teams_show_create = False
@@ -400,14 +414,22 @@ def render_bender_teams_coach(
 
 
 # --- Player: Join flow ---
-def handle_join_flow(join_code: str, current_user_id: str, load_profile_fn: Callable) -> tuple[bool, str]:
-    """Handle ?join=CODE. Returns (success, message)."""
+def handle_join_flow(join_code: str, current_user_id: str, load_profile_fn: Callable, save_profile_fn: Callable[[dict], None] | None = None) -> tuple[bool, str]:
+    """Handle ?join=CODE. Returns (success, message). Updates profile with bender_team_ids and team when join succeeds."""
     if not join_code or not current_user_id:
         return False, ""
     t = get_team_by_invite_code(join_code)
     if not t:
         return False, "Invalid invite code."
     if add_member_to_team(t["team_id"], current_user_id, "player"):
+        if save_profile_fn:
+            prof = load_profile_fn(current_user_id) or {}
+            ids = list(prof.get("bender_team_ids") or [])
+            if t["team_id"] not in ids:
+                ids.append(t["team_id"])
+            prof["bender_team_ids"] = ids
+            prof["team"] = t.get("team_name", "").strip()
+            save_profile_fn(prof)
         return True, f"You joined **{t.get('team_name', 'team')}**."
     return False, "You're already on this team."
 
