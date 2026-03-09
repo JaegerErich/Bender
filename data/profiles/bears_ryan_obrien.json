@@ -341,5 +341,15 @@
     "shooting_tests": "82",
     "stickhandling_tests": "92",
     "conditioning_test": "62"
-  }
+  },
+  "puck_mastery_xp": 479,
+  "puck_mastery_rank": 3,
+  "skating_xp": 395,
+  "skating_rank": 2,
+  "performance_xp": 452,
+  "performance_rank": 3,
+  "conditioning_xp": 97,
+  "conditioning_rank": 1,
+  "mobility_xp": 91,
+  "mobility_rank": 1
 }
