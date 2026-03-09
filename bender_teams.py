@@ -13,6 +13,7 @@ from typing import Any
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 TEAMS_PATH = DATA_DIR / "teams.json"
+TEAM_REQUESTS_PATH = DATA_DIR / "team_creation_requests.json"
 ASSIGNMENTS_PATH = DATA_DIR / "assignments.json"
 FEEDBACK_PATH = DATA_DIR / "feedback.json"
 
@@ -52,6 +53,85 @@ def _generate_invite_code() -> str:
     """6-char alphanumeric invite code."""
     chars = string.ascii_uppercase + string.digits
     return "".join(secrets.choice(chars) for _ in range(6))
+
+
+# ---------------------------------------------------------------------------
+# Team creation requests (admin approval flow)
+# ---------------------------------------------------------------------------
+
+
+def load_team_requests() -> list[dict]:
+    """Load team creation requests. Status: pending, approved, denied."""
+    return _load_json(TEAM_REQUESTS_PATH, [])
+
+
+def save_team_requests(requests: list[dict]) -> None:
+    _save_json(TEAM_REQUESTS_PATH, requests)
+
+
+def create_team_request(
+    requester_user_id: str,
+    requester_display_name: str,
+    team_name: str,
+    *,
+    age_group: str = "",
+    level: str = "",
+    season: str = "",
+) -> dict:
+    """Submit a team creation request. Requires admin approval."""
+    requests = load_team_requests()
+    req_id = f"tr_{secrets.token_hex(6)}"
+    req = {
+        "request_id": req_id,
+        "requester_user_id": requester_user_id,
+        "requester_display_name": requester_display_name,
+        "team_name": team_name,
+        "age_group": age_group or "",
+        "level": level or "",
+        "season": season or "",
+        "status": "pending",
+        "created_at": datetime.now().isoformat(),
+        "reviewed_at": None,
+        "reviewed_by": None,
+    }
+    requests.append(req)
+    save_team_requests(requests)
+    return req
+
+
+def approve_team_request(request_id: str) -> dict | None:
+    """Approve request and create the team. Returns the created team or None."""
+    requests = load_team_requests()
+    for req in requests:
+        if req.get("request_id") == request_id and req.get("status") == "pending":
+            team = create_team(
+                req["team_name"],
+                req["requester_user_id"],
+                req["requester_display_name"],
+                age_group=req.get("age_group", ""),
+                level=req.get("level", ""),
+                season=req.get("season", ""),
+            )
+            req["status"] = "approved"
+            req["reviewed_at"] = datetime.now().isoformat()
+            req["team_id"] = team["team_id"]
+            req["invite_code"] = team["invite_code"]
+            save_team_requests(requests)
+            return team
+    return None
+
+
+def deny_team_request(request_id: str, reviewed_by: str | None = None) -> bool:
+    """Mark request as denied."""
+    requests = load_team_requests()
+    for req in requests:
+        if req.get("request_id") == request_id and req.get("status") == "pending":
+            req["status"] = "denied"
+            req["reviewed_at"] = datetime.now().isoformat()
+            req["reviewed_by"] = reviewed_by or ""
+            save_team_requests(requests)
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------

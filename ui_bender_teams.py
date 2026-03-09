@@ -15,6 +15,7 @@ try:
         create_assignment,
         create_feedback,
         create_team,
+        create_team_request,
         get_assignments_for_player,
         get_assignments_for_team,
         get_feedback_for_player,
@@ -37,7 +38,7 @@ except ImportError:
     # Graceful fallback if module missing
     def _noop(*a, **k):
         return [] if "team" in str(a) + str(k) else None
-    add_member_to_team = create_assignment = create_feedback = create_team = _noop
+    add_member_to_team = create_assignment = create_feedback = create_team = create_team_request = _noop
     get_assignments_for_player = get_assignments_for_team = get_feedback_for_player = get_feedback_for_team = lambda *a: []
     get_team_by_id = get_team_by_invite_code = lambda *a: None
     get_team_members = get_team_players = get_teams_for_user = get_teams_coached_by = lambda *a: []
@@ -75,14 +76,14 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
                     else:
                         st.info("You're already on this team.")
     st.markdown("---")
-    st.subheader("Create a Team")
-    st.caption("Create a team and invite players with a code.")
+    st.subheader("Request a new team")
+    st.caption("Submit a request to create a team. An admin will review and approve or deny.")
     with st.form("create_team_form"):
         team_name = st.text_input("Team name", placeholder="e.g. Eagles U16")
         age_group = st.text_input("Age group (optional)", placeholder="e.g. U16")
         level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College", "Beer League"])
         season = st.text_input("Season (optional)", placeholder="e.g. 2024-25")
-        if st.form_submit_button("Create team"):
+        if st.form_submit_button("Submit request"):
             name = (team_name or "").strip()
             if not name:
                 st.error("Enter a team name.")
@@ -90,10 +91,8 @@ def render_team_creation(load_profile_fn: Callable, save_callback: Callable[[dic
                 prof = load_profile_fn(st.session_state.current_user_id)
                 uid = (prof or {}).get("user_id") or st.session_state.current_user_id
                 disp = (prof or {}).get("display_name") or uid
-                team = create_team(name, uid, disp, age_group=age_group or "", level=level or "", season=season or "")
-                st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
-                _base = st.session_state.get("_join_base_url", "this app")
-                st.info(f"Share this code or link: {_base}?join={team['invite_code']}")
+                create_team_request(uid, disp, name, age_group=age_group or "", level=level or "", season=season or "")
+                st.success("Team creation request submitted. An admin will review it. You'll see your team in Bender Teams once approved.")
                 st.rerun()
 
 
@@ -339,9 +338,41 @@ def render_bender_teams_coach(
     team_names = [t.get("team_name", t["team_id"]) for t in coached]
     if "bender_teams_team_idx" not in st.session_state:
         st.session_state.bender_teams_team_idx = 0
-    sel_idx = st.selectbox("Team", range(len(team_ids)), index=st.session_state.bender_teams_team_idx, format_func=lambda i: team_names[i], key="bender_teams_team_select")
-    st.session_state.bender_teams_team_idx = sel_idx
+    # Team selector row: dropdown + Add team button
+    _col_sel, _col_add = st.columns([3, 1])
+    with _col_sel:
+        sel_idx = st.selectbox("Team", range(len(team_ids)), index=st.session_state.bender_teams_team_idx, format_func=lambda i: team_names[i], key="bender_teams_team_select")
+    with _col_add:
+        if st.button("+ Add team", key="teams_add_team_btn", help="Create another team (e.g. different age group)"):
+            st.session_state.bender_teams_show_create = True
+            st.rerun()
+    st.session_state.bender_teams_team_idx = min(sel_idx, len(team_ids) - 1)
     team_id = team_ids[sel_idx]
+    # Add another team (expander when coach already has teams)
+    if st.session_state.get("bender_teams_show_create"):
+        with st.expander("Create another team", expanded=True):
+            _prof = load_profile_fn(uid)
+            disp = (_prof or {}).get("display_name") or uid
+            with st.form("create_team_form_existing"):
+                c_name = st.text_input("Team name", placeholder="e.g. Eagles U14")
+                c_age = st.text_input("Age group (optional)", placeholder="e.g. U14")
+                c_level = st.selectbox("Level (optional)", ["", "Youth", "HS", "AA", "AAA", "Junior", "College"])
+                c_season = st.text_input("Season (optional)", placeholder="e.g. 2024-25")
+                _fc1, _fc2 = st.columns(2)
+                with _fc1:
+                    if st.form_submit_button("Submit request"):
+                        name = (c_name or "").strip()
+                        if name:
+                            create_team_request(uid, disp, name, age_group=c_age or "", level=c_level or "", season=c_season or "")
+                            st.session_state.bender_teams_show_create = False
+                            st.success("Team creation request submitted. An admin will review it. You'll see your new team in the dropdown once approved.")
+                            st.rerun()
+                        else:
+                            st.error("Enter a team name.")
+                with _fc2:
+                    if st.form_submit_button("Cancel"):
+                        st.session_state.bender_teams_show_create = False
+                        st.rerun()
     sub = st.session_state.get("bender_teams_sub", "Overview")
     opts = ["Overview", "Roster", "Assignments", "Feedback"]
     for o in opts:

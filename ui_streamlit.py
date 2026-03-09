@@ -3876,7 +3876,13 @@ except Exception:
 if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
-    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label]
+    try:
+        from bender_teams import load_team_requests as _load_team_reqs
+        _team_req_pending = len([r for r in _load_team_reqs() if r.get("status") == "pending"])
+    except Exception:
+        _team_req_pending = 0
+    _team_req_label = f"Admin: Team Requests ({_team_req_pending})" if _team_req_pending > 0 else "Admin: Team Requests"
+    _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label, _team_req_label]
     if _is_coach:
         _admin_tab_names.append("Bender Teams")
     _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
@@ -4911,6 +4917,44 @@ if _admin and st.session_state.get("admin_tab_idx") == 1:
             else:
                 st.caption("No other profiles found. Create accounts for players first.")
 
+# Admin: Team Requests tab (approve/deny team creation requests)
+if _admin and st.session_state.get("admin_tab_idx") == 6:
+    try:
+        from bender_teams import load_team_requests, approve_team_request, deny_team_request
+        st.subheader("Admin: Team creation requests")
+        st.caption("Approve or deny team creation requests from users. Approved requests create the team and add the requester as coach.")
+        requests_list = load_team_requests()
+        if not requests_list:
+            st.info("No team creation requests yet. Users can submit requests via **Bender Teams** → Create a team.")
+        else:
+            for req in reversed(requests_list):
+                status = req.get("status", "pending")
+                status_icon = "⏳" if status == "pending" else ("✓" if status == "approved" else "✗")
+                _req_title = f"{status_icon} **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
+                _pending_first = next((r for r in reversed(requests_list) if r.get("status") == "pending"), None)
+                with st.expander(_req_title, expanded=(status == "pending" and req.get("request_id") == (_pending_first or {}).get("request_id"))):
+                    st.markdown(f"**Requester:** {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
+                    st.markdown(f"**Team name:** {req.get('team_name', '—')}")
+                    st.markdown(f"**Age group:** {req.get('age_group', '—')} | **Level:** {req.get('level', '—')} | **Season:** {req.get('season', '—')}")
+                    st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
+                    st.markdown(f"**Status:** {status}")
+                    if status == "approved" and req.get("invite_code"):
+                        st.caption(f"Invite code: **{req['invite_code']}**")
+                    if status == "pending":
+                        _ar1, _ar2 = st.columns(2)
+                        with _ar1:
+                            if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
+                                team = approve_team_request(req.get("request_id"))
+                                if team:
+                                    st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
+                                st.rerun()
+                        with _ar2:
+                            if st.button("Deny", key=f"deny_team_{req.get('request_id')}", type="secondary", use_container_width=True):
+                                deny_team_request(req.get("request_id"), (st.session_state.current_profile or {}).get("display_name"))
+                                st.rerun()
+    except Exception as e:
+        st.error(f"Team Requests: {e}")
+
 # Custom Plan Requester tab (admin only)
 if _admin and st.session_state.get("admin_tab_idx") == 5:
         st.subheader("Admin: Custom Plan Request")
@@ -4953,7 +4997,7 @@ if _admin and st.session_state.get("admin_tab_idx") == 4:
 
 
 # Bender Teams tab (admin/coach only)
-if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 6:
+if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 7:
     if st.session_state.get("bender_teams_join_success"):
         st.success(st.session_state.bender_teams_join_success)
         st.session_state.bender_teams_join_success = None
