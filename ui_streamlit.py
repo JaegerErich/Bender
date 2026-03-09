@@ -656,6 +656,9 @@ def _get_bottom_left_quadrant(metadata: dict) -> str:
         items = []
     if items:
         return "Equipment: " + ", ".join(items)
+    # Skating mechanics: show actual requirement (None) instead of "Minimal"
+    if mode in ("skating_mechanics", "movement", "speed_agility"):
+        return "Equipment: None"
     return "Equipment: Minimal"
 
 
@@ -3553,6 +3556,19 @@ if st.session_state.current_user_id is None:
                 st.session_state.page = "main"
             st.rerun()
 
+# Bender Teams: handle join flow (?join=CODE) when user is logged in
+_join_code = st.query_params.get("join", "").strip().upper()
+if _join_code and st.session_state.current_user_id and st.session_state.get("bender_teams_join_processed") != _join_code:
+    try:
+        from ui_bender_teams import handle_join_flow
+        ok, msg = handle_join_flow(_join_code, st.session_state.current_user_id, load_profile)
+        st.session_state.bender_teams_join_processed = _join_code
+        if ok:
+            st.session_state.bender_teams_join_success = msg
+        st.rerun()
+    except Exception:
+        st.session_state.bender_teams_join_processed = _join_code
+
 # ---------- Not logged in: Log in (first) or Create account (separate page) ----------
 if st.session_state.current_user_id is None:
     # ----- Log in page (default) -----
@@ -3843,10 +3859,26 @@ _weeks = []
 if _assigned_plan:
     _weeks = (_assigned_plan.get("plan", _assigned_plan) if isinstance(_assigned_plan, dict) else _assigned_plan) or []
 _has_valid_plan = bool(_weeks and len(_weeks) > 0)
+# Bender Teams: coach check (user coaches at least one team)
+try:
+    from bender_teams import get_teams_coached_by, get_teams_for_user
+    _cu = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id or ""
+    _coached_teams = get_teams_coached_by(_cu)
+    _teams_as_member = get_teams_for_user(_cu)
+    _is_coach = bool(_coached_teams)
+    _on_team = bool(_teams_as_member)
+except Exception:
+    _coached_teams = []
+    _teams_as_member = []
+    _is_coach = False
+    _on_team = False
+
 if _admin:
     _custom_req_count = len([r for r in load_custom_plan_requests() if not r.get("completed")])
     _custom_req_tab_label = f"Admin: Custom Plan Request ({_custom_req_count})" if _custom_req_count > 0 else "Admin: Custom Plan Request"
     _admin_tab_names = ["Workout Generator", "Admin: Plan Builder", "Admin: Highscores", "Performance Dashboard", "Bender Board", _custom_req_tab_label]
+    if _is_coach:
+        _admin_tab_names.append("Bender Teams")
     _admin_default_idx = 1 if st.session_state.get("admin_pending_integration") else 0
     if "admin_tab_idx" not in st.session_state or st.session_state.get("admin_pending_integration"):
         st.session_state.admin_tab_idx = _admin_default_idx
@@ -3970,6 +4002,22 @@ def _build_progression_animation_html(payload: dict) -> str:
 
 
 def _render_training_session():
+    # Bender Teams: show assigned workouts and coach feedback for players on a team
+    _uid = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id
+    if _uid:
+        try:
+            from bender_teams import get_teams_for_user, get_assignments_for_player, get_feedback_for_player
+            _teams = get_teams_for_user(_uid)
+            _tid = _teams[0]["team_id"] if _teams else None
+            _assigns = get_assignments_for_player(_uid, _tid)
+            _feedbacks = get_feedback_for_player(_uid)
+            if _assigns or _feedbacks:
+                from ui_bender_teams import render_player_assignments_and_feedback
+                render_player_assignments_and_feedback(_uid, _tid, load_profile)
+                st.divider()
+        except Exception:
+            pass
+
     # Post-workout progression animation (after Workout Complete)
     _prog = st.session_state.get("progression_feedback")
     if _prog:
@@ -4400,6 +4448,7 @@ else:
     if "player_tab" not in st.session_state:
         st.session_state.player_tab = "Training Session"
     _tab_opts = ["Training Session", "My Plan", "Performance Dashboard", "Bender Board"] if _has_valid_plan else ["Training Session", "Performance Dashboard", "Bender Board"]
+    _tab_opts.append("Bender Teams")  # All players can create/join teams or view coach dashboard
     with st.container():
         st.markdown('<div id="player-tab-bar" data-tab-style="classic" aria-hidden="true"></div>', unsafe_allow_html=True)
         _tab_cols = st.columns(len(_tab_opts))
@@ -4441,6 +4490,15 @@ else:
         _render_bender_board()
     elif _sel == "Performance Dashboard":
         _render_your_work_stats()
+    elif _sel == "Bender Teams":
+        if st.session_state.get("bender_teams_join_success"):
+            st.success(st.session_state.bender_teams_join_success)
+            st.session_state.bender_teams_join_success = None
+        try:
+            from ui_bender_teams import render_bender_teams_coach
+            render_bender_teams_coach(load_profile, save_profile)
+        except Exception as e:
+            st.error(f"Bender Teams: {e}")
 
 # Admin tab: Plan Builder (only for Erich Jaeger)
 if _admin and st.session_state.get("admin_tab_idx") == 1:
@@ -4893,6 +4951,17 @@ if _admin and st.session_state.get("admin_tab_idx") == 3:
 if _admin and st.session_state.get("admin_tab_idx") == 4:
         _render_bender_board()
 
+
+# Bender Teams tab (admin/coach only)
+if _admin and _is_coach and st.session_state.get("admin_tab_idx") == 6:
+    if st.session_state.get("bender_teams_join_success"):
+        st.success(st.session_state.bender_teams_join_success)
+        st.session_state.bender_teams_join_success = None
+    try:
+        from ui_bender_teams import render_bender_teams_coach
+        render_bender_teams_coach(load_profile, save_profile)
+    except Exception as e:
+        st.error(f"Bender Teams: {e}")
 
 # Admin: Highscores tab (admin only)
 if _admin and st.session_state.get("admin_tab_idx") == 2:

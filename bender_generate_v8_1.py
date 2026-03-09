@@ -878,6 +878,7 @@ def pick_n(
     recent_ids: Optional[set] = None,
     recent_penalty: float = 0.25,
     extra_weight_fn: Optional[Callable[[Dict[str, Any]], float]] = None,
+    on_chosen: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> List[Dict[str, Any]]:
     if not drills or n <= 0:
         return []
@@ -917,6 +918,8 @@ def pick_n(
 
         chosen = weighted_choice(candidates, weights, rnd)
         picked.append(chosen)
+        if on_chosen:
+            on_chosen(chosen)
 
         did = norm(get(chosen, "id", default="")).upper()
         if did:
@@ -1293,10 +1296,12 @@ def build_skating_mechanics_sequential(
     total_min = max(1, int(round(total_sec / 60)))
     lines.append("Do each in order. Rest 30–45s after each rep; then next drill.")
     for d, sets, reps, rep_dur in result:
+        did = norm(get(d, "id", ""))
         name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
+        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
+        lines.append(f"- {prefix}{name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
         eq = _equipment_display(d) or "None"
         lines.append(f"  Equipment: {eq}")
         if cues:
@@ -1420,6 +1425,35 @@ def _stickhandling_equipment_group(d: Dict[str, Any]) -> str:
         return "metal_plate"
     if "partner" in low:
         return "partner"
+    return "other"
+
+
+def _skating_equipment_group(d: Dict[str, Any]) -> str:
+    """Return equipment group for clustering skating drills: hurdles, mini_hurdles, ladder, cones, box, band, bosu, partner, reaction_ball, line_tape, minimal."""
+    raw = norm(get(d, "equipment", default=""))
+    if not raw or raw.lower() in ("none", "no", "bodyweight", "no equipment"):
+        return "minimal"
+    low = raw.lower()
+    if "mini hurdle" in low or "mini_hurdle" in low:
+        return "mini_hurdles"
+    if "hurdle" in low:
+        return "hurdles"
+    if "ladder" in low:
+        return "ladder"
+    if "cone" in low:
+        return "cones"
+    if "box" in low:
+        return "box"
+    if "band" in low:
+        return "band"
+    if "bosu" in low:
+        return "bosu"
+    if "partner" in low:
+        return "partner"
+    if "reaction" in low:
+        return "reaction_ball"
+    if "line" in low or "tape" in low:
+        return "line_tape"
     return "other"
 
 
@@ -2375,7 +2409,7 @@ def build_conditioning_single_block(
 
     effort = (conditioning_effort or "surprise").strip().lower()
     if effort == "surprise":
-        effort = rnd.choice(["easy", "hard"])
+        effort = rnd.choice(["easy", "medium", "hard"])
 
     scored = [(d, _conditioning_effort_score(d, effort)) for d in pool]
     scored.sort(key=lambda x: (-x[1], preference_score(x[0])))
@@ -2395,6 +2429,18 @@ def build_conditioning_single_block(
     if _is_hill_or_stairs_conditioning(drill):
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
         lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
+    elif norm(get(drill, "id", "")) == "CD_017":
+        # Curved treadmill 1-min intervals: hard=30/30, medium=20/40, easy=15/45
+        if effort == "hard":
+            work, rest = 30, 30
+        elif effort == "medium":
+            work, rest = 20, 40
+        else:
+            work, rest = 15, 45
+        interval = work + rest
+        rounds = max(1, int(block_sec) // max(1, interval))
+        r_label = "round" if rounds == 1 else "rounds"
+        lines.append(f"  {rounds} {r_label} x {work}s sprint / {rest}s rest")
     elif _is_shuttle_run_conditioning(drill):
         lines.append(f"  1 shuttle run, 30s rest — repeat for {minutes} min")
     elif wrp == "continuous":
@@ -5236,7 +5282,13 @@ def generate_session(
         return plan_text
 
     def _return_with_equipment(text: str):
-        return {"output_text": text, "equipment_used": extract_equipment_from_plan(text, data)}
+        equip = extract_equipment_from_plan(text, data)
+        # Skating mechanics: never show "Minimal"; output actual equipment (None if bodyweight-only)
+        if session_mode in ("skating_mechanics", "movement", "speed_agility") and not equip:
+            equip = ["None"]
+        if session_mode in ("skating_mechanics", "movement", "speed_agility") and len(equip) > 5:
+            equip = equip[:5]  # Cap at 5 items for skating to avoid massive changes between drills
+        return {"output_text": text, "equipment_used": equip}
 
     lines: List[str] = []
     lines.append(f"\nBENDER SINGLE WORKOUT | mode={session_mode} | len={session_len_min} min | age={age} | focus={focus or 'none'}\n")
@@ -5529,9 +5581,27 @@ def generate_session(
 
         minutes = max(1, seconds // 60)
         count = 2 if minutes <= 8 else (3 if minutes <= 15 else 4)
-        chosen = pick_n(drills, n=min(count, len(drills)) if drills else count, rnd=rnd, focus_rule=focus_rule)
+        is_skating = category == "movement" and session_mode == "skating_mechanics"
+        if is_skating and drills:
+            active_equip: set = set()
 
-        section_title = "SKATING MECHANICS" if (category == "movement" and session_mode == "skating_mechanics") else category.replace("_", " ").upper()
+            def equip_weight(d: Dict[str, Any]) -> float:
+                g = _skating_equipment_group(d)
+                return 2.0 if g != "minimal" and g in active_equip else 1.0
+
+            def on_pick(d: Dict[str, Any]) -> None:
+                g = _skating_equipment_group(d)
+                if g != "minimal":
+                    active_equip.add(g)
+
+            chosen = pick_n(drills, n=min(count, len(drills)), rnd=rnd, focus_rule=focus_rule, extra_weight_fn=equip_weight, on_chosen=on_pick)
+            # Cluster drills by equipment (hurdles together, etc.) so athletes don't switch gear often
+            _SK_EQUIP_ORDER = ("minimal", "cones", "ladder", "hurdles", "mini_hurdles", "box", "band", "bosu", "line_tape", "reaction_ball", "partner", "other")
+            chosen.sort(key=lambda d: (_SK_EQUIP_ORDER.index(g) if (g := _skating_equipment_group(d)) in _SK_EQUIP_ORDER else 99, _display_name(d)))
+        else:
+            chosen = pick_n(drills, n=min(count, len(drills)) if drills else count, rnd=rnd, focus_rule=focus_rule)
+
+        section_title = "SKATING MECHANICS" if is_skating else category.replace("_", " ").upper()
         lines.append(f"\n{section_title} (~{minutes} min)")
         if not chosen:
             if user_equipment is not None:
@@ -5539,7 +5609,7 @@ def generate_session(
                 lines.append("Equipment is required.")
             else:
                 lines.append("- [No matching drills found]")
-        elif category == "movement" and session_mode == "skating_mechanics":
+        elif is_skating:
             # Single events with time each; total matches block
             lines.extend(build_skating_mechanics_sequential(chosen, seconds))
         else:
