@@ -3686,8 +3686,7 @@ if st.session_state.current_user_id is None:
             _next_step()
 
     st.markdown("#### Create an account")
-    if _step > 1:
-        st.caption(f"Step {_step} of 9")
+    st.progress(_step / 9, text=f"Step {_step} of 9")
     st.markdown("---")
 
     if _step == 1:
