@@ -4410,7 +4410,7 @@ def _render_training_session():
 - Full recovery between sets
 
 **Muscle Endurance**
-- 6–12 reps
+- 10–25 reps
 - Controlled tempo
 - Moderate load
 

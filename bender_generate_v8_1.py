@@ -2920,9 +2920,9 @@ STRENGTH_RX_TABLE: Dict[str, Dict[str, Any]] = {
         FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 10, "rest_sec": 45},
     },
     "hypertrophy": {
-        FATIGUE_ROLE_HIGH:      {"sets": 4, "reps": 8,  "rest_sec": 150},
-        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 10, "rest_sec": 75},
-        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 12, "rest_sec": 45},
+        FATIGUE_ROLE_HIGH:      {"sets": 4, "reps": 12, "rest_sec": 120},
+        FATIGUE_ROLE_SECONDARY: {"sets": 4, "reps": 14, "rest_sec": 60},
+        FATIGUE_ROLE_RESILIENCE:{"sets": 3, "reps": 16, "rest_sec": 45},
     },
     "recovery": {
         FATIGUE_ROLE_HIGH:      None,
@@ -3069,10 +3069,10 @@ def _avoid_movement_pattern(pool: List[Dict[str, Any]], mp_to_avoid: str) -> Lis
 REP_LIMITS: Dict[str, Tuple[int, int]] = {
     "power": (1, 5),
     "max_strength": (2, 6),
-    "hypertrophy": (6, 12),  # Muscle Endurance: 6–12 reps
+    "hypertrophy": (10, 25),  # Muscle Endurance: 10–25 reps
     "stability": (6, 10),    # Stability/Core: 6–10 per side
     "strength_endurance": (10, 25),
-    "youth": (6, 12),
+    "youth": (10, 25),  # youth maps to hypertrophy (Muscle Endurance)
 }
 
 
@@ -3140,7 +3140,7 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
     LIMITS = {
         "power": {FATIGUE_ROLE_HIGH: (2, 6), FATIGUE_ROLE_SECONDARY: (3, 6), FATIGUE_ROLE_RESILIENCE: (6, 10)},  # 3–6 reps, don't change
         "strength": {FATIGUE_ROLE_HIGH: (3, 7), FATIGUE_ROLE_SECONDARY: (5, 10), FATIGUE_ROLE_RESILIENCE: (8, 12)},
-        "hypertrophy": {FATIGUE_ROLE_HIGH: (6, 10), FATIGUE_ROLE_SECONDARY: (8, 12), FATIGUE_ROLE_RESILIENCE: (10, 12)},  # Muscle Endurance: 6–12
+        "hypertrophy": {FATIGUE_ROLE_HIGH: (10, 15), FATIGUE_ROLE_SECONDARY: (10, 18), FATIGUE_ROLE_RESILIENCE: (12, 20)},  # Muscle Endurance: 10–25
         "recovery": {FATIGUE_ROLE_HIGH: (0, 0), FATIGUE_ROLE_SECONDARY: (10, 15), FATIGUE_ROLE_RESILIENCE: (10, 15)},  # 10–15 reps or 20–45s
     }
 
