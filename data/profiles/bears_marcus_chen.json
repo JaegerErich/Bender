@@ -98,9 +98,11 @@
   "performance_tests": {
     "vertical_jump": "21.5 in",
     "agility_5_10_5": "4.49 s",
-    "shooting_tests": "57",
-    "stickhandling_tests": "54",
-    "conditioning_test": "53"
+    "broad_jump": "81.3 in",
+    "pull_ups": "8",
+    "shooting_tests": "52",
+    "stickhandling_tests": "88",
+    "conditioning_test": "43"
   },
   "puck_mastery_xp": 6,
   "puck_mastery_rank": 1,

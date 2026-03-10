@@ -150,8 +150,7 @@ def _sanitize_user_id(name: str) -> str:
 
 
 def _profile_path(user_id: str) -> Path:
-    canonical = (user_id or "").strip().lower()
-    return PROFILE_DIR / f"{canonical}.json"
+    return PROFILE_DIR / f"{user_id}.json"
 
 
 def load_profile(user_id: str) -> dict | None:
@@ -177,21 +176,33 @@ def save_profile(profile: dict) -> None:
         return
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     path = _profile_path(user_id)
-    # Merge with disk: preserve any field missing or None so we never drop equipment etc.
-    if path.exists():
-        try:
-            with open(path, encoding="utf-8") as f:
-                existing = json.load(f)
-            for key in list(existing.keys()):
-                if key == "updated_at":
-                    continue
-                if key not in profile or profile[key] is None:
-                    profile[key] = existing[key]
-        except Exception:
-            pass
     profile["updated_at"] = datetime.now().isoformat()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2)
+
+
+# U16 Bears: ensure these accounts are always included in Bender Board
+_U16_BEARS_USER_IDS = [
+    "bears_marcus_chen", "bears_jake_thompson", "bears_tyler_williams", "bears_ryan_obrien",
+    "bears_noah_martinez", "bears_cole_anderson", "bears_liam_sullivan", "bears_ethan_park",
+    "bears_dylan_foster", "bears_carter_brooks",
+]
+
+
+def _bender_board_profiles() -> list[dict]:
+    """All profiles for Bender Board, including U16 Bears. Ensures 10 Bears accounts are in the pool."""
+    pool = {str(p.get("user_id") or ""): p for p in list_profiles()}
+    for uid in _U16_BEARS_USER_IDS:
+        if uid and uid not in pool:
+            prof = load_profile(uid)
+            if prof:
+                try:
+                    from bender_leveling import ensure_leveling_defaults
+                    prof = ensure_leveling_defaults(prof)
+                except Exception:
+                    pass
+                pool[uid] = prof
+    return sorted(pool.values(), key=lambda x: (x.get("display_name") or x.get("user_id") or "").lower())
 
 
 def list_profiles() -> list[dict]:
@@ -553,8 +564,8 @@ MODE_LABELS = {
 }
 
 # Puck Mastery sub-options (map to actual session_mode sent to engine)
-SKILLS_SUB_LABELS = ["Shooting", "Stickhandling", "Both"]
-SKILLS_SUB_TO_MODE = {"Shooting": "shooting", "Stickhandling": "stickhandling", "Both": "skills_only"}
+SKILLS_SUB_LABELS = ["Shooting", "Stickhandling", "Shooting and Stickhandling"]
+SKILLS_SUB_TO_MODE = {"Shooting": "shooting", "Stickhandling": "stickhandling", "Shooting and Stickhandling": "skills_only"}
 
 DISPLAY_MODES = [MODE_LABELS.get(m, m) for m in RAW_MODES]
 LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
@@ -1057,8 +1068,8 @@ def _audit_completion_history(completion_history: list) -> tuple[list[dict], set
 
 def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str, str, dict | None]]:
     """Returns list of (category_label, leader_name, formatted_value, best_profile) for current month.
-    Uses completion_history from all profiles."""
-    all_profs = list_profiles()
+    Uses completion_history from all profiles. Includes U16 Bears."""
+    all_profs = _bender_board_profiles()
     _cat_defs = [
         ("Shots", lambda h: h["shots"], "{:,}"),
         ("Stickhandling time", lambda h: h["stickhandling_hours"], "{:.1f} h"),
@@ -1086,8 +1097,8 @@ def _bender_board_monthly_leaders(year: int, month: int) -> list[tuple[str, str,
 
 def _bender_board_lifetime_leaders() -> list[tuple[str, str, str, dict | None]]:
     """Returns list of (category_label, leader_name, formatted_value, best_profile) for lifetime highscores.
-    Uses private_victory_stats from all profiles."""
-    all_profs = list_profiles()
+    Uses private_victory_stats from all profiles. Includes U16 Bears."""
+    all_profs = _bender_board_profiles()
     _cat_defs = [
         ("Shots", lambda s: int(s.get("shots", 0) or 0), "{:,}"),
         ("Stickhandling time", lambda s: float(s.get("stickhandling_hours", 0) or 0), "{:.1f} h"),
@@ -1134,12 +1145,12 @@ _BB_CAT_DEFS = [
 
 
 def _bender_overall_ranked() -> list[dict]:
-    """All profiles sorted by total_xp desc, total_workouts desc, longest_streak desc."""
+    """All profiles sorted by total_xp desc, total_workouts desc, longest_streak desc. Includes U16 Bears."""
     try:
         from bender_leveling import ensure_leveling_defaults, get_longest_streak
     except Exception:
         return []
-    all_profs = [ensure_leveling_defaults(p) for p in list_profiles()]
+    all_profs = [ensure_leveling_defaults(p) for p in _bender_board_profiles()]
     for p in all_profs:
         if "longest_streak" not in p or p["longest_streak"] is None:
             p["longest_streak"] = get_longest_streak(p.get("completion_history") or [])
@@ -1261,7 +1272,7 @@ def _render_bender_board() -> None:
     _bb_categories = [c for c, *_ in _BB_CAT_DEFS]
 
     # --- Section: Overall Leaderboard ---
-    _rank_visible = 15
+    _rank_visible = 10
     _dismiss_tok = st.session_state.get("bender_board_dismiss_token", 0)
     st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Overall Leaderboard</div><div class="bender-board-section-caption">Sorted by Total points → Total workouts → Longest streak. Click a name for a quick pop-up of their stats.</div></div>', unsafe_allow_html=True)
     if _overall:
@@ -1299,53 +1310,27 @@ def _render_bender_board() -> None:
     else:
         st.caption("No players yet. Complete workouts to appear on the board.")
 
-    # --- Section: Monthly Leaders ---
-    _monthly_map = {cat: (name, val, prof) for cat, name, val, prof in _bender_board_monthly_leaders(_today.year, _today.month)}
-    _monthly_lines = ['<div class="bender-board-section">']
-    _monthly_lines.append('<div class="bender-board-section-title">Monthly Leaders</div>')
-    _monthly_lines.append(f'<div class="bender-board-section-caption">{_today.strftime("%B %Y")} — top performer per category</div>')
-    _monthly_lines.append('<div class="your-work-stats-card" style="max-width:none; margin-top:0.5rem;">')
-    for cat in _bb_categories:
-        if cat in _monthly_map:
-            name, val, _ = _monthly_map[cat]
-            _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
-        else:
-            _monthly_lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
-    _monthly_lines.append("</div></div>")
-    st.markdown("\n".join(_monthly_lines), unsafe_allow_html=True)
+    # --- Section: Monthly Leaders (updates automatically as workouts are completed) ---
+    @st.fragment
+    def _monthly_leaders_section():
+        _monthly_map = {cat: (name, val, prof) for cat, name, val, prof in _bender_board_monthly_leaders(_today.year, _today.month)}
+        _lines = ['<div class="bender-board-section">']
+        _lines.append('<div class="bender-board-section-title">Monthly Leaders</div>')
+        _lines.append(f'<div class="bender-board-section-caption">{_today.strftime("%B %Y")} — top performer per category</div>')
+        _lines.append('<div class="your-work-stats-card" style="max-width:none; margin-top:0.5rem;">')
+        for cat in _bb_categories:
+            if cat in _monthly_map:
+                name, val, _ = _monthly_map[cat]
+                _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">{html.escape(name)} — {html.escape(val)}</span></div>')
+            else:
+                _lines.append(f'<div class="your-work-row"><span class="your-work-cat">{html.escape(cat)}</span><span class="your-work-num">Nothing yet this month</span></div>')
+        _lines.append("</div></div>")
+        st.markdown("\n".join(_lines), unsafe_allow_html=True)
 
-    # --- Section: Monthly Category Rankings ---
-    st.markdown('<div class="bender-board-section"><div class="bender-board-section-title">Monthly Category Rankings</div><div class="bender-board-section-caption">' + _today.strftime("%B %Y") + ' — ranked by volume in each category</div></div>', unsafe_allow_html=True)
-    _monthly_ranked = _bender_monthly_ranked(_today.year, _today.month)
-    for cat_label in _bb_categories:
-        rows = _monthly_ranked.get(cat_label, [])
-        leveling_cat = _BB_CAT_TO_LEVELING_CAT.get(cat_label, "")
-        with st.expander(f"{cat_label} ({len(rows)} players)" if rows else cat_label, expanded=False):
-            if not rows:
-                st.caption("Nothing yet this month")
-                continue
-            for r, (p, _val, fmt_val) in enumerate(rows[:20], 1):
-                p = ensure_leveling_defaults(p)
-                _name = p.get("display_name") or p.get("user_id") or "Unknown"
-                _xp = int(p.get(_category_profile_key(leveling_cat)[0]) or 0) if leveling_cat else 0
-                _cat_rank = rank_from_category_xp(_xp) if leveling_cat else 1
-                _cat_title = rank_title_for_category(leveling_cat, _cat_rank) if leveling_cat else "—"
-                _bc = len(get_unlocked_badges(p))
-                _is_you = (p.get("user_id") or "") == _current_uid
-                _line = f"{r}. Level {_cat_rank}: **{_cat_title}** — {_name} · {_xp:,} cat points · {_bc} badge(s) · {fmt_val}"
-                if _is_you:
-                    st.markdown(f":orange[{_line}] *(you)*")
-                else:
-                    st.markdown(_line)
-            _your_idx = next((i for i, (p, _, _) in enumerate(rows) if (p.get("user_id") or "") == _current_uid), None)
-            if _your_idx is not None and _your_idx >= 20:
-                _p, _v, _fv = rows[_your_idx]
-                _p = ensure_leveling_defaults(_p)
-                _xk = _category_profile_key(leveling_cat)[0] if leveling_cat else ""
-                _cat_xp = int(_p.get(_xk) or 0) if _xk else 0
-                _yr_rank = rank_from_category_xp(_cat_xp)
-                _yr_title = rank_title_for_category(leveling_cat, _yr_rank)
-                st.caption(f"**Your rank: {_your_idx + 1}** — Level {_yr_rank}: **{_yr_title}** · {_cat_xp:,} cat points")
+    _monthly_leaders_section()
+
+    # --- Section: Monthly Category Rankings (hidden for now) ---
+    # st.markdown(...)  # Monthly Category Rankings - hidden
 
     # --- Section: Lifetime Highscores ---
     _lifetime_map = {cat: (name, val) for cat, name, val, _ in _bender_board_lifetime_leaders()}
@@ -1432,7 +1417,6 @@ def _render_your_work_stats():
     _pt_items = [
         ("Vertical Jump", "vertical_jump"),
         ("5-10-5 Agility", "agility_5_10_5"),
-        ("Pull-ups", "pull_ups"),
         ("Shooting Tests", "shooting_tests"),
         ("Stickhandling Tests", "stickhandling_tests"),
         ("Conditioning Test", "conditioning_test"),
@@ -3669,82 +3653,201 @@ if st.session_state.current_user_id is None:
         st.caption("Don’t have an account?")
         if st.button("Create an account", key="goto_create"):
             st.session_state.auth_page = "create_account"
+            st.session_state.pop("create_account_step", None)
+            st.session_state.pop("create_account_data", None)
             st.rerun()
         st.stop()
 
-    # ----- Create account page (separate) -----
+    _step = st.session_state.get("create_account_step", 1)
+    _data = st.session_state.get("create_account_data", {})
+
+    def _next_step():
+        st.session_state.create_account_step = _step + 1
+        st.rerun()
+
+    def _prev_step():
+        st.session_state.create_account_step = max(1, _step - 1)
+        st.rerun()
+
+    def _save_and(key: str, value, then_next: bool = True):
+        _d = dict(st.session_state.get("create_account_data", {}))
+        _d[key] = value
+        st.session_state.create_account_data = _d
+        if then_next:
+            _next_step()
+
     st.markdown("#### Create an account")
-    st.caption("You’ll choose your equipment below.")
-    create_username = st.text_input(
-        "Username (your first and last name)",
-        key="create_username",
-        placeholder="e.g. John Smith",
-        autocomplete="name",
-    )
-    create_age = st.number_input("Age", min_value=6, max_value=99, value=16, step=1, key="create_age")
-    create_position = st.selectbox("Position", options=POSITION_OPTIONS, key="create_position")
-    create_level = st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, key="create_level")
-    create_team = st.text_input("Team (current team you play for)", key="create_team", placeholder="e.g. Eagles U16")
-    _ch_h, _ch_w = st.columns(2)
-    with _ch_h:
-        create_height = st.text_input("Height", placeholder="e.g. 5'10\" or 180 cm", key="create_height")
-    with _ch_w:
-        create_weight = st.text_input("Weight", placeholder="e.g. 175 lbs or 79 kg", key="create_weight")
-    create_password = st.text_input("Password", key="create_password", type="password")
-    create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
-    st.markdown("**Equipment**")
-    st.caption("Choose what you have. You can change this anytime in the sidebar.")
-    try:
-        _create_equip_by_mode = ENGINE.get_canonical_equipment_by_mode()
-    except Exception:
-        _create_equip_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
-    _render_equipment_dropdowns(_create_equip_by_mode, set(), "create_equip")
-    if st.button("Create account", key="btn_create"):
-        create_username = (create_username or "").strip()
-        if not create_username:
-            st.error("Please enter your first and last name.")
-        elif not create_password:
-            st.error("Please enter a password.")
-        elif create_password != create_confirm:
-            st.error("Passwords do not match.")
-        else:
-            uid = _sanitize_user_id(create_username)
-            if not uid or uid == "default":
-                st.error("Please enter a valid first and last name.")
-            elif _user_id_taken(uid):
-                st.error("That username is already taken. Please choose another or log in.")
+    if _step > 1:
+        st.caption(f"Step {_step} of 9")
+    st.markdown("---")
+
+    if _step == 1:
+        create_username = st.text_input("Username (your first and last name)", key="create_username", placeholder="e.g. John Smith", autocomplete="name")
+        create_password = st.text_input("Password", key="create_password", type="password")
+        create_confirm = st.text_input("Confirm password", key="create_confirm", type="password")
+        if st.button("Continue", key="create_step1"):
+            u = (create_username or "").strip()
+            if not u:
+                st.error("Please enter your first and last name.")
+            elif not create_password:
+                st.error("Please enter a password.")
+            elif create_password != create_confirm:
+                st.error("Passwords do not match.")
             else:
-                salt_hex, hash_hex = _hash_password(create_password)
-                _create_equipment = _collect_equipment_from_session(_create_equip_by_mode, "create_equip")
-                profile = {
-                    "user_id": uid,
-                    "display_name": create_username,
-                    "age": int(create_age),
-                    "position": create_position,
-                    "current_level": create_level,
-                    "team": (create_team or "").strip(),
-                    "height": (create_height or "").strip(),
-                    "weight": (create_weight or "").strip(),
-                    "equipment": _create_equipment,
-                    "equipment_setup_done": True,
-                    "password_salt": salt_hex,
-                    "password_hash": hash_hex,
-                    "created_at": datetime.now().isoformat(),
-                    "updated_at": datetime.now().isoformat(),
-                }
-                try:
-                    from bender_leveling import ensure_leveling_defaults
-                    profile = ensure_leveling_defaults(profile)
-                except Exception:
-                    pass
-                save_profile(profile)
-                st.session_state.creation_success = "Account created. Please log in."
-                st.session_state.auth_page = "login"
-                st.rerun()
+                uid = _sanitize_user_id(u)
+                if not uid or uid == "default":
+                    st.error("Please enter a valid first and last name.")
+                elif _user_id_taken(uid):
+                    st.error("That username is already taken. Choose another or log in.")
+                else:
+                    st.session_state.create_account_data = {**_data, "username": u, "password": create_password}
+                    _next_step()
+
+    elif _step == 2:
+        create_age = st.number_input("Age", min_value=6, max_value=99, value=int(_data.get("age", 16)), step=1, key="create_age")
+        _pos = _data.get("position", "Forward")
+        create_position = st.selectbox("Position", options=POSITION_OPTIONS, index=POSITION_OPTIONS.index(_pos) if _pos in POSITION_OPTIONS else 0, key="create_position")
+        if st.button("Continue", key="create_step2"):
+            st.session_state.create_account_data = {**_data, "age": create_age, "position": create_position}
+            _next_step()
+
+    elif _step == 3:
+        _lvl = _data.get("current_level", "Youth")
+        create_level = st.selectbox("Current Level", options=CURRENT_LEVEL_OPTIONS, index=CURRENT_LEVEL_OPTIONS.index(_lvl) if _lvl in CURRENT_LEVEL_OPTIONS else 0, key="create_level")
+        create_team = st.text_input("Team (current team you play for)", value=_data.get("team", ""), key="create_team", placeholder="e.g. Eagles U16")
+        if st.button("Continue", key="create_step3"):
+            st.session_state.create_account_data = {**_data, "current_level": create_level, "team": (create_team or "").strip()}
+            _next_step()
+
+    elif _step == 4:
+        create_height = st.text_input("Height (optional)", value=_data.get("height", ""), key="create_height", placeholder="e.g. 5'10\" or 180 cm")
+        create_weight = st.text_input("Weight (optional)", value=_data.get("weight", ""), key="create_weight", placeholder="e.g. 175 lbs or 79 kg")
+        if st.button("Continue", key="create_step4"):
+            st.session_state.create_account_data = {**_data, "height": (create_height or "").strip(), "weight": (create_weight or "").strip()}
+            _next_step()
+
+    elif _step == 5:
+        st.markdown("**What's your gym setup?**")
+        st.caption("Select one. We'll set equipment and conditioning automatically.")
+        perf_opts = [
+            ("full_gym", "Full-Gym Access: Barbells, racks, machines, sleds, etc."),
+            ("garage_gym", "Garage Gym / Small Gym: Dumbbells, Kettlebells, bench, basic equipment"),
+            ("minimal", "Minimal equipment: bodyweight, bands, etc."),
+        ]
+        sel = st.radio("Performance", options=[o[0] for o in perf_opts], format_func=lambda x: next(t for k, t in perf_opts if k == x), index=0, key="create_perf", label_visibility="collapsed")
+        if st.button("Continue", key="create_step5"):
+            st.session_state.create_account_data = {**_data, "performance_setup": sel}
+            _next_step()
+
+    elif _step == 6:
+        st.markdown("**Puck Mastery** — select all that apply")
+        pm_opts = [
+            ("shooting_area", "Shooting area"),
+            ("stickhandling_area", "Stickhandling area"),
+            ("puck_tools", "Puck Handling tools: Bosu ball, bands, metal plates, extra sticks"),
+        ]
+        pm_sel = [k for k, label in pm_opts if st.checkbox(label, key=f"create_pm_{k}")]
+        if st.button("Continue", key="create_step6"):
+            st.session_state.create_account_data = {**_data, "puck_mastery": pm_sel}
+            _next_step()
+
+    elif _step == 7:
+        st.markdown("**What tools do you have for skating drills?** — select all that apply")
+        skate_opts = [
+            ("markers_lines", "Markers & lines: cones, tape, floor lines"),
+            ("agility", "Agility equipment: agility ladder, hurdles, mini hurdles, box"),
+            ("training_tools", "Training tools: bands, reaction ball, bosu ball, hills"),
+        ]
+        skate_sel = [k for k, label in skate_opts if st.checkbox(label, key=f"create_skate_{k}")]
+        if st.button("Continue", key="create_step7"):
+            st.session_state.create_account_data = {**_data, "skating": skate_sel}
+            _next_step()
+
+    elif _step == 8:
+        st.markdown("**Recovery / Mobility**")
+        has_foam_roller = st.checkbox("Foam roller", key="create_foam_roller")
+        st.caption("Bench is assumed from your Performance setup.")
+        if st.button("Continue", key="create_step8"):
+            st.session_state.create_account_data = {**_data, "foam_roller": has_foam_roller}
+            _next_step()
+
+    elif _step == 9:
+        perf = _data.get("performance_setup", "minimal")
+        pm = _data.get("puck_mastery", [])
+        skate = _data.get("skating", [])
+        foam = _data.get("foam_roller", False)
+        equip = []
+        if perf == "full_gym":
+            equip.extend(["Barbell", "Bench", "Squat Rack", "Dumbbells", "Kettlebells", "Hex Bar", "Bands", "Resistance band", "Bar or rings", "Cable machine", "Pull-up bar", "Medicine ball", "Exercise ball", "Box", "Slider or TRX", "Landmine setup", "Sled", "Battle Ropes"])
+        elif perf == "garage_gym":
+            equip.extend(["Dumbbells", "Kettlebells", "Bench", "Bands", "Resistance band", "Bar or rings", "Medicine ball", "Exercise ball", "Box", "Slider or TRX"])
+        else:
+            equip.extend(["Bands", "Resistance band", "Box", "Slider or TRX"])
+        if perf == "full_gym":
+            equip.extend(["Cones", "Stationary bike", "Treadmill", "Hill", "Stairs", "Box", "Sled"])
+        elif perf == "garage_gym":
+            equip.extend(["Cones", "Stationary bike", "Hill", "Box"])
+        else:
+            equip.extend(["Cones", "Hill", "Stairs", "Box"])
+        if "shooting_area" in pm:
+            equip.append("Shooting pad & net")
+        if "stickhandling_area" in pm:
+            equip.append("Stickhandling ball")
+        if "puck_tools" in pm:
+            equip.extend(["BOSU ball", "resistance band", "metal plate", "2 extra sticks"])
+        if "markers_lines" in skate:
+            equip.extend(["Cones", "Line/Tape"])
+        if "agility" in skate:
+            equip.extend(["Agility Ladder", "Hurdles", "Mini hurdles", "Box"])
+        if "training_tools" in skate:
+            equip.extend(["Bands", "Reaction ball", "BOSU ball", "Hill"])
+        if foam:
+            equip.append("Foam roller")
+        if perf in ("full_gym", "garage_gym") and "Bench" not in equip:
+            equip.append("Bench")
+        equip = list(dict.fromkeys(equip))
+
+        st.markdown("**Review & create**")
+        st.json({k: v for k, v in _data.items() if k != "password"})
+        if st.button("Create account", key="btn_create"):
+            salt_hex, hash_hex = _hash_password(_data.get("password", ""))
+            profile = {
+                "user_id": _sanitize_user_id(_data.get("username", "")),
+                "display_name": _data.get("username", ""),
+                "age": int(_data.get("age", 16)),
+                "position": _data.get("position", "Forward"),
+                "current_level": _data.get("current_level", "Youth"),
+                "team": (_data.get("team") or "").strip(),
+                "height": (_data.get("height") or "").strip(),
+                "weight": (_data.get("weight") or "").strip(),
+                "equipment": equip,
+                "equipment_setup_done": True,
+                "password_salt": salt_hex,
+                "password_hash": hash_hex,
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat(),
+            }
+            try:
+                from bender_leveling import ensure_leveling_defaults
+                profile = ensure_leveling_defaults(profile)
+            except Exception:
+                pass
+            save_profile(profile)
+            st.session_state.creation_success = "Account created. Please log in."
+            st.session_state.auth_page = "login"
+            for k in ("create_account_step", "create_account_data"):
+                st.session_state.pop(k, None)
+            st.rerun()
+
+    if _step > 1:
+        if st.button("← Back", key="create_back"):
+            _prev_step()
     st.markdown("---")
     st.caption("Already have an account?")
     if st.button("Back to log in", key="back_to_login"):
         st.session_state.auth_page = "login"
+        for k in ("create_account_step", "create_account_data"):
+            st.session_state.pop(k, None)
         st.rerun()
     st.stop()
 
@@ -3814,21 +3917,15 @@ with st.sidebar:
         except Exception:
             equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
         prof = st.session_state.current_profile or {}
-        # Always prefer disk equipment as source of truth (prevents stale session state from showing unchecked)
+        # Restore equipment from disk when in-memory profile lost it (e.g. session clear, rerun)
         _uid = prof.get("user_id") or st.session_state.get("current_user_id")
         if _uid:
             _disk_prof = load_profile(str(_uid))
-            if _disk_prof and (_disk_prof.get("equipment") or []):
-                if not (prof.get("equipment") or []):
-                    prof["equipment"] = _disk_prof["equipment"]
-                    st.session_state.current_profile = prof
-                current_equip_source = _disk_prof["equipment"]
-            else:
-                current_equip_source = prof.get("equipment") or []
-        else:
-            current_equip_source = prof.get("equipment") or []
+            if _disk_prof and (_disk_prof.get("equipment") or []) and not (prof.get("equipment") or []):
+                prof["equipment"] = _disk_prof["equipment"]
+                st.session_state.current_profile = prof
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
-        current_equip = set(_canonicalize(current_equip_source) if _canonicalize else current_equip_source)
+        current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
         _equip_prefix = "sidebar_" + (str(st.session_state.get("current_user_id") or "default").replace(" ", "_")[:80])
         _render_equipment_dropdowns(equipment_by_mode, current_equip, _equip_prefix)
         if st.button("Save equipment", key="sidebar_save"):
@@ -3860,7 +3957,7 @@ with st.sidebar:
     _sidebar_meta = st.session_state.get("last_output_metadata") or {}
     _sidebar_prefill = build_prefilled_feedback_url(
         athlete=_sidebar_athlete.strip(),
-        mode_label={"performance": "Performance", "energy_systems": "Conditioning", "skating_mechanics": "Skating Mechanics", "shooting": "Puck Mastery (Shooting)", "stickhandling": "Puck Mastery (Stickhandling)", "skills_only": "Puck Mastery (Both)", "mobility": "Mobility"}.get(_sidebar_meta.get("mode", ""), ""),
+        mode_label={"performance": "Performance", "energy_systems": "Conditioning", "skating_mechanics": "Skating Mechanics", "shooting": "Puck Mastery (Shooting)", "stickhandling": "Puck Mastery (Stickhandling)", "skills_only": "Puck Mastery (Shooting and Stickhandling)", "mobility": "Mobility"}.get(_sidebar_meta.get("mode", ""), ""),
         location_label="Gym" if _sidebar_meta.get("location") == "gym" else "No Gym",
         emphasis_key="",
         rating=4,
@@ -3924,7 +4021,7 @@ try:
     from bender_teams import get_teams_coached_by, get_teams_for_user
     _cu = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id or ""
     _coached_teams = get_teams_coached_by(_cu, load_profile)
-    _teams_as_member = get_teams_for_user(_cu, load_profile)
+    _teams_as_member = get_teams_for_user(_cu)
     _is_coach = bool(_coached_teams)
     _on_team = bool(_teams_as_member)
 except Exception:
@@ -4075,7 +4172,7 @@ def _render_training_session():
     if _uid:
         try:
             from bender_teams import get_teams_for_user, get_assignments_for_player, get_feedback_for_player
-            _teams = get_teams_for_user(_uid, load_profile)
+            _teams = get_teams_for_user(_uid)
             _tid = _teams[0]["team_id"] if _teams else None
             _assigns = get_assignments_for_player(_uid, _tid)
             _feedbacks = get_feedback_for_player(_uid)
@@ -4577,7 +4674,7 @@ else:
         try:
             if _is_coach:
                 from ui_bender_teams import render_bender_teams_coach
-                render_bender_teams_coach(load_profile, save_profile, _generate_via_engine)
+                render_bender_teams_coach(load_profile, save_profile)
             elif _on_team:
                 from ui_bender_teams import render_bender_teams_player_portal
                 _uid = (st.session_state.current_profile or {}).get("user_id") or st.session_state.current_user_id
@@ -4608,9 +4705,6 @@ else:
                                             _ids.append(_t["team_id"])
                                         _prof["bender_team_ids"] = _ids
                                         _prof["team"] = _t.get("team_name", "").strip()
-                                        _cache = [c for c in (_prof.get("player_teams_cache") or []) if c.get("team_id") != _t["team_id"]]
-                                        _cache.append(dict(_t))
-                                        _prof["player_teams_cache"] = _cache[-20:]
                                         save_profile(_prof)
                                         if st.session_state.get("current_user_id") == _uid and "current_profile" in st.session_state:
                                             st.session_state.current_profile = _prof
@@ -5043,73 +5137,71 @@ if _admin and (st.session_state.get("admin_tab") or "").startswith("Admin: Team 
         if not requests_list:
             st.info("No team creation requests yet. Users submit requests from **Bender Teams** → Create a team.")
         else:
-            _pending = [r for r in requests_list if r.get("status") == "pending"]
-            _approved = [r for r in requests_list if r.get("status") == "approved"]
-            _denied = [r for r in requests_list if r.get("status") == "denied"]
+            _pending = [r for r in reversed(requests_list) if r.get("status") == "pending"]
+            _accepted = [r for r in reversed(requests_list) if r.get("status") == "approved"]
+            _denied = [r for r in reversed(requests_list) if r.get("status") == "denied"]
 
-            def _render_request_detail(req, show_actions=False):
-                st.markdown(f"**Requester:** {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
-                st.markdown(f"**Team name:** {req.get('team_name', '—')}")
-                st.markdown(f"**Age group:** {req.get('age_group', '—')} | **Level:** {req.get('level', '—')} | **Season:** {req.get('season', '—')}")
-                st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
-                if req.get("status") == "approved" and req.get("invite_code"):
-                    st.caption(f"Invite code: **{req['invite_code']}**")
-                if show_actions:
-                    _ar1, _ar2 = st.columns(2)
-                    with _ar1:
-                        if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
-                            team = approve_team_request(req.get("request_id"))
-                            if team:
-                                requester_uid = req.get("requester_user_id")
-                                if requester_uid:
-                                    prof = load_profile(requester_uid)
-                                    if prof:
-                                        ids = list(prof.get("coached_team_ids") or [])
-                                        if team["team_id"] not in ids:
-                                            ids.append(team["team_id"])
-                                            prof["coached_team_ids"] = ids
-                                        cache = list(prof.get("coached_teams_cache") or [])
-                                        existing_ids = {t.get("team_id") for t in cache}
-                                        if team["team_id"] not in existing_ids:
-                                            cache.append(dict(team))
-                                            prof["coached_teams_cache"] = cache
-                                        save_profile(prof)
-                                st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
-                            st.rerun()
-                    with _ar2:
-                        if st.button("Deny", key=f"deny_team_{req.get('request_id')}", type="secondary", use_container_width=True):
-                            deny_team_request(req.get("request_id"), (st.session_state.current_profile or {}).get("display_name"))
-                            st.rerun()
-
-            # 1. Pending requests (first, no dropdown)
+            # Section 1: Pending requests (first, main section)
             st.markdown("**Pending requests**")
             if not _pending:
                 st.caption("No pending requests.")
             else:
-                for req in reversed(_pending):
+                for req in _pending:
                     _req_title = f"⏳ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
                     with st.expander(_req_title, expanded=True):
-                        _render_request_detail(req, show_actions=True)
+                        st.markdown(f"**Requester:** {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
+                        st.markdown(f"**Team name:** {req.get('team_name', '—')}")
+                        st.markdown(f"**Age group:** {req.get('age_group', '—')} | **Level:** {req.get('level', '—')} | **Season:** {req.get('season', '—')}")
+                        st.markdown(f"**Submitted:** {req.get('created_at', '—')}")
+                        _ar1, _ar2 = st.columns(2)
+                        with _ar1:
+                            if st.button("Approve", key=f"approve_team_{req.get('request_id')}", type="primary", use_container_width=True):
+                                team = approve_team_request(req.get("request_id"))
+                                if team:
+                                    requester_uid = req.get("requester_user_id")
+                                    if requester_uid:
+                                        prof = load_profile(requester_uid)
+                                        if prof:
+                                            ids = list(prof.get("coached_team_ids") or [])
+                                            if team["team_id"] not in ids:
+                                                ids.append(team["team_id"])
+                                                prof["coached_team_ids"] = ids
+                                            cache = list(prof.get("coached_teams_cache") or [])
+                                            existing_ids = {t.get("team_id") for t in cache}
+                                            if team["team_id"] not in existing_ids:
+                                                cache.append(dict(team))
+                                                prof["coached_teams_cache"] = cache
+                                            save_profile(prof)
+                                    st.success(f"Team **{team['team_name']}** created. Invite code: **{team['invite_code']}**")
+                                st.rerun()
+                        with _ar2:
+                            if st.button("Deny", key=f"deny_team_{req.get('request_id')}", type="secondary", use_container_width=True):
+                                deny_team_request(req.get("request_id"), (st.session_state.current_profile or {}).get("display_name"))
+                                st.rerun()
 
-            # 2. Accepted requests (dropdown)
-            with st.expander(f"**Accepted requests** ({len(_approved)})", expanded=False):
-                if not _approved:
+            st.markdown("---")
+
+            # Section 2: Accepted requests (dropdown)
+            with st.expander(f"**Accepted requests** ({len(_accepted)})", expanded=False):
+                if not _accepted:
                     st.caption("No accepted requests yet.")
                 else:
-                    for req in reversed(_approved):
-                        _req_title = f"✓ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
-                        with st.expander(_req_title, expanded=False):
-                            _render_request_detail(req, show_actions=False)
+                    for req in _accepted:
+                        st.markdown(f"✓ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})")
+                        st.markdown(f"  Requester: {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')}) · Age: {req.get('age_group', '—')} · Level: {req.get('level', '—')}")
+                        if req.get("invite_code"):
+                            st.caption(f"  Invite code: **{req['invite_code']}**")
+                        st.markdown("")
 
-            # 3. Denied requests (dropdown)
+            # Section 3: Denied requests (dropdown)
             with st.expander(f"**Denied requests** ({len(_denied)})", expanded=False):
                 if not _denied:
                     st.caption("No denied requests.")
                 else:
-                    for req in reversed(_denied):
-                        _req_title = f"✗ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})"
-                        with st.expander(_req_title, expanded=False):
-                            _render_request_detail(req, show_actions=False)
+                    for req in _denied:
+                        st.markdown(f"✗ **{req.get('team_name', '—')}** — {req.get('requester_display_name', '—')} ({req.get('created_at', '')[:10]})")
+                        st.markdown(f"  Requester: {req.get('requester_display_name', '—')} ({req.get('requester_user_id', '—')})")
+                        st.markdown("")
     except Exception as e:
         st.error(f"Team Requests: {e}")
 
@@ -5161,7 +5253,7 @@ if _admin and st.session_state.get("admin_tab") == "Bender Teams":
         st.session_state.bender_teams_join_success = None
     try:
         from ui_bender_teams import render_bender_teams_coach
-        render_bender_teams_coach(load_profile, save_profile, _generate_via_engine)
+        render_bender_teams_coach(load_profile, save_profile)
     except Exception as e:
         st.error(f"Bender Teams: {e}")
 

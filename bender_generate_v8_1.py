@@ -177,7 +177,7 @@ def drill_equipment_list(d: Dict[str, Any]) -> List[str]:
     """
     Parse equipment string into list of required items (each must be satisfied).
     Comma separates distinct equipment tags (AND: all required).
-    '&' / 'and' within a tag is normalized; multiple words in one tag stay together.
+    '&' / ' and ' / '+' within a tag splits items; use word-boundary so 'Band' is not split into 'B'.
     """
     raw = norm(get(d, "equipment", default=""))
     if not raw:
@@ -188,7 +188,8 @@ def drill_equipment_list(d: Dict[str, Any]) -> List[str]:
     parts = [p.strip() for p in r.split(",") if p.strip()]
     out: List[str] = []
     for p in parts:
-        out.extend([x.strip() for x in p.split("and") if x.strip()])
+        # Split on " and ", " + ", " & " (word boundaries) — avoid breaking "Band" into "B"
+        out.extend([x.strip() for x in re.split(r"\s+(?:and|\+)\s+", p) if x.strip()])
     return out
 
 
@@ -1217,11 +1218,11 @@ def _opposing_push_pull(mp: str) -> Optional[str]:
 # Formatting (display names only — no drill IDs in output)
 # ------------------------------
 def _display_name(d: Dict[str, Any]) -> str:
-    """Name for user-facing output; strips any leading drill ID (e.g. SH_010, WU_005) if present.
+    """Name for user-facing output; strips any leading drill ID (e.g. SH_010, WU_005, CD_017) if present.
     When inspired_by is a player (not 'self'), appends full name in parentheses."""
     name = norm(get(d, "name", default="(unnamed)"))
-    # Strip leading ID pattern: 2–4 letters, underscore, digits, optional space
-    base = re.sub(r"^[A-Z]{2,4}_\d+\s+", "", name).strip() or name
+    # Strip leading drill ID pattern: 2–5 letters, underscore, digits, optional space (e.g. SK_001, CD_017, MC_007)
+    base = re.sub(r"(?i)^[A-Za-z]{2,5}_\d+\s*", "", name).strip() or name
     inspired = norm(get(d, "inspired_by", ""))
     if inspired and inspired.lower() != "self":
         return f"{base} ({inspired})"
@@ -1296,12 +1297,10 @@ def build_skating_mechanics_sequential(
     total_min = max(1, int(round(total_sec / 60)))
     lines.append("Do each in order. Rest 30–45s after each rep; then next drill.")
     for d, sets, reps, rep_dur in result:
-        did = norm(get(d, "id", ""))
         name = _display_name(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
-        lines.append(f"- {prefix}{name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
+        lines.append(f"- {name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
         eq = _equipment_display(d) or "None"
         lines.append(f"  Equipment: {eq}")
         if cues:
@@ -1738,13 +1737,11 @@ def build_stickhandling_blocks_session(
             current_block = block
             lines.append("")
             lines.append(block_labels.get(block, block))
-        did = norm(get(d, "id", ""))
         name = _display_name(d)
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
-        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
-        lines.append(f"- {prefix}{name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
+        lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
         eq = _stickhandling_special_equipment(d) or "Puck & stick"
         lines.append(f"  Equipment: {eq}")
         if cue:
@@ -2053,14 +2050,12 @@ def build_shooting_blocks_session(
         if section != current_section:
             current_section = section
             lines.append(f"\n{block_labels.get(section, section.upper())}")
-        did = norm(get(d, "id", ""))
         reps = _parse_default_reps(d)
         equip = _equipment_display(d)
         cues = norm(get(d, "coaching_cues", ""))
         steps = norm(get(d, "step_by_step", ""))
         name = _display_name(d)
-        prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
-        line = f"- {prefix}{name} | {sets} x {reps}"
+        line = f"- {name} | {sets} x {reps}"
         line += f"\n  Equipment: {equip or 'None'}"
         if cues:
             line += f"\n  Cues: {cues}"
@@ -2422,15 +2417,13 @@ def build_conditioning_single_block(
 
     mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
 
-    did = norm(get(drill, "id", ""))
     name = _display_name(drill)
-    prefix = f"{did} " if did and re.match(r"^[A-Z]{2,4}_\d{3}$", did) else ""
     cue = norm(get(drill, "coaching_cues", ""))
     wrp = norm(get(drill, "work_rest_profile", "")).lower()
 
     lines: List[str] = []
     lines.append(f"Conditioning ({minutes} min) | {mode_label}")
-    lines.append(f"- {prefix}{name}")
+    lines.append(f"- {name}")
 
     if _is_hill_or_stairs_conditioning(drill):
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
@@ -3930,7 +3923,7 @@ def build_heavy_leg_session(
                 if vm_s:
                     lines.append(vm_s.strip())
                 # Block 2: explosive exercise with bracket, directions before cues, video
-                lines.append(f"- └ {explosive_name} | 6 reps")
+                lines.append(f"- └ {explosive_name} (bodyweight) | 6 reps")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
                 equip_e = _equipment_display(explosive_d) or "None"
                 lines.append(f"  Equipment: {equip_e}")
@@ -5165,7 +5158,7 @@ _EQUIPMENT_DISPLAY_EXCLUDE = {
 
 # Puck Mastery special equipment: always show when drills require it (never exclude)
 _EQUIPMENT_PUCK_MASTERY_ALWAYS_SHOW = frozenset(
-    x.lower() for x in ("BOSU ball", "metal plate", "2 extra sticks", "Resistance band", "Partner")
+    x.lower() for x in ("BOSU ball", "metal plate", "2 extra sticks", "Resistance band")
 )
 
 
@@ -5287,8 +5280,14 @@ def generate_session(
                 pass
         return plan_text
 
+    def _strip_drill_ids_from_output(text: str) -> str:
+        """Remove any drill ID patterns (e.g. SK_001, CD_017) from output so they are never shown to users."""
+        # Match drill ID at start of line after "- " (e.g. "- SK_001 Carioca" -> "- Carioca")
+        return re.sub(r"^(\s*-\s*)([A-Za-z]{2,5}_\d+\s+)", r"\1", text, flags=re.MULTILINE)
+
     def _return_with_equipment(text: str):
         equip = extract_equipment_from_plan(text, data)
+        text = _strip_drill_ids_from_output(text)
         # Skating mechanics: never show "Minimal"; output actual equipment (None if bodyweight-only)
         if session_mode in ("skating_mechanics", "movement", "speed_agility") and not equip:
             equip = ["None"]

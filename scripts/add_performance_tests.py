@@ -31,6 +31,10 @@ def main():
         vj = round(random.uniform(18.5, 26.0), 1)
         # 5-10-5: seconds, lower is better, typical 4.3–5.4
         agility = round(random.uniform(4.25, 5.45), 2)
+        # Broad jump: inches, U16 typical 75–110 (NHL elite 100–130+)
+        broad = round(random.uniform(75, 110), 1)
+        # Pull-ups: reps, U16 typical 5–18
+        pullups = random.randint(5, 18)
         # Shooting / stickhandling / conditioning: 0–100
         shooting = random.randint(35, 98)
         stick = random.randint(40, 95)
@@ -38,6 +42,8 @@ def main():
         data["performance_tests"] = {
             "vertical_jump": f"{vj} in",
             "agility_5_10_5": f"{agility} s",
+            "broad_jump": f"{broad} in",
+            "pull_ups": str(pullups),
             "shooting_tests": str(shooting),
             "stickhandling_tests": str(stick),
             "conditioning_test": str(cond),
