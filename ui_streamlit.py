@@ -1224,6 +1224,7 @@ def _render_bender_board() -> None:
         if "bender_board_dialog_uid" in st.session_state:
             del st.session_state["bender_board_dialog_uid"]
         st.session_state["bender_board_dismiss_token"] = st.session_state.get("bender_board_dismiss_token", 0) + 1
+        st.rerun()
 
     @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss, width="small")
     def _show_player_card_dialog(uid: str) -> None:
@@ -1305,7 +1306,7 @@ def _render_bender_board() -> None:
                         st.markdown(f":orange[**{_name}**] *(you)*")
                     else:
                         with st.popover(_name, type="secondary"):
-                            if st.button("View card", key=f"bender_view_card_{_uid}_{_dismiss_tok}"):
+                            if st.button("View Player Card", key=f"bender_view_card_{_uid}_{_dismiss_tok}"):
                                 st.session_state.bender_board_dialog_uid = _uid
                                 _show_player_card_dialog(_uid)
                 with _c3:
