@@ -5205,6 +5205,15 @@ def extract_equipment_from_plan(plan_text: str, data: Dict[str, List[Dict[str, A
                     if key not in seen_raw:
                         seen_raw[key] = leg2can.get(key, raw)
                 break
+    # Fallback: parse "Equipment: X" lines from text (skating mechanics output has no drill IDs)
+    for raw in re.findall(r"^\s*Equipment:\s*(.+)$", plan_text or "", re.M | re.I):
+        for part in re.split(r"[,+]|\s+\+\s+", norm(raw)):
+            p = part.strip()
+            if p and p.lower() not in ("none", "no", "bodyweight") and p.lower() not in _EQUIPMENT_DISPLAY_EXCLUDE:
+                key = p.lower()
+                can = leg2can.get(key, p)
+                if key not in seen_raw and (can or p):
+                    seen_raw[key] = leg2can.get(key, p) or p
     return list(dict.fromkeys(seen_raw.values()))
 
 
