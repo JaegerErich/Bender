@@ -90,6 +90,15 @@ def _collect_equipment_from_session(equipment_by_mode: dict, key_prefix: str) ->
     return out
 
 
+def _merge_equipment_preserve_unknown(
+    new_equip: list, existing_equip: list, equipment_by_mode: dict
+) -> list:
+    """Merge new UI selection with existing equipment not in the canonical UI (prevents accidental deletion)."""
+    all_canonical = {o for opts in equipment_by_mode.values() for o in opts if o != "None"}
+    preserve = [e for e in (existing_equip or []) if e not in all_canonical]
+    return list(dict.fromkeys(list(new_equip) + preserve))
+
+
 def save_custom_plan_request(request: dict) -> None:
     """Append a new custom plan request."""
     requests = load_custom_plan_requests()
@@ -3810,34 +3819,40 @@ if st.session_state.current_user_id is None:
         st.markdown("**Review & create**")
         st.json({k: v for k, v in _data.items() if k != "password"})
         if st.button("Create account", key="btn_create"):
-            salt_hex, hash_hex = _hash_password(_data.get("password", ""))
-            profile = {
-                "user_id": _sanitize_user_id(_data.get("username", "")),
-                "display_name": _data.get("username", ""),
-                "age": int(_data.get("age", 16)),
-                "position": _data.get("position", "Forward"),
-                "current_level": _data.get("current_level", "Youth"),
-                "team": (_data.get("team") or "").strip(),
-                "height": (_data.get("height") or "").strip(),
-                "weight": (_data.get("weight") or "").strip(),
-                "equipment": equip,
-                "equipment_setup_done": True,
-                "password_salt": salt_hex,
-                "password_hash": hash_hex,
-                "created_at": datetime.now().isoformat(),
-                "updated_at": datetime.now().isoformat(),
-            }
-            try:
-                from bender_leveling import ensure_leveling_defaults
-                profile = ensure_leveling_defaults(profile)
-            except Exception:
-                pass
-            save_profile(profile)
-            st.session_state.creation_success = "Account created. Please log in."
-            st.session_state.auth_page = "login"
-            for k in ("create_account_step", "create_account_data"):
-                st.session_state.pop(k, None)
-            st.rerun()
+            # Ensure all required steps completed before creating (no partial accounts)
+            req = ["username", "password", "age", "position", "current_level", "performance_setup"]
+            missing = [k for k in req if (k == "age" and _data.get("age") is None) or (k != "age" and not _data.get(k))]
+            if missing:
+                st.error("Please complete all steps. Missing: " + ", ".join(missing) + ". Use Back to fill them in.")
+            else:
+                salt_hex, hash_hex = _hash_password(_data.get("password", ""))
+                profile = {
+                    "user_id": _sanitize_user_id(_data.get("username", "")),
+                    "display_name": _data.get("username", ""),
+                    "age": int(_data.get("age", 16)),
+                    "position": _data.get("position", "Forward"),
+                    "current_level": _data.get("current_level", "Youth"),
+                    "team": (_data.get("team") or "").strip(),
+                    "height": (_data.get("height") or "").strip(),
+                    "weight": (_data.get("weight") or "").strip(),
+                    "equipment": equip,
+                    "equipment_setup_done": True,
+                    "password_salt": salt_hex,
+                    "password_hash": hash_hex,
+                    "created_at": datetime.now().isoformat(),
+                    "updated_at": datetime.now().isoformat(),
+                }
+                try:
+                    from bender_leveling import ensure_leveling_defaults
+                    profile = ensure_leveling_defaults(profile)
+                except Exception:
+                    pass
+                save_profile(profile)
+                st.session_state.creation_success = "Account created. Please log in."
+                st.session_state.auth_page = "login"
+                for k in ("create_account_step", "create_account_data"):
+                    st.session_state.pop(k, None)
+                st.rerun()
 
     if _step > 1:
         if st.button("← Back", key="create_back"):
@@ -3854,6 +3869,15 @@ if st.session_state.current_user_id is None:
 # ---------- Required: Equipment onboarding (before first workout) ----------
 if st.session_state.page == "equipment_onboarding":
     prof = st.session_state.current_profile or {}
+    # Restore equipment from disk if in-memory has less (prevents equipment loss)
+    _onb_uid = prof.get("user_id") or st.session_state.get("current_user_id")
+    if _onb_uid:
+        _onb_disk = load_profile(str(_onb_uid))
+        _onb_disk_equip = _onb_disk.get("equipment") or [] if _onb_disk else []
+        _onb_mem_equip = prof.get("equipment") or []
+        if _onb_disk_equip and len(_onb_disk_equip) > len(_onb_mem_equip):
+            prof["equipment"] = _onb_disk_equip
+            st.session_state.current_profile = prof
     st.markdown("#### Set up your equipment")
     st.caption("Choose what you have so we can build the right workouts. You can change this anytime in the sidebar.")
     try:
@@ -3868,7 +3892,8 @@ if st.session_state.page == "equipment_onboarding":
         if not selected:
             st.warning("Select at least one option so we can build workouts.")
         else:
-            prof["equipment"] = selected
+            existing = prof.get("equipment") or []
+            prof["equipment"] = _merge_equipment_preserve_unknown(selected, existing, equipment_by_mode)
             prof["equipment_setup_done"] = True
             st.session_state.current_profile = prof
             save_profile(prof)
@@ -3917,12 +3942,14 @@ with st.sidebar:
         except Exception:
             equipment_by_mode = {"Performance": ["None"], "Puck Mastery": [], "Conditioning": ["None"], "Skating Mechanics": ["None"], "Mobility": ["None"]}
         prof = st.session_state.current_profile or {}
-        # Restore equipment from disk when in-memory profile lost it (e.g. session clear, rerun)
+        # Restore equipment from disk when in-memory profile has less (prevents equipment deletion from session/rerun bugs)
         _uid = prof.get("user_id") or st.session_state.get("current_user_id")
         if _uid:
             _disk_prof = load_profile(str(_uid))
-            if _disk_prof and (_disk_prof.get("equipment") or []) and not (prof.get("equipment") or []):
-                prof["equipment"] = _disk_prof["equipment"]
+            _disk_equip = _disk_prof.get("equipment") or [] if _disk_prof else []
+            _mem_equip = prof.get("equipment") or []
+            if _disk_equip and len(_disk_equip) > len(_mem_equip):
+                prof["equipment"] = _disk_equip
                 st.session_state.current_profile = prof
         _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
         current_equip = set(_canonicalize(prof.get("equipment") or []) if _canonicalize else (prof.get("equipment") or []))
@@ -3931,13 +3958,15 @@ with st.sidebar:
         if st.button("Save equipment", key="sidebar_save"):
             new_equip = _collect_equipment_from_session(equipment_by_mode, _equip_prefix)
             existing_equip = prof.get("equipment") or []
-            if existing_equip and not new_equip:
+            # Preserve any equipment not in canonical UI (prevents accidental deletion from session/UI bugs)
+            final_equip = _merge_equipment_preserve_unknown(new_equip, existing_equip, equipment_by_mode)
+            if existing_equip and not final_equip:
                 if not st.session_state.get("sidebar_confirm_clear_equipment"):
                     st.session_state.sidebar_confirm_clear_equipment = True
                     st.warning("This will clear all equipment. Click Save again to confirm, or cancel by refreshing.")
                     st.rerun()
                 del st.session_state.sidebar_confirm_clear_equipment
-            prof["equipment"] = new_equip
+            prof["equipment"] = final_equip
             prof["position"] = st.session_state.get("sidebar_position", prof.get("position") or "Forward")
             prof["current_level"] = st.session_state.get("sidebar_level", prof.get("current_level") or "Youth")
             prof["team"] = (st.session_state.get("sidebar_team") or "").strip()
