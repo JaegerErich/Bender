@@ -1224,7 +1224,6 @@ def _render_bender_board() -> None:
         if "bender_board_dialog_uid" in st.session_state:
             del st.session_state["bender_board_dialog_uid"]
         st.session_state["bender_board_dismiss_token"] = st.session_state.get("bender_board_dismiss_token", 0) + 1
-        st.rerun()
 
     @st.dialog("Player card", dismissible=True, on_dismiss=_on_player_card_dismiss, width="small")
     def _show_player_card_dialog(uid: str) -> None:
