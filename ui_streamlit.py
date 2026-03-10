@@ -3736,13 +3736,21 @@ if st.session_state.current_user_id is None:
 
     elif _step == 5:
         st.markdown("**What's your gym setup?**")
-        st.caption("Select one. We'll set equipment and conditioning automatically.")
+        st.caption("Select one. Equipment and conditioning are set automatically.")
         perf_opts = [
-            ("full_gym", "Full-Gym Access: Barbells, racks, machines, sleds, etc."),
-            ("garage_gym", "Garage Gym / Small Gym: Dumbbells, Kettlebells, bench, basic equipment"),
-            ("minimal", "Minimal equipment: bodyweight, bands, etc."),
+            ("full_gym", "Full-Gym Access", "Barbells, racks, machines, sleds, etc."),
+            ("garage_gym", "Garage Gym / Small Gym", "Dumbbells, Kettlebells, bench, basic equipment"),
+            ("minimal", "Minimal Equipment", "Bodyweight, bands, etc."),
         ]
-        sel = st.radio("Performance", options=[o[0] for o in perf_opts], format_func=lambda x: next(t for k, t in perf_opts if k == x), index=0, key="create_perf", label_visibility="collapsed")
+        sel = st.radio(
+            "Performance",
+            options=[o[0] for o in perf_opts],
+            format_func=lambda x: next(t[1] for t in perf_opts if t[0] == x),
+            index=0,
+            key="create_perf",
+            label_visibility="collapsed",
+            captions=[t[2] for t in perf_opts],
+        )
         if st.button("Continue", key="create_step5"):
             st.session_state.create_account_data = {**_data, "performance_setup": sel}
             _next_step()
@@ -3750,11 +3758,16 @@ if st.session_state.current_user_id is None:
     elif _step == 6:
         st.markdown("**Puck Mastery** — select all that apply")
         pm_opts = [
-            ("shooting_area", "Shooting area"),
-            ("stickhandling_area", "Stickhandling area"),
-            ("puck_tools", "Puck Handling tools: Bosu ball, bands, metal plates, extra sticks"),
+            ("shooting_area", "Shooting area", "Shooting pad, net"),
+            ("stickhandling_area", "Stickhandling area", "Stickhandling ball"),
+            ("puck_tools", "Puck Handling tools", "BOSU ball, bands, metal plates, extra sticks"),
         ]
-        pm_sel = [k for k, label in pm_opts if st.checkbox(label, key=f"create_pm_{k}")]
+        pm_sel = []
+        for k, label, cap in pm_opts:
+            with st.container():
+                if st.checkbox(label, key=f"create_pm_{k}"):
+                    pm_sel.append(k)
+                st.caption(cap)
         if st.button("Continue", key="create_step6"):
             st.session_state.create_account_data = {**_data, "puck_mastery": pm_sel}
             _next_step()
@@ -3762,11 +3775,16 @@ if st.session_state.current_user_id is None:
     elif _step == 7:
         st.markdown("**What tools do you have for skating drills?** — select all that apply")
         skate_opts = [
-            ("markers_lines", "Markers & lines: cones, tape, floor lines"),
-            ("agility", "Agility equipment: agility ladder, hurdles, mini hurdles, box"),
-            ("training_tools", "Training tools: bands, reaction ball, bosu ball, hills"),
+            ("markers_lines", "Markers & lines", "Cones, tape, floor lines"),
+            ("agility", "Agility equipment", "Ladder, hurdles, mini hurdles, box"),
+            ("training_tools", "Training tools", "Bands, reaction ball, BOSU ball, hills"),
         ]
-        skate_sel = [k for k, label in skate_opts if st.checkbox(label, key=f"create_skate_{k}")]
+        skate_sel = []
+        for k, label, cap in skate_opts:
+            with st.container():
+                if st.checkbox(label, key=f"create_skate_{k}"):
+                    skate_sel.append(k)
+                st.caption(cap)
         if st.button("Continue", key="create_step7"):
             st.session_state.create_account_data = {**_data, "skating": skate_sel}
             _next_step()
@@ -3774,7 +3792,6 @@ if st.session_state.current_user_id is None:
     elif _step == 8:
         st.markdown("**Recovery / Mobility**")
         has_foam_roller = st.checkbox("Foam roller", key="create_foam_roller")
-        st.caption("Bench is assumed from your Performance setup.")
         if st.button("Continue", key="create_step8"):
             st.session_state.create_account_data = {**_data, "foam_roller": has_foam_roller}
             _next_step()
@@ -3816,7 +3833,30 @@ if st.session_state.current_user_id is None:
         equip = list(dict.fromkeys(equip))
 
         st.markdown("**Review & create**")
-        st.json({k: v for k, v in _data.items() if k != "password"})
+        with st.container(border=True):
+            _r = _data
+            col1, col2 = st.columns(2)
+            with col1:
+                st.markdown("**Account**")
+                st.markdown(f"**{_r.get('username', '')}**")
+                st.caption(f"Age {_r.get('age', '—')} · {_r.get('position', '—')} · {_r.get('current_level', '—')}")
+                if _r.get("team"):
+                    st.caption(f"Team: {_r.get('team')}")
+                if _r.get("height") or _r.get("weight"):
+                    st.caption(f"{_r.get('height', '') or '—'} / {_r.get('weight', '') or '—'}")
+            with col2:
+                st.markdown("**Equipment**")
+                _perf_labels = {"full_gym": "Full-Gym Access", "garage_gym": "Garage Gym", "minimal": "Minimal"}
+                st.caption(f"Performance: {_perf_labels.get(_r.get('performance_setup'), _r.get('performance_setup', '—'))}")
+                _pm = _r.get("puck_mastery") or []
+                _sk = _r.get("skating") or []
+                _pm_labels = {"shooting_area": "Shooting", "stickhandling_area": "Stickhandling", "puck_tools": "Puck tools"}
+                _sk_labels = {"markers_lines": "Markers & lines", "agility": "Agility", "training_tools": "Training tools"}
+                if _pm or _sk:
+                    st.caption("Puck: " + (", ".join(_pm_labels.get(p, p) for p in _pm) if _pm else "—"))
+                    st.caption("Skating: " + (", ".join(_sk_labels.get(s, s) for s in _sk) if _sk else "—"))
+                st.caption(f"Foam roller: {'Yes' if _r.get('foam_roller') else 'No'}")
+        st.markdown("")
         if st.button("Create account", key="btn_create"):
             # Ensure all required steps completed before creating (no partial accounts)
             req = ["username", "password", "age", "position", "current_level", "performance_setup"]
