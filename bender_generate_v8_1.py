@@ -1456,6 +1456,45 @@ def _skating_equipment_group(d: Dict[str, Any]) -> str:
     return "other"
 
 
+def _generic_equipment_group(d: Dict[str, Any]) -> str:
+    """Return equipment group for any drill (mobility, conditioning, etc.). Used for mild clustering bias."""
+    raw = norm(get(d, "equipment", default=""))
+    if not raw or raw.lower() in ("none", "no", "bodyweight", "no equipment"):
+        return "minimal"
+    low = raw.lower()
+    # Mobility-style
+    if "foam" in low or "roller" in low:
+        return "foam_roller"
+    if "lacrosse" in low:
+        return "lacrosse_ball"
+    if "medicine" in low or "med ball" in low or "medball" in low:
+        return "med_ball"
+    if "ball" in low:
+        return "ball"
+    if "strap" in low or "trx" in low:
+        return "strap"
+    # Movement-style (overlap with skating)
+    if "hurdle" in low:
+        return "hurdles" if "mini" not in low else "mini_hurdles"
+    if "ladder" in low:
+        return "ladder"
+    if "cone" in low:
+        return "cones"
+    if "box" in low:
+        return "box"
+    if "band" in low:
+        return "band"
+    if "bosu" in low:
+        return "bosu"
+    if "bike" in low:
+        return "bike"
+    if "treadmill" in low:
+        return "treadmill"
+    if "hill" in low:
+        return "hill"
+    return "other"
+
+
 def _stickhandling_special_equipment(d: Dict[str, Any]) -> Optional[str]:
     """Return only the extra equipment needed (exclude stick/puck); None if nothing special."""
     eq = norm(get(d, "equipment", "")).strip()
@@ -1660,10 +1699,10 @@ def build_stickhandling_blocks_session(
             candidates.sort(key=lambda d: preference_score(d))
         if focus_rule:
             candidates = sorted(candidates, key=lambda d: focus_multiplier_for_drill(d, focus_rule), reverse=True)
-        # Prefer drills that share equipment with already-selected drills (pull out BOSU once, use it 2x)
+        # Slight tendency to prefer drills that share equipment (pull out BOSU once, use it 2x)
         def equip_weight(d: Dict[str, Any]) -> float:
             g = _stickhandling_equipment_group(d)
-            return 2.0 if g != "minimal" and g in equip_groups else 1.0
+            return 1.25 if g != "minimal" and g in equip_groups else 1.0
         return pick_n(candidates, n=min(n, len(candidates)), rnd=rnd, focus_rule=focus_rule, extra_weight_fn=equip_weight)
 
     for block in ("control", "quick_hands", "game_transfer", "decision"):
@@ -2562,7 +2601,16 @@ def pick_mobility_drills(
         pool = [d for d in drills if is_active(d) and age_ok(d, age)]
     if not pool:
         return []
-    return pick_n(pool, n=n, rnd=rnd, focus_rule=focus_rule)
+    # Slight tendency to group drills with similar equipment (e.g. band drills together)
+    active_equip: set = set()
+    def equip_weight(d: Dict[str, Any]) -> float:
+        g = _generic_equipment_group(d)
+        return 1.2 if g != "minimal" and g in active_equip else 1.0
+    def on_pick(d: Dict[str, Any]) -> None:
+        g = _generic_equipment_group(d)
+        if g != "minimal":
+            active_equip.add(g)
+    return pick_n(pool, n=n, rnd=rnd, focus_rule=focus_rule, extra_weight_fn=equip_weight, on_chosen=on_pick)
 
 
 def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds: int) -> List[str]:
@@ -3625,7 +3673,18 @@ def build_foundation_session(
     if user_equipment is not None:
         sk_pool = [d for d in sk_pool if equipment_ok_for_user(d, user_equipment)]
     sk_pool = [d for d in sk_pool if drill_ok_for_stage(d, "foundation")]
-    sk_chosen = pick_n(sk_pool, n=min(4, max(2, sk_sec // 180)), rnd=rnd, focus_rule=focus_rule) if sk_pool else []
+    if sk_pool:
+        active_sk_equip: set = set()
+        def sk_equip_weight(d: Dict[str, Any]) -> float:
+            g = _skating_equipment_group(d)
+            return 1.2 if g != "minimal" and g in active_sk_equip else 1.0
+        def sk_on_pick(d: Dict[str, Any]) -> None:
+            g = _skating_equipment_group(d)
+            if g != "minimal":
+                active_sk_equip.add(g)
+        sk_chosen = pick_n(sk_pool, n=min(4, max(2, sk_sec // 180)), rnd=rnd, focus_rule=focus_rule, extra_weight_fn=sk_equip_weight, on_chosen=sk_on_pick)
+    else:
+        sk_chosen = []
     lines.append(f"\nSKATING MECHANICS (~{format_seconds_short(sk_sec)}) — mandatory")
     if not sk_chosen:
         lines.append("- Choose 2–3 skating mechanics drills from your program; focus on posture and edge control.")
@@ -5601,7 +5660,7 @@ def generate_session(
 
             def equip_weight(d: Dict[str, Any]) -> float:
                 g = _skating_equipment_group(d)
-                return 2.0 if g != "minimal" and g in active_equip else 1.0
+                return 1.25 if g != "minimal" and g in active_equip else 1.0
 
             def on_pick(d: Dict[str, Any]) -> None:
                 g = _skating_equipment_group(d)
@@ -5612,6 +5671,17 @@ def generate_session(
             # Cluster drills by equipment (hurdles together, etc.) so athletes don't switch gear often
             _SK_EQUIP_ORDER = ("minimal", "cones", "ladder", "hurdles", "mini_hurdles", "box", "band", "bosu", "line_tape", "reaction_ball", "partner", "other")
             chosen.sort(key=lambda d: (_SK_EQUIP_ORDER.index(g) if (g := _skating_equipment_group(d)) in _SK_EQUIP_ORDER else 99, _display_name(d)))
+        elif category in ("movement", "speed_agility", "skating_mechanics") and drills:
+            # Slight tendency to group drills with similar equipment
+            active_equip_mv: set = set()
+            def mv_equip_weight(d: Dict[str, Any]) -> float:
+                g = _skating_equipment_group(d)
+                return 1.2 if g != "minimal" and g in active_equip_mv else 1.0
+            def mv_on_pick(d: Dict[str, Any]) -> None:
+                g = _skating_equipment_group(d)
+                if g != "minimal":
+                    active_equip_mv.add(g)
+            chosen = pick_n(drills, n=min(count, len(drills)), rnd=rnd, focus_rule=focus_rule, extra_weight_fn=mv_equip_weight, on_chosen=mv_on_pick)
         else:
             chosen = pick_n(drills, n=min(count, len(drills)) if drills else count, rnd=rnd, focus_rule=focus_rule)
 
