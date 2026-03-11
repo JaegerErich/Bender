@@ -2351,7 +2351,8 @@ def get_conditioning_modes_for_equipment(user_equipment: Optional[List[str]]) ->
 
 
 def _conditioning_mode_match(d: Dict[str, Any], mode: str) -> bool:
-    """True if drill matches mode via equipment substring. mode: bike|treadmill|hill|cones|field."""
+    """True if drill matches mode via equipment substring. mode: bike|treadmill|hill|cones|field.
+    For field: only drills with NO equipment (bodyweight/none) — never cones, bike, treadmill, etc."""
     eq = norm(get(d, "equipment", "")).lower()
     if mode == "bike":
         return "bike" in eq
@@ -2362,7 +2363,7 @@ def _conditioning_mode_match(d: Dict[str, Any], mode: str) -> bool:
     if mode == "cones":
         return "cone" in eq
     if mode == "field":
-        return not any(x in eq for x in ("bike", "treadmill", "hill", "stair")) or not eq or "none" in eq
+        return equipment_ok(d, "none")  # Only bodyweight/no equipment; excludes cones, bike, treadmill, etc.
     return False
 
 
@@ -2447,7 +2448,11 @@ def build_conditioning_single_block(
     lines.append(f"Conditioning ({minutes} min) | {mode_label}")
     lines.append(f"- {name}")
 
-    if _is_hill_or_stairs_conditioning(drill):
+    if norm(get(drill, "id", "")) == "CD_003":
+        # Hill Sprint + Broad Jump Combo: sprint + rest + broad jump + rest; repeat for half the time (longer cycle)
+        half_min = max(1, minutes // 2)
+        lines.append(f"  1 hill sprint, 30 seconds rest, 1 hill broad jumping, 30 sec rest — repeat for {half_min} min")
+    elif _is_hill_or_stairs_conditioning(drill):
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
         lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
     elif norm(get(drill, "id", "")) == "CD_017":

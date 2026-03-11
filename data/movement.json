@@ -386,7 +386,7 @@
   {
     "id": "MC_020",
     "name": "Reaction Ball Drop",
-    "status": "active",
+    "status": "inactive",
     "movement_bucket": "reaction",
     "tags": "reaction, hand_eye, coordination",
     "movement_direction": "multi_directional",
@@ -732,7 +732,7 @@
     "intensity": "low-med",
     "age_min": 8,
     "age_max": 99,
-    "equipment": null,
+    "equipment": "Partner",
     "space": "10 yd lane",
     "step_by_step": "Start movement on clap cue",
     "coaching_cues": "Quick start, easy speed",

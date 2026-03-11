@@ -1511,6 +1511,11 @@ def _render_your_work_stats():
         '</div>'.format(shots, gym_min, skating_min, cond_min, stick_min, mob_min, total_min),
         unsafe_allow_html=True,
     )
+    st.markdown("")
+    request_plan_clicked = st.button("Request Custom Plan", type="secondary", key="request_custom_plan_btn")
+    if request_plan_clicked:
+        st.session_state.custom_plan_intake_open = True
+        st.rerun()
 # -----------------------------
 # Pretty workout renderer (UI only)
 # -----------------------------
@@ -4492,12 +4497,8 @@ def _render_training_session():
             # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
             # "Clear workout" or "Workout Complete".
 
-            # Generate session + Request Custom Plan — both buttons
+            # Generate session
             generate_clicked = st.button("Generate session", type="primary", key="generate_session_btn")
-            request_plan_clicked = st.button("Request Custom Plan", type="secondary", key="request_custom_plan_btn")
-            if request_plan_clicked:
-                st.session_state.custom_plan_intake_open = True
-                st.rerun()
             if generate_clicked:
                 profile = st.session_state.get("current_profile") or {}
                 user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
