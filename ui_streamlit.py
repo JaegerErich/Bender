@@ -162,6 +162,31 @@ def _profile_path(user_id: str) -> Path:
     return PROFILE_DIR / f"{user_id}.json"
 
 
+def _equipment_path(user_id: str) -> Path:
+    """Dedicated equipment file (backup) so preferences survive profile overwrites."""
+    return PROFILE_DIR / f"{user_id}.equipment.json"
+
+
+def _load_equipment_from_dedicated(user_id: str) -> list | None:
+    path = _equipment_path(user_id)
+    if not path.exists():
+        return None
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        eq = data.get("equipment") if isinstance(data, dict) else data
+        return eq if isinstance(eq, list) else None
+    except Exception:
+        return None
+
+
+def _save_equipment_to_dedicated(user_id: str, equipment: list) -> None:
+    path = _equipment_path(user_id)
+    PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"equipment": equipment or [], "updated_at": datetime.now().isoformat()}, f, indent=2)
+
+
 def load_profile(user_id: str) -> dict | None:
     path = _profile_path(user_id)
     if not path.exists():
@@ -174,6 +199,12 @@ def load_profile(user_id: str) -> dict | None:
             prof = ensure_leveling_defaults(prof)
         except Exception:
             pass
+        # Restore equipment from dedicated file if profile has less (backup survives overwrites)
+        ded = _load_equipment_from_dedicated(user_id)
+        prof_equip = prof.get("equipment") or []
+        if ded and len(ded) > len(prof_equip):
+            prof = dict(prof)
+            prof["equipment"] = ded
         return prof
     except Exception:
         return None
@@ -185,6 +216,20 @@ def save_profile(profile: dict) -> None:
         return
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     path = _profile_path(user_id)
+    # Preserve equipment from disk or dedicated file when incoming omits it (prevents loss from overwrites)
+    if "equipment" not in profile:
+        disk_equip = []
+        if path.exists():
+            try:
+                with open(path, encoding="utf-8") as f:
+                    disk_equip = json.load(f).get("equipment") or []
+            except Exception:
+                disk_equip = []
+        ded_equip = _load_equipment_from_dedicated(user_id) or []
+        best = disk_equip if len(disk_equip) >= len(ded_equip) else ded_equip
+        if best:
+            profile = dict(profile)
+            profile["equipment"] = best
     profile["updated_at"] = datetime.now().isoformat()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2)
@@ -847,8 +892,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
             st.caption("**Max Level Reached**")
         else:
             xp_remaining = max(0, next_xp - total)
-            st.progress(progress_pct)
-            st.caption(f"**{xp_remaining:,} points to Level {level + 1}**")
+            st.progress(progress_pct, text=f"**{xp_remaining:,} points to Level {level + 1}**")
     except Exception:
         st.progress(0.0)
         st.caption("—")
@@ -1376,8 +1420,12 @@ def _render_your_work_stats():
         level_prog = get_level_progress(prof)
         st.markdown('<p class="bender-level-heading">Bender Level</p>', unsafe_allow_html=True)
         st.markdown(f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>', unsafe_allow_html=True)
-        st.caption(f"Points: {level_prog['current_xp']:,} / {level_prog['next_xp']:,} ({level_prog['progress_pct']}%)")
-        st.progress(level_prog["progress_pct"] / 100.0)
+        _xp_rem = max(0, int(level_prog.get("next_xp") or 0) - int(level_prog.get("current_xp") or 0))
+        _next_lv = int(level_prog.get("level") or 1) + 1
+        if _next_lv <= 25:
+            st.progress(level_prog["progress_pct"] / 100.0, text=f"**{_xp_rem:,} points to Level {_next_lv}**")
+        else:
+            st.progress(level_prog["progress_pct"] / 100.0)
         st.markdown('<div class="bender-level-divider"></div>', unsafe_allow_html=True)
 
         # Category ranks
@@ -1392,8 +1440,12 @@ def _render_your_work_stats():
         for cat_key, cat_label in categories:
             cp = get_category_progress(prof, cat_key)
             st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(cp["title"])}</strong></p>', unsafe_allow_html=True)
-            st.caption(f"Points: {cp['current_xp']:,} / {cp['next_xp']:,} ({cp['progress_pct']}%)")
-            st.progress(cp["progress_pct"] / 100.0)
+            _cp_xp_rem = max(0, int(cp.get("next_xp") or 0) - int(cp.get("current_xp") or 0))
+            _cp_rank = int(cp.get("rank") or 1)
+            if _cp_rank < 8:
+                st.progress(cp["progress_pct"] / 100.0, text=f"**{_cp_xp_rem:,} points to Level {_cp_rank + 1}**")
+            else:
+                st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
 
         # Full XP workouts + badges (rank 8 + full XP milestones)
@@ -1478,7 +1530,8 @@ def _parse_video_url(line: str) -> str | None:
 
 def _video_url_to_embed(url: str) -> str | None:
     """Convert video URL to iframe embed URL (Cloudflare) or return as-is for direct video. Returns None for YouTube.
-    Cloudflare embeds get muted=true so the video does not take audio focus from the user's music."""
+    Cloudflare embeds get muted=true so the video does not take audio focus from the user's music.
+    loop=true so the video repeats until the user closes the player."""
     url = (url or "").strip()
     if "youtube.com" in url.lower() or "youtu.be" in url.lower():
         return None
@@ -1486,7 +1539,7 @@ def _video_url_to_embed(url: str) -> str | None:
         base = re.sub(r"/(manifest|downloads|thumbnails|hls|play|watch)/[^?#]*", "", url.split("?")[0], flags=re.I).rstrip("/")
         if not base.lower().endswith("/iframe"):
             base = f"{base}/iframe"
-        base += "&muted=true" if "?" in base else "?muted=true"
+        base += "&muted=true&loop=true" if "?" in base else "?muted=true&loop=true"
         return base
     return url
 
@@ -1802,8 +1855,8 @@ def render_workout_readable(text: str) -> None:
         else:
             with st.container(border=True):
                 st.subheader(label)
-                # Skip redundant captions (already in section title): Posterior Chain, Frontal/Adductor, Iso/Decel, Mobility
-                _redundant_tags = ("Section", "Strength", "Posterior Chain", "Frontal / Adductor", "Iso / Decel", "Mobility")
+                # Skip redundant captions (already in section title): Posterior Chain, Frontal/Adductor, Iso/Decel, Mobility, Shooting, Stickhandling
+                _redundant_tags = ("Section", "Strength", "Posterior Chain", "Frontal / Adductor", "Iso / Decel", "Mobility", "Shooting", "Stickhandling")
                 if tag and tag not in _redundant_tags:
                     st.caption(tag)
                 for i, (block_lines, video_url) in enumerate(blocks):
@@ -3932,9 +3985,11 @@ if st.session_state.page == "equipment_onboarding":
             st.warning("Select at least one option so we can build workouts.")
         else:
             existing = prof.get("equipment") or []
-            prof["equipment"] = _merge_equipment_preserve_unknown(selected, existing, equipment_by_mode)
+            final_equip = _merge_equipment_preserve_unknown(selected, existing, equipment_by_mode)
+            prof["equipment"] = final_equip
             prof["equipment_setup_done"] = True
             st.session_state.current_profile = prof
+            _save_equipment_to_dedicated(str(_onb_uid), final_equip)
             save_profile(prof)
             st.session_state.page = "main"
             st.success("Saved. Taking you to Bender.")
@@ -4147,7 +4202,7 @@ def _build_progression_animation_html(payload: dict) -> str:
 .bender-prog .level-row{{font-size:0.95rem;color:#aaa;margin-bottom:0.5rem}}
 .bender-prog .bar-wrap{{height:10px;background:#333;border-radius:6px;overflow:hidden;margin:0.5rem 0 1rem 0}}
 .bender-prog .bar-fill{{height:100%;background:linear-gradient(90deg,#2563eb,#3b82f6);border-radius:6px;transition:width 0.6s ease-out;width:0%}}
-.bender-prog .xp-to-next{{font-size:0.9rem;color:#888;margin-top:0.25rem}}
+.bender-prog .xp-to-next{{font-size:1.1rem;font-weight:600;color:#e0e0e0;margin-top:0.5rem}}
 .bender-prog .level-up{{text-align:center;padding:1rem;margin:1rem 0;background:rgba(34,197,94,0.15);border:1px solid #22c55e;border-radius:8px}}
 .bender-prog .level-up-title{{font-size:1rem;font-weight:700;color:#4ade80;letter-spacing:0.05em;margin-bottom:0.25rem}}
 .bender-prog .level-up-detail{{font-size:0.95rem;color:#ccc}}

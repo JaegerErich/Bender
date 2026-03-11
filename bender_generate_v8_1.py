@@ -1764,18 +1764,7 @@ def build_stickhandling_blocks_session(
     lines: List[str] = []
     lines.append(f"Stickhandling ({stickhandling_minutes} min)")
     lines.append(f"Format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
-    block_labels = {
-        "control": "A) Control/Touch",
-        "quick_hands": "B) Quick Hands",
-        "game_transfer": "C) Game Transfer",
-        "decision": "D) Decision/Pressure",
-    }
-    current_block = None
     for block, d, reps, assigned_time in result:
-        if block != current_block:
-            current_block = block
-            lines.append("")
-            lines.append(block_labels.get(block, block))
         name = _display_name(d)
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
@@ -2082,13 +2071,7 @@ def build_shooting_blocks_session(
     lines.append(f"Target: {target_shots} shots (+/- 10%) | {minutes} min session")
     lines.append("")
 
-    block_labels = {"warmup": "WARM-UP", "main": "MAIN"}
-    current_section = None
     for block, d, sets in sets_per:
-        section = "main" if block == "finisher" else block
-        if section != current_section:
-            current_section = section
-            lines.append(f"\n{block_labels.get(section, section.upper())}")
         reps = _parse_default_reps(d)
         equip = _equipment_display(d)
         cues = norm(get(d, "coaching_cues", ""))
