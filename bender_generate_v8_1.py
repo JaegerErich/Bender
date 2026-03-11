@@ -1631,7 +1631,7 @@ def build_stickhandling_blocks_session(
     if not pool:
         if available_equipment:
             return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
-        return [f"Stickhandling ({stickhandling_minutes} min)", "Format: 45s work / 30s rest per rep", "- [No matching drills found]"]
+        return [f"Stickhandling ({stickhandling_minutes} min)", "Timing format: 45s work / 30s rest per rep", "- [No matching drills found]"]
 
     total_sec = stickhandling_minutes * 60
     overhead_sec = max(60, round(total_sec * 0.10))
@@ -1763,7 +1763,7 @@ def build_stickhandling_blocks_session(
     total_min = max(1, round(total_time_sec / 60))
     lines: List[str] = []
     lines.append(f"Stickhandling ({stickhandling_minutes} min)")
-    lines.append(f"Format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
+    lines.append(f"Timing format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
     for block, d, reps, assigned_time in result:
         name = _display_name(d)
         cue = norm(get(d, "coaching_cues", ""))
