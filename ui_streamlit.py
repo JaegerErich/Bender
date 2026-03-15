@@ -678,14 +678,19 @@ def clear_last_output():
 
 
 def _parse_workout_header_for_metadata(text: str) -> dict:
-    """Parse BENDER SINGLE WORKOUT header for mode and len. Returns metadata dict or {}."""
+    """Parse BENDER SINGLE WORKOUT header for mode, len, and optional Difficulty: N/10. Returns metadata dict or {}."""
     import re as _re
     if not text or not isinstance(text, str):
         return {}
+    out = {}
     m = _re.search(r"mode=(\w+)\s*\|\s*len=(\d+)\s*min", text, _re.IGNORECASE)
     if m:
-        return {"mode": m.group(1).strip(), "minutes": int(m.group(2) or 0)}
-    return {}
+        out["mode"] = m.group(1).strip()
+        out["minutes"] = int(m.group(2) or 0)
+    dm = _re.search(r"Difficulty:\s*(\d+)/10", text)
+    if dm:
+        out["difficulty"] = int(dm.group(1))
+    return out
 
 
 # Training focus fallback by category (deprecated for bottom-left; use _get_bottom_left_quadrant)
@@ -4595,7 +4600,7 @@ def _render_training_session():
                             st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
                             _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
                             _meta_is_explosive = _is_explosive_day or (strength_emphasis == "explosiveness") if effective_mode == "performance" else False
-                            st.session_state.last_output_metadata = {
+                            _meta = {
                                 "mode": effective_mode,
                                 "minutes": int(minutes),
                                 "location": location,
@@ -4607,6 +4612,11 @@ def _render_training_session():
                                 "is_explosive_day": _meta_is_explosive,
                                 "equipment_used": _equip_used,
                             }
+                            # Use difficulty from output text when present (e.g. stickhandling "Difficulty: N/10")
+                            _diff_m = re.search(r"Difficulty:\s*(\d+)/10", out_text or "")
+                            if _diff_m:
+                                _meta["difficulty"] = int(_diff_m.group(1))
+                            st.session_state.last_output_metadata = _meta
                             st.session_state.scroll_to_workout = True
                             st.success("Generated")
                             # Force full rerun so next "Generate" tap is a fresh click (fixes mobile
