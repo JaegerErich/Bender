@@ -3142,11 +3142,13 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
 
 def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: str, rest_sec: Optional[int] = None) -> str:
     name = _display_name(d)
+    did = norm(get(d, "id", ""))
     equip = _equipment_display(d) or "None"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     rx = f"{sets} x {reps}"
-    line = f"- {name} | {rx}".strip()
+    prefix = f"- {did} " if did else "- "
+    line = f"{prefix}{name} | {rx}".strip()
     if rest_sec:
         line += f" | Rest {rest_sec}s"
     line += f"\n  Equipment: {equip}"
@@ -5160,7 +5162,7 @@ def last_circuit_signature_from_history(history: Dict[str, Any], mode: Optional[
     return tuple(sorted(ids))
 
 
-_DRILL_ID_RE = re.compile(r"^\s*-\s*([A-Z]{2,10}_[0-9]{3})\b", re.M)
+_DRILL_ID_RE = re.compile(r"^\s*-\s*([A-Za-z]{2,10}_[0-9]{3})\b", re.M | re.I)
 _CIRCUIT_ID_RE = re.compile(r"\(([A-Z]{2,10}_[0-9]{3})\)")
 
 
@@ -5264,7 +5266,8 @@ def _session_difficulty_from_plan(plan_text: str, data: Dict[str, List[Dict[str,
     Uses drill IDs found in plan_text and looks up each drill in data; averages
     difficulties (JSON uses 1-4) and rounds to 1-5 scale. Returns 3 if no drills found.
     """
-    ids = set(extract_ids_from_plan(plan_text or ""))
+    raw_ids = extract_ids_from_plan(plan_text or "")
+    ids = set((x or "").upper() for x in raw_ids if x)
     if not ids:
         return 3
     difficulties: List[float] = []
@@ -5272,7 +5275,7 @@ def _session_difficulty_from_plan(plan_text: str, data: Dict[str, List[Dict[str,
         if cat == "circuits" or not isinstance(drills, list):
             continue
         for d in drills:
-            did = norm(get(d, "id", ""))
+            did = norm(get(d, "id", "")).upper()
             if did and did in ids:
                 raw = d.get("difficulty")
                 try:
@@ -5361,7 +5364,7 @@ def generate_session(
     def _strip_drill_ids_from_output(text: str) -> str:
         """Remove any drill ID patterns (e.g. SK_001, CD_017) from output so they are never shown to users."""
         # Match drill ID at start of line after "- " (e.g. "- SK_001 Carioca" -> "- Carioca")
-        return re.sub(r"^(\s*-\s*)([A-Za-z]{2,5}_\d+\s+)", r"\1", text, flags=re.MULTILINE)
+        return re.sub(r"^(\s*-\s*)([A-Za-z]{2,10}_\d+\s+)", r"\1", text, flags=re.MULTILINE | re.IGNORECASE)
 
     def _return_with_equipment(text: str):
         equip = extract_equipment_from_plan(text, data)
