@@ -3153,11 +3153,11 @@ def _apply_strength_emphasis_guardrails(
     if lo > hi:
         lo, hi = hi, lo
 
-    # Single rep: rep_difficulty 1-5 biases toward low or high end of range
+    # Single rep: rep_difficulty 1-5 maps to band (e.g. Muscle Endurance 1→10, 5→25)
     if rep_difficulty is not None and 1 <= rep_difficulty <= 5:
         t = (rep_difficulty - 1) / 4.0  # 0 to 1
-        single_rep = round(lo + (hi - lo) * t)
-        single_rep = clamp(single_rep, lo, hi)
+        single_rep = round(min_r + (max_r - min_r) * t)
+        single_rep = clamp(single_rep, min_r, max_r)
     elif rnd is not None:
         single_rep = rnd.randint(lo, hi)
     else:
