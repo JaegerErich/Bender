@@ -34,9 +34,9 @@ _CURRENT_LAST_CIRCUIT_SIGNATURE: Tuple[str, ...] = tuple()
 # Presets (off-ice only)
 # ------------------------------
 PRESETS: Dict[str, Dict[str, Any]] = {
-    "30_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 30, "shooting_shots": 150},
-    "45_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 45, "shooting_shots": 220},
-    "60_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 60, "shooting_shots": 300},
+    "30_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 30, "shooting_shots": 600},
+    "45_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 45, "shooting_shots": 900},
+    "60_min_skills_off_ice": {"session_mode": "skills_only", "session_len_min": 60, "shooting_shots": 1200},
     "45_min_off_ice": {"session_mode": "movement", "session_len_min": 45},
     "in_season_lift": {
         "session_mode": "performance",
@@ -1937,7 +1937,8 @@ def build_shooting_blocks_session(
 ) -> List[str]:
     """
     Block-based shooting: Warm-up (mechanics), Main (quick release + skill), Finisher (puck retrieval/transition).
-    Uses default_reps as shot count, scaled by sets. Target shots from effective_minutes * 8, ±10%.
+    Uses default_reps as shot count, scaled by sets. Target shots from effective_minutes * 20 (~20 shots/min),
+    accounting for puck bucket refills and typical home setup (most players don't have 100s of pucks). ±10%.
     Output: "sets x default_reps" plus 1 coaching cue per drill.
     """
     pool = filter_shooting_pool(drills, age, athlete_skill, user_equipment)
@@ -1947,7 +1948,7 @@ def build_shooting_blocks_session(
         return ["- [No matching drills found]"]
 
     effective_minutes = minutes - max(2, round(minutes * 0.1))
-    target_shots = int(effective_minutes * 8)
+    target_shots = int(effective_minutes * 20)  # ~20 shots/min: bucket refill + limited pucks
     low = int(target_shots * 0.9)
     high = int(target_shots * 1.1)
 
@@ -5464,7 +5465,7 @@ def generate_session(
             shooting_min = max(0, session_len_min - to_int(stickhandling_min, 0))
 
         if shooting_shots is None or shooting_shots <= 0:
-            shooting_shots = max(120, int(max(1, shooting_min or 1) * 12))
+            shooting_shots = max(120, int(max(1, shooting_min or 1) * 20))  # ~20 shots/min (bucket refill)
 
     # Performance: decide optional post-lift conditioning (unless user sets it)
     if include_post_lift_conditioning is None:
