@@ -4528,12 +4528,19 @@ def _render_training_session():
 
             conditioning = False
             conditioning_type = None
+            game_within_48h = False
             if effective_mode == "performance":
-                conditioning = st.checkbox("Post-lift conditioning?", value=False)
-                if conditioning:
-                    conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
-                else:
-                    conditioning_type = None
+                _col_cond, _col_game = st.columns(2)
+                with _col_cond:
+                    conditioning = st.checkbox("Post-lift conditioning?", value=False)
+                    if conditioning:
+                        conditioning_type = st.selectbox("Post-lift type (gym)", ["bike", "treadmill", "surprise"])
+                    else:
+                        conditioning_type = None
+                with _col_game:
+                    game_within_48h = st.checkbox("Game within 48 hours?", value=False, key="perf_game_48h")
+                if game_within_48h:
+                    st.warning("Lifting heavy within 48 hours of a game will limit performance and is not suggested.")
 
             # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
             # "Clear workout" or "Workout Complete".
