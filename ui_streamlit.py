@@ -199,10 +199,9 @@ def load_profile(user_id: str) -> dict | None:
             prof = ensure_leveling_defaults(prof)
         except Exception:
             pass
-        # Restore equipment from dedicated file if profile has less (backup survives overwrites)
+        # Dedicated equipment file is source of truth once user has saved equipment (survives overwrites/logout)
         ded = _load_equipment_from_dedicated(user_id)
-        prof_equip = prof.get("equipment") or []
-        if ded and len(ded) > len(prof_equip):
+        if ded and len(ded) > 0:
             prof = dict(prof)
             prof["equipment"] = ded
         return prof
@@ -216,8 +215,9 @@ def save_profile(profile: dict) -> None:
         return
     PROFILE_DIR.mkdir(parents=True, exist_ok=True)
     path = _profile_path(user_id)
-    # Preserve equipment from disk or dedicated file when incoming omits it (prevents loss from overwrites)
-    if "equipment" not in profile:
+    # Never overwrite saved equipment: prefer dedicated file, then disk, when incoming omits or has empty
+    current_equip = profile.get("equipment") or []
+    if not current_equip:
         disk_equip = []
         if path.exists():
             try:
@@ -226,10 +226,17 @@ def save_profile(profile: dict) -> None:
             except Exception:
                 disk_equip = []
         ded_equip = _load_equipment_from_dedicated(user_id) or []
-        best = disk_equip if len(disk_equip) >= len(ded_equip) else ded_equip
+        # Prefer dedicated (user explicitly saved); else use whichever has more
+        best = ded_equip if ded_equip else disk_equip
         if best:
             profile = dict(profile)
             profile["equipment"] = best
+    # Before writing: never persist empty equipment if user has saved equipment in dedicated file
+    if not (profile.get("equipment") or []):
+        ded_equip = _load_equipment_from_dedicated(user_id) or []
+        if ded_equip:
+            profile = dict(profile)
+            profile["equipment"] = ded_equip
     profile["updated_at"] = datetime.now().isoformat()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(profile, f, indent=2)
@@ -927,8 +934,9 @@ def _compute_volume_from_metadata(metadata: dict) -> dict:
         # ~5 min mobility cooldown in every performance workout
         out["mobility_hours"] += 5 / 60.0
         if conditioning:
-            # ~6–8 min typical post-lift conditioning
-            out["conditioning_hours"] += 7 / 60.0  # ~7 min
+            # Post-lift conditioning length matches generator: 6 min if session < 60 min, else 8 min (cap 10)
+            post_lift_min = min(10, 8 if minutes >= 60 else 6)
+            out["conditioning_hours"] += post_lift_min / 60.0
     elif mode == "stickhandling":
         out["stickhandling_hours"] = hours
     elif mode == "shooting":
@@ -4084,6 +4092,7 @@ with st.sidebar:
             prof["height"] = (st.session_state.get("sidebar_height") or "").strip()
             prof["weight"] = (st.session_state.get("sidebar_weight") or "").strip()
             st.session_state.current_profile = prof
+            _save_equipment_to_dedicated(str(_uid), final_equip)
             save_profile(prof)
             st.session_state.collapse_sidebar_after_save = True
             st.session_state.equipment_expander_collapse_after_save = True
@@ -4540,7 +4549,10 @@ def _render_training_session():
                 with _col_game:
                     game_within_48h = st.checkbox("Game within 48 hours?", value=False, key="perf_game_48h")
                 if game_within_48h:
-                    st.warning("Lifting heavy within 48 hours of a game will limit performance and is not suggested.")
+                    st.warning(
+                        "Lifting heavy within 48 hours of a game will limit performance and is not suggested.\n\n"
+                        "**Limit lifting load by 50% to stay game ready.**"
+                    )
 
             # Do NOT auto-clear workout when inputs change. Workout persists until user clicks
             # "Clear workout" or "Workout Complete".
