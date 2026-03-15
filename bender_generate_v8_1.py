@@ -3127,8 +3127,15 @@ def _rep_range_for_emphasis(emphasis: str, fatigue_role: str) -> Optional[Tuple[
     return band
 
 
-def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: str, rnd: Optional[random.Random] = None) -> str:
-    """Clamp reps to Rep Range Guide and return a single rep number (not a range). Power 3-6, Strength 5-10, Muscle Endurance 10-25."""
+def _apply_strength_emphasis_guardrails(
+    emphasis: str,
+    fatigue_role: str,
+    reps: str,
+    rnd: Optional[random.Random] = None,
+    rep_difficulty: Optional[int] = None,
+) -> str:
+    """Clamp reps to Rep Range Guide and return a single rep number (not a range).
+    rep_difficulty 1-5 from UI: 1 = lower end of range (easier), 5 = higher end (harder)."""
     rep_part, suffix = _split_rep_suffix(reps)
     parsed = _parse_rep_numbers(rep_part)
     if parsed is None:
@@ -3145,8 +3152,12 @@ def _apply_strength_emphasis_guardrails(emphasis: str, fatigue_role: str, reps: 
     if lo > hi:
         lo, hi = hi, lo
 
-    # Output a single number in range (higher end = harder; used for difficulty)
-    if rnd is not None:
+    # Single rep: rep_difficulty 1-5 biases toward low or high end of range
+    if rep_difficulty is not None and 1 <= rep_difficulty <= 5:
+        t = (rep_difficulty - 1) / 4.0  # 0 to 1
+        single_rep = round(lo + (hi - lo) * t)
+        single_rep = clamp(single_rep, lo, hi)
+    elif rnd is not None:
         single_rep = rnd.randint(lo, hi)
     else:
         single_rep = (lo + hi) // 2
@@ -3851,6 +3862,7 @@ def build_heavy_leg_session(
     user_equipment: Optional[List[str]] = None,
     full_gym: bool = True,
     emphasis: str = "strength",
+    rep_difficulty: Optional[int] = None,
 ) -> List[str]:
     """
     Heavy Leg Day: Warmup → Primary Bilateral → Heavy Unilateral → Posterior Chain →
@@ -3903,7 +3915,7 @@ def build_heavy_leg_session(
     bilateral = [d for d in (loaded_only or pool) if primary_region(d) == "lower" and lift_role(d) == "primary" and strength_focus(d) == "max_strength" and not _unilateral(d)]
     b_pick = _pick_one(bilateral, used_ids, used_names)
     if b_pick:
-        reps_b = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "3-6", rnd=rnd)
+        reps_b = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "3-6", rnd=rnd, rep_difficulty=rep_difficulty)
         b_sec = _heavy_leg_est_sec(b_pick, 4, reps_b, 180)
         if total_strength_sec + b_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(b_pick, "id", "")))
@@ -3955,7 +3967,7 @@ def build_heavy_leg_session(
             sid, eid = HEAVY_UNILATERAL_SPECIAL_SUPERSETS[idx]
             strength_d = drill_by_id[sid]
             explosive_d = drill_by_id[eid]
-            reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "6-8", rnd=rnd)
+            reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "6-8", rnd=rnd, rep_difficulty=rep_difficulty)
             c_sec = _heavy_leg_est_sec(strength_d, 3, reps_c, 90) + 120  # +2 min for explosive
             # Include superset even if slightly over budget (prioritize superset over regular unilateral)
             if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC or total_strength_sec < strength_budget_sec:
@@ -3998,7 +4010,7 @@ def build_heavy_leg_session(
         unilateral_heavy = [d for d in (loaded_only or pool) if _unilateral(d) and lift_role(d) in ("primary", "secondary") and strength_focus(d) == "max_strength" and norm(get(d, "id", "")) not in used_ids]
         c_pick = _pick_one(unilateral_heavy, used_ids, used_names)
         if c_pick:
-            reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "3-6", rnd=rnd)
+            reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, "3-6", rnd=rnd, rep_difficulty=rep_difficulty)
             c_sec = _heavy_leg_est_sec(c_pick, 3, reps_c, 150)
             if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
                 used_ids.add(norm(get(c_pick, "id", "")))
@@ -4010,7 +4022,7 @@ def build_heavy_leg_session(
     hinge = [d for d in pool if movement_pattern(d) == "hinge" and primary_region(d) == "lower" and strength_focus(d) in ("hypertrophy", "strength") and norm(get(d, "id", "")) not in used_ids]
     d_pick = _pick_one(hinge, used_ids, used_names)
     if d_pick:
-        reps_d = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(d_pick, "default_reps") or "6-10", rnd=rnd)
+        reps_d = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(d_pick, "default_reps") or "6-10", rnd=rnd, rep_difficulty=rep_difficulty)
         d_sec = _heavy_leg_est_sec(d_pick, 3, reps_d, 120)
         if total_strength_sec + d_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(d_pick, "id", "")))
@@ -4022,7 +4034,7 @@ def build_heavy_leg_session(
     frontal = [d for d in pool if _tags_contain(d, "adductor", "adductors", "frontal_plane", "lateral_strength") and norm(get(d, "id", "")) not in used_ids]
     e_pick = _pick_one(frontal, used_ids, used_names)
     if e_pick:
-        reps_e = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, get(e_pick, "default_reps") or "6-10/side", rnd=rnd)
+        reps_e = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, get(e_pick, "default_reps") or "6-10/side", rnd=rnd, rep_difficulty=rep_difficulty)
         e_sec = _heavy_leg_est_sec(e_pick, 3, reps_e, 90)
         if total_strength_sec + e_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(e_pick, "id", "")))
@@ -4052,7 +4064,7 @@ def build_heavy_leg_session(
         fallback_pick = _pick_one(remaining, used_ids, used_names) if remaining else None
         if fallback_pick:
             lines.append("\nSTRENGTH")
-            reps_f = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(fallback_pick, "default_reps") or "6-10", rnd=rnd)
+            reps_f = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(fallback_pick, "default_reps") or "6-10", rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=reps_f, rest_sec=90))
 
     total_est_sec = HEAVY_LEG_WARMUP_SEC + total_strength_sec
@@ -4079,6 +4091,7 @@ def build_upper_core_stability_session(
     user_equipment: Optional[List[str]] = None,
     full_gym: bool = True,
     emphasis: str = "strength",
+    rep_difficulty: Optional[int] = None,
 ) -> List[str]:
     """
     Upper + Core Stability: Scap/RC Prep (2) → Primary Press (1) → Primary Pull (1) →
@@ -4155,7 +4168,7 @@ def build_upper_core_stability_session(
     uni_press = [d for d in press_pool if _unilateral(d)]
     b_pick = _pick_one(uni_press or press_pool, used_ids, used_names)
     if b_pick:
-        reps_b = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(b_pick, "default_reps") or "8-10", rnd=rnd)
+        reps_b = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(b_pick, "default_reps") or "8-10", rnd=rnd, rep_difficulty=rep_difficulty)
         b_sec = _est_upper(b_pick, 3, reps_b, 90)
         if total_strength_sec + b_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(b_pick, "id", "")))
@@ -4167,7 +4180,7 @@ def build_upper_core_stability_session(
     pull_pool = [d for d in pool if movement_pattern(d) == "pull" and _tags_contain(d, "posture", "scap_control") and norm(get(d, "id", "")) not in used_ids and not norm(get(d, "id", "")).upper().startswith("SC_")]
     c_pick = _pick_one(pull_pool, used_ids, used_names)
     if c_pick:
-        reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(c_pick, "default_reps") or "8-10", rnd=rnd)
+        reps_c = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(c_pick, "default_reps") or "8-10", rnd=rnd, rep_difficulty=rep_difficulty)
         c_sec = _est_upper(c_pick, 3, reps_c, 90)
         if total_strength_sec + c_sec <= strength_budget_sec + OVERBUILD_BUFFER_SEC:
             used_ids.add(norm(get(c_pick, "id", "")))
@@ -4236,7 +4249,7 @@ def build_upper_core_stability_session(
         fallback_pick = _pick_one(remaining, used_ids, used_names) if remaining else None
         if fallback_pick:
             lines.append("\nSTRENGTH")
-            reps_f = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(fallback_pick, "default_reps") or "8-10", rnd=rnd)
+            reps_f = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, get(fallback_pick, "default_reps") or "8-10", rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(format_strength_drill_with_prescription(fallback_pick, sets=3, reps=reps_f, rest_sec=90))
 
     total_est_sec = UPPER_CORE_WARMUP_SEC + total_strength_sec
@@ -4386,13 +4399,14 @@ def build_hockey_strength_session(
     day_type: str,
     session_len_min: int,
     emphasis: str = "strength",
+    rep_difficulty: Optional[int] = None,
     focus_rule: Optional[Dict[str, Any]] = None,
     include_finisher: Optional[bool] = None,
     full_gym: bool = True,
     post_lift_conditioning_type: Optional[str] = None,
     skate_within_24h: bool = False,
     user_equipment: Optional[List[str]] = None,
-) -> List[str]:    
+) -> List[str]:
     # No gym: circuits only
     if not full_gym:
         return build_bw_strength_circuits(
@@ -4919,24 +4933,24 @@ def build_hockey_strength_session(
         if include_block_a_part:
             if sec_a:
                 d = sec_a[0]
-                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=90))
             elif res_a:
                 d = res_a[0]
-                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=45))
         else:
             if not sec_a:
                 lines.append("- [No secondary strength lift found]")
             else:
                 d = sec_a[0]
-                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=90))
             if not res_a:
                 lines.append("- [No resilience drill found]")
             else:
                 d = res_a[0]
-                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(format_strength_drill_with_prescription(d, sets=sets_common_a, reps=reps, rest_sec=45))
 
     if include_block_b:
@@ -4945,13 +4959,13 @@ def build_hockey_strength_session(
             lines.append("- [No secondary strength lift found]")
         else:
             d = sec_b[0]
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx_sec["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(format_strength_drill_with_prescription(d, sets=sets_common_b, reps=reps, rest_sec=90))
         if not res_b:
             lines.append("- [No resilience drill found]")
         else:
             d = res_b[0]
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx_res["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(format_strength_drill_with_prescription(d, sets=sets_common_b, reps=reps, rest_sec=45))
 
     # SCAP / SHOULDER HEALTH ACCESSORY (guaranteed 1 on upper days)
@@ -4965,7 +4979,7 @@ def build_hockey_strength_session(
 
             # Use resilience-style RX (low stress, controlled)
             rx = _rx_for(emphasis, FATIGUE_ROLE_RESILIENCE) or _rx_for("strength", FATIGUE_ROLE_RESILIENCE)
-            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"], rnd=rnd)
+            reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_RESILIENCE, rx["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
 
             lines.append(
                 format_strength_drill_with_prescription(
@@ -4999,7 +5013,7 @@ def build_hockey_strength_session(
  
 
                 rx = _rx_for(emphasis, FATIGUE_ROLE_SECONDARY) or _rx_for("strength", FATIGUE_ROLE_SECONDARY)
-                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"], rnd=rnd)
+                reps = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_SECONDARY, rx["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
 
                 lines.append("\nPUSH / PULL BALANCE (auto-added)")
                 lines.append(
@@ -5354,6 +5368,7 @@ def generate_session(
     memory_sessions: int = 8,
     recent_penalty: float = 0.12,
     strength_emphasis: str = "strength",
+    rep_difficulty: Optional[int] = None,  # 1-5 from UI slider: 1 = lower reps, 5 = higher reps
     shooting_shots: Optional[int] = None,
     stickhandling_min: Optional[int] = None,
     shooting_min: Optional[int] = None,
@@ -5522,6 +5537,7 @@ def generate_session(
                     day_type=dt,
                     session_len_min=session_len_min,
                     emphasis=strength_emphasis,
+                    rep_difficulty=rep_difficulty,
                     focus_rule=focus_rule,
                     include_finisher=include_finisher,
                     full_gym=False,
@@ -5568,6 +5584,7 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                     emphasis=strength_emphasis,
+                    rep_difficulty=rep_difficulty,
                 )
                 if strength_lines is None:
                     return _return_with_equipment("BENDER_EQUIPMENT_REQUIRED\n\nEquipment is required.")
@@ -5595,6 +5612,7 @@ def generate_session(
                     user_equipment=user_equipment,
                     full_gym=strength_full_gym,
                     emphasis=strength_emphasis,
+                    rep_difficulty=rep_difficulty,
                 )
                 if strength_lines is None:
                     return _return_with_equipment("BENDER_EQUIPMENT_REQUIRED\n\nEquipment is required.")
@@ -5627,6 +5645,7 @@ def generate_session(
                 day_type=dt,
                 session_len_min=session_len_min,
                 emphasis=strength_emphasis,
+                rep_difficulty=rep_difficulty,
                 focus_rule=focus_rule,
                 include_finisher=include_finisher,
                 full_gym=strength_full_gym,

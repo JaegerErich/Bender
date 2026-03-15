@@ -2290,6 +2290,7 @@ def _generate_via_engine(payload: dict) -> dict:
     available_space = payload.get("available_space")
     conditioning_mode = payload.get("conditioning_mode")
     conditioning_effort = payload.get("conditioning_effort")
+    rep_difficulty = payload.get("rep_difficulty")  # 1-5 from slider; None for non-performance
     resp = ENGINE.generate_session(
         data=data,
         age=age,
@@ -2302,6 +2303,7 @@ def _generate_via_engine(payload: dict) -> dict:
         memory_sessions=8,
         recent_penalty=0.12,
         strength_emphasis=strength_emphasis,
+        rep_difficulty=rep_difficulty,
         shooting_shots=shooting_shots,
         stickhandling_min=stickhandling_min,
         shooting_min=shooting_min,
@@ -4471,6 +4473,10 @@ def _render_training_session():
             minutes = st.slider("Session length (minutes)", 10, 120, _default_min, step=5, key=f"session_len_{effective_mode}")
             minutes = int(minutes)
 
+            rep_difficulty = st.slider("Difficulty (1–5)", 1, 5, 3, key="session_rep_difficulty", help="Lower = fewer reps per set (easier). Higher = more reps per set (harder). Applies to Performance workouts.")
+            if effective_mode == "performance":
+                st.caption("Difficulty affects rep ranges: 1 = lower end (e.g. 3–4 reps for Power), 5 = higher end (e.g. 25 reps for Muscle Endurance).")
+
             if effective_mode == "performance":
                 location = "gym"  # Performance always uses full gym flow (strength day, post-lift conditioning)
             else:
@@ -4587,6 +4593,7 @@ def _render_training_session():
                         "location": location,
                         "strength_day_type": _payload_strength_day,
                         "strength_emphasis": _payload_strength_emphasis,
+                        "rep_difficulty": int(rep_difficulty) if effective_mode == "performance" else None,
                         "skate_within_24h": skate_within_24h,
                         "conditioning": conditioning,
                         "conditioning_type": conditioning_type,
