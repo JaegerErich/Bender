@@ -617,9 +617,8 @@ MODE_LABELS = {
     "skills_only": "Shooting and Stickhandling",
 }
 
-# Puck Mastery sub-options (map to actual session_mode sent to engine)
-SKILLS_SUB_LABELS = ["Shooting", "Stickhandling", "Shooting and Stickhandling"]
-SKILLS_SUB_TO_MODE = {"Shooting": "shooting", "Stickhandling": "stickhandling", "Shooting and Stickhandling": "skills_only"}
+# Puck Mastery: clickable types (checkboxes). Workout displays only checked types.
+PUCK_MASTERY_OPTIONS = ["Shooting", "Stickhandling", "Passing"]  # Passing drills coming later
 
 DISPLAY_MODES = [MODE_LABELS.get(m, m) for m in RAW_MODES]
 LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
@@ -4412,12 +4411,43 @@ def _render_training_session():
             mode = LABEL_TO_MODE[mode_label]
 
             if mode == "puck_mastery":
-                skills_sub = st.selectbox("Puck Mastery — focus", SKILLS_SUB_LABELS, index=2)
-                effective_mode = SKILLS_SUB_TO_MODE[skills_sub]
+                st.caption("Select the types of training to include in your workout.")
+                if "puck_include_shooting" not in st.session_state:
+                    st.session_state.puck_include_shooting = True
+                if "puck_include_stickhandling" not in st.session_state:
+                    st.session_state.puck_include_stickhandling = True
+                if "puck_include_passing" not in st.session_state:
+                    st.session_state.puck_include_passing = False
+                _col_s, _col_st, _col_p = st.columns(3)
+                with _col_s:
+                    puck_shooting = st.checkbox("Shooting", value=st.session_state.puck_include_shooting, key="puck_cb_shooting")
+                with _col_st:
+                    puck_stickhandling = st.checkbox("Stickhandling", value=st.session_state.puck_include_stickhandling, key="puck_cb_stickhandling")
+                with _col_p:
+                    puck_passing = st.checkbox("Passing", value=st.session_state.puck_include_passing, key="puck_cb_passing")
+                st.session_state.puck_include_shooting = puck_shooting
+                st.session_state.puck_include_stickhandling = puck_stickhandling
+                st.session_state.puck_include_passing = puck_passing
+                _puck_checked = [b for b, lbl in [(puck_shooting, "shooting"), (puck_stickhandling, "stickhandling"), (puck_passing, "passing")] if b]
+                if not _puck_checked:
+                    st.warning("Select at least one: Shooting, Stickhandling, or Passing.")
+                # Derive effective_mode and time split for engine
+                if puck_shooting and puck_stickhandling and not puck_passing:
+                    effective_mode = "skills_only"
+                elif puck_shooting and not puck_stickhandling:
+                    effective_mode = "shooting"
+                elif puck_stickhandling and not puck_shooting:
+                    effective_mode = "stickhandling"
+                elif puck_passing and not puck_shooting and not puck_stickhandling:
+                    effective_mode = "passing_only"  # no engine call; placeholder output
+                else:
+                    effective_mode = "skills_only"  # shooting + stickhandling, or all three
+                puck_include_passing_in_output = puck_passing
             else:
                 effective_mode = mode
+                puck_include_passing_in_output = False
 
-            _default_min = MODE_SESSION_LEN_DEFAULTS.get(effective_mode, 45)
+            _default_min = MODE_SESSION_LEN_DEFAULTS.get(effective_mode, 45) if effective_mode != "passing_only" else 30
             minutes = st.slider("Session length (minutes)", 10, 120, _default_min, step=5, key=f"session_len_{effective_mode}")
             minutes = int(minutes)
 
@@ -4500,78 +4530,98 @@ def _render_training_session():
             # Generate session
             generate_clicked = st.button("Generate session", type="primary", key="generate_session_btn")
             if generate_clicked:
-                profile = st.session_state.get("current_profile") or {}
-                user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
-                # Explosiveness = Power day + power emphasis (explosive session)
-                _payload_strength_day = strength_day_type
-                _payload_strength_emphasis = strength_emphasis
-                if strength_emphasis == "explosiveness":
-                    _payload_strength_day = "heavy_explosive"
-                    _payload_strength_emphasis = "power"
-                payload = {
-                    "athlete_id": athlete_id,
-                    "age": int(age),
-                    "minutes": int(minutes),
-                    "mode": effective_mode,
-                    "focus": focus,
-                    "location": location,
-                    "strength_day_type": _payload_strength_day,
-                    "strength_emphasis": _payload_strength_emphasis,
-                    "skate_within_24h": skate_within_24h,
-                    "conditioning": conditioning,
-                    "conditioning_type": conditioning_type,
-                    "user_equipment": user_equipment,
-                    "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
-                    "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
-                    "conditioning_effort": None,
-                }
+                _puck_none_checked = mode == "puck_mastery" and not (puck_shooting or puck_stickhandling or puck_passing)
+                if _puck_none_checked:
+                    st.warning("Select at least one Puck Mastery type: Shooting, Stickhandling, or Passing.")
+                else:
+                    profile = st.session_state.get("current_profile") or {}
+                    user_equipment = ENGINE.expand_user_equipment(profile.get("equipment"))
+                    # Explosiveness = Power day + power emphasis (explosive session)
+                    _payload_strength_day = strength_day_type
+                    _payload_strength_emphasis = strength_emphasis
+                    if strength_emphasis == "explosiveness":
+                        _payload_strength_day = "heavy_explosive"
+                        _payload_strength_emphasis = "power"
+                    # Puck Mastery: split time only when both shooting and stickhandling checked (skills_only)
+                    _shooting_min = None
+                    _stickhandling_min = None
+                    if mode == "puck_mastery" and effective_mode == "skills_only":
+                        _shooting_min = minutes // 2
+                        _stickhandling_min = minutes - _shooting_min
+                    payload = {
+                        "athlete_id": athlete_id,
+                        "age": int(age),
+                        "minutes": int(minutes),
+                        "mode": effective_mode,
+                        "focus": focus,
+                        "location": location,
+                        "strength_day_type": _payload_strength_day,
+                        "strength_emphasis": _payload_strength_emphasis,
+                        "skate_within_24h": skate_within_24h,
+                        "conditioning": conditioning,
+                        "conditioning_type": conditioning_type,
+                        "user_equipment": user_equipment,
+                        "available_space": available_space if effective_mode in ("stickhandling", "skills_only") else None,
+                        "conditioning_mode": conditioning_mode if effective_mode == "energy_systems" else None,
+                        "conditioning_effort": None,
+                        "shooting_min": _shooting_min,
+                        "stickhandling_min": _stickhandling_min,
+                    }
 
-                try:
-                    with st.spinner("Generating workout..."):
-                        if USE_API:
-                            resp = _generate_via_api(payload)
+                    try:
+                        if effective_mode == "passing_only":
+                            out_text = f"BENDER SINGLE WORKOUT | mode=puck_mastery (Passing) | len={minutes} min\n\nPUCK MASTERY — PASSING\n\n(Passing drills coming soon.)"
+                            resp = {"output_text": out_text, "session_id": None, "equipment_used": []}
                         else:
-                            resp = _generate_via_engine(payload)
+                            with st.spinner("Generating workout..."):
+                                if USE_API:
+                                    resp = _generate_via_api(payload)
+                                else:
+                                    resp = _generate_via_engine(payload)
+                            out_text = resp.get("output_text") or ""
+                            if puck_include_passing_in_output and out_text and "PASSING" not in out_text:
+                                out_text = out_text.rstrip() + "\n\nPUCK MASTERY — PASSING\n\n(Passing drills coming soon.)"
+                                resp = dict(resp)
+                                resp["output_text"] = out_text
 
-                    st.session_state.last_session_id = resp.get("session_id")
-                    out_text = resp.get("output_text") or ""
-                    _equip_used = resp.get("equipment_used") or []
-                    if "BENDER_EQUIPMENT_REQUIRED" in out_text:
-                        st.error("Equipment is required.")
-                    elif out_text and out_text.strip():
-                        st.session_state.last_output_text = out_text
-                        st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
-                        _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
-                        _meta_is_explosive = _is_explosive_day or (strength_emphasis == "explosiveness") if effective_mode == "performance" else False
-                        st.session_state.last_output_metadata = {
-                            "mode": effective_mode,
-                            "minutes": int(minutes),
-                            "location": location,
-                            "conditioning": conditioning,
-                            "conditioning_type": conditioning_type,
-                            "workout_id": _sid,
-                            "strength_emphasis": _payload_strength_emphasis if effective_mode == "performance" else None,
-                            "strength_day_type": _payload_strength_day if effective_mode == "performance" else None,
-                            "is_explosive_day": _meta_is_explosive,
-                            "equipment_used": _equip_used,
-                        }
-                        st.session_state.scroll_to_workout = True
-                        st.success("Generated")
-                        # Force full rerun so next "Generate" tap is a fresh click (fixes mobile
-                        # fragment rerun sometimes reusing state and returning same workout).
-                        st.rerun()
-                    else:
-                        st.session_state.last_output_text = (
-                            "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
-                            "Generation returned no content. This can happen if:\n"
-                            "- Data files (performance.json) are missing or empty\n"
-                            "- All drills were filtered out by equipment/age\n\n"
-                            "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
-                        )
-                        st.warning("Generated but no exercises were returned — see message below.")
-                        st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
-                except Exception as e:
-                    st.error(str(e))
+                        st.session_state.last_session_id = resp.get("session_id")
+                        _equip_used = resp.get("equipment_used") or []
+                        if "BENDER_EQUIPMENT_REQUIRED" in out_text:
+                            st.error("Equipment is required.")
+                        elif out_text and out_text.strip():
+                            st.session_state.last_output_text = out_text
+                            st.session_state.workout_started = False  # Show quadrants first; "Start Workout" reveals body
+                            _sid = resp.get("session_id") or hashlib.sha256((out_text or "")[:2000].encode()).hexdigest()[:32]
+                            _meta_is_explosive = _is_explosive_day or (strength_emphasis == "explosiveness") if effective_mode == "performance" else False
+                            st.session_state.last_output_metadata = {
+                                "mode": effective_mode,
+                                "minutes": int(minutes),
+                                "location": location,
+                                "conditioning": conditioning,
+                                "conditioning_type": conditioning_type,
+                                "workout_id": _sid,
+                                "strength_emphasis": _payload_strength_emphasis if effective_mode == "performance" else None,
+                                "strength_day_type": _payload_strength_day if effective_mode == "performance" else None,
+                                "is_explosive_day": _meta_is_explosive,
+                                "equipment_used": _equip_used,
+                            }
+                            st.session_state.scroll_to_workout = True
+                            st.success("Generated")
+                            # Force full rerun so next "Generate" tap is a fresh click (fixes mobile
+                            # fragment rerun sometimes reusing state and returning same workout).
+                            st.rerun()
+                        else:
+                            st.session_state.last_output_text = (
+                                "BENDER SINGLE WORKOUT | mode=performance | len=45 min\n\n"
+                                "Generation returned no content. This can happen if:\n"
+                                "- Data files (performance.json) are missing or empty\n"
+                                "- All drills were filtered out by equipment/age\n\n"
+                                "Try: Clear equipment in sidebar (use full gym), or check that data/performance.json exists."
+                            )
+                            st.warning("Generated but no exercises were returned — see message below.")
+                            st.error("Missing equipment: Workout could not be generated. Please update your Equipment settings in the sidebar for best functionality.")
+                    except Exception as e:
+                        st.error(str(e))
 
             # Display last generated workout (Tabbed) — isolated so it doesn't affect My Plan / Performance Dashboard tabs
             if st.session_state.last_output_text:
