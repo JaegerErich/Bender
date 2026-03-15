@@ -4473,7 +4473,7 @@ def _render_training_session():
             minutes = st.slider("Session length (minutes)", 10, 120, _default_min, step=5, key=f"session_len_{effective_mode}")
             minutes = int(minutes)
 
-            rep_difficulty = st.slider("Difficulty (1–5)", 1, 5, 3, key="session_rep_difficulty", help="Lower = fewer reps per set (easier). Higher = more reps per set (harder). Applies to Performance workouts.")
+            rep_difficulty = st.slider("Difficulty (1–5)", 1, 5, 3, key="session_rep_difficulty", help="Session difficulty shown in the quadrant card (all modes). For Performance, also sets rep ranges: 1 = fewer reps, 5 = more reps.")
             if effective_mode == "performance":
                 st.caption("Difficulty affects rep ranges: 1 = lower end (e.g. 3–4 reps for Power), 5 = higher end (e.g. 25 reps for Muscle Endurance).")
 
@@ -4593,7 +4593,7 @@ def _render_training_session():
                         "location": location,
                         "strength_day_type": _payload_strength_day,
                         "strength_emphasis": _payload_strength_emphasis,
-                        "rep_difficulty": int(rep_difficulty) if effective_mode == "performance" else None,
+                        "rep_difficulty": int(rep_difficulty),
                         "skate_within_24h": skate_within_24h,
                         "conditioning": conditioning,
                         "conditioning_type": conditioning_type,
@@ -4642,13 +4642,16 @@ def _render_training_session():
                                 "is_explosive_day": _meta_is_explosive,
                                 "equipment_used": _equip_used,
                             }
-                            # Use difficulty from output text (N/5 from drill JSONs, or legacy N/10)
-                            _diff_5 = re.search(r"Difficulty:\s*(\d+)/5\b", out_text or "")
-                            _diff_10 = re.search(r"Difficulty:\s*(\d+)/10\b", out_text or "")
-                            if _diff_5:
-                                _meta["difficulty"] = int(_diff_5.group(1))
-                            elif _diff_10:
-                                _meta["difficulty"] = int(_diff_10.group(1))
+                            # Quadrant difficulty: prefer slider (rep_difficulty) for all modes, else from output
+                            if rep_difficulty is not None:
+                                _meta["difficulty"] = max(1, min(5, int(rep_difficulty)))
+                            else:
+                                _diff_5 = re.search(r"Difficulty:\s*(\d+)/5\b", out_text or "")
+                                _diff_10 = re.search(r"Difficulty:\s*(\d+)/10\b", out_text or "")
+                                if _diff_5:
+                                    _meta["difficulty"] = int(_diff_5.group(1))
+                                elif _diff_10:
+                                    _meta["difficulty"] = int(_diff_10.group(1))
                             st.session_state.last_output_metadata = _meta
                             st.session_state.scroll_to_workout = True
                             st.success("Generated")

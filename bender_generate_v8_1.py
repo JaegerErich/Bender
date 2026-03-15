@@ -5434,8 +5434,11 @@ def generate_session(
 
     def _return_with_equipment(text: str):
         equip = extract_equipment_from_plan(text, data)
-        # Workout difficulty from drill JSONs (1-5)
-        difficulty_5 = _session_difficulty_from_plan(text, data)
+        # Use slider (rep_difficulty) when provided (all modes); else from drill JSONs
+        if rep_difficulty is not None and 1 <= rep_difficulty <= 5:
+            difficulty_5 = rep_difficulty
+        else:
+            difficulty_5 = _session_difficulty_from_plan(text, data)
         text = (text.rstrip() + "\n\nDifficulty: " + str(difficulty_5) + "/5\n").strip()
         text = _strip_drill_ids_from_output(text)
         # Skating mechanics: never show "Minimal"; output actual equipment (None if bodyweight-only)
