@@ -3171,7 +3171,13 @@ def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: 
     equip = _equipment_display(d) or "None"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
-    rx = f"{sets} x {reps}"
+    # Lateral Sled Drag: show step amount per side (e.g. "4 x 8 steps/side")
+    if did == "LS_118" or "lateral sled drag" in (name or "").lower():
+        reps_clean = (reps or "").replace("/side", "").replace(" per side", "").replace(" each side", "").strip()
+        reps_display = f"{reps_clean} steps/side" if "steps" not in reps_clean.lower() else reps_clean
+    else:
+        reps_display = reps or ""
+    rx = f"{sets} x {reps_display}"
     prefix = f"- {did} " if did else "- "
     line = f"{prefix}{name} | {rx}".strip()
     if rest_sec:
@@ -3995,8 +4001,9 @@ def build_heavy_leg_session(
                 vm_s = _video_marker_line(strength_d)
                 if vm_s:
                     lines.append(vm_s.strip())
-                # Block 2: explosive exercise with bracket, directions before cues, video
-                lines.append(f"- └ {explosive_name} (bodyweight) | 6 reps")
+                # Block 2: explosive exercise (Lateral Sled Drag = steps/side, else reps)
+                rep_unit = " steps/side" if norm(get(explosive_d, "id", "")) == "LS_118" else " reps"
+                lines.append(f"- └ {explosive_name} (bodyweight) | {rep_num}{rep_unit}")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
                 equip_e = _equipment_display(explosive_d) or "None"
                 lines.append(f"  Equipment: {equip_e}")
@@ -4593,8 +4600,8 @@ def build_hockey_strength_session(
             # Enforce equal sets
             sets_common = min(int(rx_a1["sets"]), int(rx_a2["sets"]))
 
-            # A1 — Speed / Power
-            reps_a1 = rx_a1["reps"]
+            # A1 — Speed / Power (match updated rep ranges by difficulty)
+            reps_a1 = _apply_strength_emphasis_guardrails(emphasis, role_a1, rx_a1["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(
                 format_strength_drill_with_prescription(
                     speed_a1,
@@ -4605,8 +4612,8 @@ def build_hockey_strength_session(
             )
             used_ids.add(norm(get(speed_a1, "id", "")))
 
-            # A2 — High Fatigue
-            reps_a2 = rx_a2["reps"]
+            # A2 — High Fatigue (match updated rep ranges by difficulty)
+            reps_a2 = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_HIGH, rx_a2["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
             lines.append(
                 format_strength_drill_with_prescription(
                     hf_a2,
@@ -4622,11 +4629,12 @@ def build_hockey_strength_session(
             lines.append("\nHIGH FATIGUE (1 exercise)")
             rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH) or _rx_for("strength", FATIGUE_ROLE_HIGH)
             if rx:
+                reps_hf = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_HIGH, rx["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(
                     format_strength_drill_with_prescription(
                         hf_a2,
                         sets=rx["sets"],
-                        reps=rx["reps"],
+                        reps=reps_hf,
                         rest_sec=180,
                     )
                 )
@@ -4639,11 +4647,12 @@ def build_hockey_strength_session(
             d = hf_pick[0]
             rx = _rx_for(emphasis, FATIGUE_ROLE_HIGH) or _rx_for("strength", FATIGUE_ROLE_HIGH)
             if rx:
+                reps_hf = _apply_strength_emphasis_guardrails(emphasis, FATIGUE_ROLE_HIGH, rx["reps"], rnd=rnd, rep_difficulty=rep_difficulty)
                 lines.append(
                     format_strength_drill_with_prescription(
                         d,
                         sets=rx["sets"],
-                        reps=rx["reps"],
+                        reps=reps_hf,
                         rest_sec=180,
                     )
                 )

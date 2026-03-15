@@ -4078,7 +4078,7 @@
     "fatigue_cost": "medium",
     "progression_level": "advanced",
     "default_sets": 4,
-    "default_reps": null,
+    "default_reps": "6-10/side",
     "default_duration_sec": 90,
     "intensity": "high",
     "age_min": 15,
