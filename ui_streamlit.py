@@ -687,9 +687,13 @@ def _parse_workout_header_for_metadata(text: str) -> dict:
     if m:
         out["mode"] = m.group(1).strip()
         out["minutes"] = int(m.group(2) or 0)
-    dm = _re.search(r"Difficulty:\s*(\d+)/10", text)
-    if dm:
-        out["difficulty"] = int(dm.group(1))
+    # Difficulty: from generator (N/5 from drill JSONs) or legacy N/10
+    dm5 = _re.search(r"Difficulty:\s*(\d+)/5\b", text)
+    dm10 = _re.search(r"Difficulty:\s*(\d+)/10\b", text)
+    if dm5:
+        out["difficulty"] = int(dm5.group(1))
+    elif dm10:
+        out["difficulty"] = int(dm10.group(1))  # card will map 1-10 -> 1-5
     return out
 
 
@@ -4612,10 +4616,13 @@ def _render_training_session():
                                 "is_explosive_day": _meta_is_explosive,
                                 "equipment_used": _equip_used,
                             }
-                            # Use difficulty from output text when present (e.g. stickhandling "Difficulty: N/10")
-                            _diff_m = re.search(r"Difficulty:\s*(\d+)/10", out_text or "")
-                            if _diff_m:
-                                _meta["difficulty"] = int(_diff_m.group(1))
+                            # Use difficulty from output text (N/5 from drill JSONs, or legacy N/10)
+                            _diff_5 = re.search(r"Difficulty:\s*(\d+)/5\b", out_text or "")
+                            _diff_10 = re.search(r"Difficulty:\s*(\d+)/10\b", out_text or "")
+                            if _diff_5:
+                                _meta["difficulty"] = int(_diff_5.group(1))
+                            elif _diff_10:
+                                _meta["difficulty"] = int(_diff_10.group(1))
                             st.session_state.last_output_metadata = _meta
                             st.session_state.scroll_to_workout = True
                             st.success("Generated")

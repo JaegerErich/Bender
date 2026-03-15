@@ -1242,10 +1242,11 @@ def _video_marker_line(d: Dict[str, Any]) -> str:
 
 def format_drill(d: Dict[str, Any]) -> str:
     name = _display_name(d)
+    did = norm(get(d, "id", ""))
     equip = _equipment_display(d) or "None"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
-    line = f"- {name}".strip()
+    line = (f"- {did} {name}".strip() if did else f"- {name}".strip())
     line += f"\n  Equipment: {equip}"
     if cues:
         line += f"\n  Cues: {cues}"
@@ -1298,9 +1299,11 @@ def build_skating_mechanics_sequential(
     lines.append("Do each in order. Rest 30–45s after each rep; then next drill.")
     for d, sets, reps, rep_dur in result:
         name = _display_name(d)
+        did = norm(get(d, "id", ""))
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
+        prefix = f"- {did} " if did else "- "
+        lines.append(f"{prefix}{name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
         eq = _equipment_display(d) or "None"
         lines.append(f"  Equipment: {eq}")
         if cues:
@@ -1766,28 +1769,18 @@ def build_stickhandling_blocks_session(
     lines.append(f"Timing format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
     for block, d, reps, assigned_time in result:
         name = _display_name(d)
+        did = norm(get(d, "id", ""))
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
-        lines.append(f"- {name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
+        prefix = f"- {did} " if did else "- "
+        lines.append(f"{prefix}{name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
         eq = _stickhandling_special_equipment(d) or "Puck & stick"
         lines.append(f"  Equipment: {eq}")
         if cue:
             lines.append(f"  Cue: {cue}")
 
-    # Difficulty rating
-    total_time = sum(per for _, _, _, per in result)
-    if total_time > 0:
-        weighted_pts = sum(_stickhandling_difficulty_points(d, per) for _, d, _, per in result)
-        avg_pts = weighted_pts / total_time
-        difficulty_10 = clamp(round((avg_pts - 3) * 1.5), 1, 10)
-        labels = {1: "Easy", 2: "Easy", 3: "Easy", 4: "Standard", 5: "Standard", 6: "Standard", 7: "Hard", 8: "Hard", 9: "Very Hard", 10: "Very Hard"}
-        label = labels.get(difficulty_10, "Standard")
-        diff_line = f"Difficulty: {difficulty_10}/10 ({label})"
-        if difficulty_10 >= 7:
-            diff_line += " — Harder than most"
-        lines.append("")
-        lines.append(diff_line)
+    # Session difficulty is computed from drill JSON 'difficulty' in _return_with_equipment (all modes)
 
     return lines
 
@@ -1795,10 +1788,11 @@ def build_stickhandling_blocks_session(
 def format_stickhandling_drill(d: Dict[str, Any]) -> str:
     """Format stickhandling drill with Equipment above Cues."""
     name = _display_name(d)
+    did = norm(get(d, "id", ""))
     eq = _stickhandling_special_equipment(d) or "Puck & stick"
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
-    line = f"- {name}".strip()
+    line = (f"- {did} {name}".strip() if did else f"- {name}".strip())
     line += f"\n  Equipment: {eq}"
     if cues:
         line += f"\n  Cue: {cues}"
@@ -5264,6 +5258,34 @@ def extract_equipment_from_plan(plan_text: str, data: Dict[str, List[Dict[str, A
     return list(dict.fromkeys(seen_raw.values()))
 
 
+def _session_difficulty_from_plan(plan_text: str, data: Dict[str, List[Dict[str, Any]]]) -> int:
+    """
+    Compute workout difficulty (1-5) from drill 'difficulty' fields in the plan.
+    Uses drill IDs found in plan_text and looks up each drill in data; averages
+    difficulties (JSON uses 1-4) and rounds to 1-5 scale. Returns 3 if no drills found.
+    """
+    ids = set(extract_ids_from_plan(plan_text or ""))
+    if not ids:
+        return 3
+    difficulties: List[float] = []
+    for cat, drills in (data or {}).items():
+        if cat == "circuits" or not isinstance(drills, list):
+            continue
+        for d in drills:
+            did = norm(get(d, "id", ""))
+            if did and did in ids:
+                raw = d.get("difficulty")
+                try:
+                    v = int(raw) if raw is not None else 3
+                    difficulties.append(max(1, min(5, v)))
+                except (TypeError, ValueError):
+                    difficulties.append(3)
+    if not difficulties:
+        return 3
+    avg = sum(difficulties) / len(difficulties)
+    return max(1, min(5, int(round(avg))))
+
+
 # ------------------------------
 # Session generation
 # ------------------------------
@@ -5343,6 +5365,9 @@ def generate_session(
 
     def _return_with_equipment(text: str):
         equip = extract_equipment_from_plan(text, data)
+        # Workout difficulty from drill JSONs (1-5)
+        difficulty_5 = _session_difficulty_from_plan(text, data)
+        text = (text.rstrip() + "\n\nDifficulty: " + str(difficulty_5) + "/5\n").strip()
         text = _strip_drill_ids_from_output(text)
         # Skating mechanics: never show "Minimal"; output actual equipment (None if bodyweight-only)
         if session_mode in ("skating_mechanics", "movement", "speed_agility") and not equip:
