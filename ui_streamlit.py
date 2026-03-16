@@ -1422,6 +1422,29 @@ def _render_your_work_stats():
     prof = st.session_state.get("current_profile") or {}
     pt = prof.get("performance_tests") or {}
 
+    # --- Performance Tests (top) + MotionApp button ---
+    _pt_items = [
+        ("Vertical Jump", "vertical_jump"),
+        ("5-10-5 Agility", "agility_5_10_5"),
+        ("Pull-ups", "pull_ups"),
+        ("Broad Jump", "broad_jump"),
+        ("Shooting Tests", "shooting_tests"),
+        ("Stickhandling Tests", "stickhandling_tests"),
+        ("Conditioning Test", "conditioning_test"),
+    ]
+    _pt_rows = [
+        f'<div class="your-work-row"><span class="your-work-cat">{html.escape(label)}</span><span class="your-work-num">{html.escape(str(pt.get(key, "") or "").strip() or "—")}</span></div>'
+        for label, key in _pt_items
+    ]
+    _pt_html = '<div class="your-work-stats-card">' + "".join(_pt_rows) + "</div>"
+    _col_tests, _col_btn = st.columns([3, 1])
+    with _col_tests:
+        st.markdown("**Performance Tests**")
+    with _col_btn:
+        perf_app_btn = st.button("Open Motion Dashboard", type="secondary", key="open_motion_dashboard_btn")
+    st.markdown(_pt_html, unsafe_allow_html=True)
+    st.markdown("")
+
     # --- Bender Leveling: Overall Level + Category Ranks + Badges + Achievements ---
     try:
         from bender_leveling import (
@@ -1435,11 +1458,17 @@ def _render_your_work_stats():
         prof = ensure_leveling_defaults(prof)
         level_prog = get_level_progress(prof)
         st.markdown('<p class="bender-level-heading">Bender Level</p>', unsafe_allow_html=True)
-        st.markdown(f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>', unsafe_allow_html=True)
+        st.markdown(
+            f'<p class="bender-level-value">Level {level_prog["level"]} — {level_prog["title"]}</p>',
+            unsafe_allow_html=True,
+        )
         _xp_rem = max(0, int(level_prog.get("next_xp") or 0) - int(level_prog.get("current_xp") or 0))
         _next_lv = int(level_prog.get("level") or 1) + 1
         if _next_lv <= 25:
-            st.progress(level_prog["progress_pct"] / 100.0, text=f"**{_xp_rem:,} points to Level {_next_lv}**")
+            st.progress(
+                level_prog["progress_pct"] / 100.0,
+                text=f"**{_xp_rem:,} points to Level {_next_lv}**",
+            )
         else:
             st.progress(level_prog["progress_pct"] / 100.0)
         st.markdown('<div class="bender-level-divider"></div>', unsafe_allow_html=True)
@@ -1455,11 +1484,17 @@ def _render_your_work_stats():
         ]
         for cat_key, cat_label in categories:
             cp = get_category_progress(prof, cat_key)
-            st.markdown(f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(cp["title"])}</strong></p>', unsafe_allow_html=True)
+            st.markdown(
+                f'<p class="category-rank-line"><strong>{html.escape(cat_label)}</strong> — Level {cp["rank"]}: <strong>{html.escape(cp["title"])}</strong></p>',
+                unsafe_allow_html=True,
+            )
             _cp_xp_rem = max(0, int(cp.get("next_xp") or 0) - int(cp.get("current_xp") or 0))
             _cp_rank = int(cp.get("rank") or 1)
             if _cp_rank < 8:
-                st.progress(cp["progress_pct"] / 100.0, text=f"**{_cp_xp_rem:,} points to Level {_cp_rank + 1}**")
+                st.progress(
+                    cp["progress_pct"] / 100.0,
+                    text=f"**{_cp_xp_rem:,} points to Level {_cp_rank + 1}**",
+                )
             else:
                 st.progress(cp["progress_pct"] / 100.0)
         st.markdown("")
@@ -1490,22 +1525,8 @@ def _render_your_work_stats():
     except Exception:
         pass
 
-    # Performance tests — same box format as Workout Records
-    _pt_items = [
-        ("Vertical Jump", "vertical_jump"),
-        ("5-10-5 Agility", "agility_5_10_5"),
-        ("Pull-ups", "pull_ups"),
-        ("Broad Jump", "broad_jump"),
-        ("Shooting Tests", "shooting_tests"),
-        ("Stickhandling Tests", "stickhandling_tests"),
-        ("Conditioning Test", "conditioning_test"),
-    ]
-    _pt_rows = [f'<div class="your-work-row"><span class="your-work-cat">{html.escape(label)}</span><span class="your-work-num">{html.escape(str(pt.get(key, "") or "").strip() or "—")}</span></div>' for label, key in _pt_items]
-    _pt_html = '<div class="your-work-stats-card">' + "".join(_pt_rows) + "</div>"
-    st.markdown("**Performance Tests**")
-    st.markdown(_pt_html, unsafe_allow_html=True)
-    st.markdown("")
-    st.markdown("**Workout Records**")
+    # Lifetime Records (was Workout Records) — keep at bottom
+    st.markdown("**Lifetime Records**")
     stats = prof.get("private_victory_stats") or {}
     gym_min = int(round(60 * float(stats.get("gym_hours", 0) or 0)))
     skating_min = int(round(60 * float(stats.get("skating_hours", 0) or 0)))
@@ -1529,11 +1550,6 @@ def _render_your_work_stats():
         '</div>'.format(shots, gym_min, skating_min, cond_min, stick_min, mob_min, total_min),
         unsafe_allow_html=True,
     )
-    st.markdown("")
-    request_plan_clicked = st.button("Request Custom Plan", type="secondary", key="request_custom_plan_btn")
-    if request_plan_clicked:
-        st.session_state.custom_plan_intake_open = True
-        st.rerun()
 # -----------------------------
 # Pretty workout renderer (UI only)
 # -----------------------------
