@@ -3988,7 +3988,7 @@ def build_heavy_leg_session(
                 lines.append(f"\nHEAVY UNILATERAL STRENGTH — SUPERSET (~{format_seconds_short(c_sec)})")
                 # Block 1: strength exercise with bracket, directions before cues, video
                 rep_num = reps_c.split()[0] if reps_c else "6"
-                lines.append(f"- ├ {strength_name} (DB or KB) | 3 x {rep_num} | Rest 90s")
+                lines.append(f"- {strength_name} (DB or KB) | 3 x {rep_num} | Rest 90s")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
                 equip_s = _equipment_display(strength_d)
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
@@ -4003,7 +4003,7 @@ def build_heavy_leg_session(
                     lines.append(vm_s.strip())
                 # Block 2: explosive exercise (Lateral Sled Drag = steps/side, else reps)
                 rep_unit = " steps/side" if norm(get(explosive_d, "id", "")) == "LS_118" else " reps"
-                lines.append(f"- └ {explosive_name} (bodyweight) | {rep_num}{rep_unit}")
+                lines.append(f"- {explosive_name} (bodyweight) | {rep_num}{rep_unit}")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
                 equip_e = _equipment_display(explosive_d) or "None"
                 lines.append(f"  Equipment: {equip_e}")
