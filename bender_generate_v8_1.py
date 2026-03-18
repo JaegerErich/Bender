@@ -2211,7 +2211,6 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
 
     def describe_one(d: Dict[str, Any], seconds: int) -> List[str]:
         name = _display_name(d)
-        equip = _equipment_display(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         mod = conditioning_modality(d)
@@ -2229,10 +2228,9 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
         out.append(
             f"  Time plan: ~{format_seconds_short(ramp)} ramp + {rounds} rounds of ({work}s work / {rest}s easy) (~{format_seconds_short(est)})"
         )
-        if equip:
-            out.append(f"  Equipment: {equip}")
         if cues:
             out.append(f"  Cues: {cues}")
+        out.append("  Rule: Sprint portions are max effort. Recovery portions should be controlled and easy.")
         if steps:
             out.append(f"  Steps: {steps}")
         return out
@@ -2464,7 +2462,6 @@ def build_conditioning_single_block(
     else:
         lines.append("- Warm-up: 5 min warm-up jog")
     lines.append(f"- {name}")
-    lines.append("Rule: Sprint portions are max effort. Recovery portions should be controlled and easy.")
 
     # Default sprinting/interval volume target: 10 minutes inside a 20-min conditioning session.
     # Reserve 5 min warm-up + 5 min mobility cooldown outside the main conditioning work.
@@ -2474,6 +2471,7 @@ def build_conditioning_single_block(
         # Bike pedal-counting intervals: 20s sprint to a pedal target, rest remainder of the minute.
         n = main_minutes
         lines.append(f"  {n} reps")
+        lines.append("  Pedal sprints: start each sprint with the minute; pedal hard until you hit the target pedal pushes; then pedal easy for the rest of the minute.")
         lines.append("  1 rep = sprint until reaching the target pedal pushes, then rest for the remainder of the minute.")
         lines.append("  Start new sprint on the minute.")
         if drill_id == "CD_006":
@@ -2493,11 +2491,9 @@ def build_conditioning_single_block(
             # CD_012: descending targets by 5 each rep, floor at 20.
             targets = [max(70 - 5 * i, 20) for i in range(n)]
             lines.append(f"  Targets: {', '.join(str(t) for t in targets)} pedal pushes")
-        eq = _equipment_display(drill)
-        if eq:
-            lines.append(f"  Equipment: {eq}")
         if cue:
             lines.append(f"  Cues: {cue}")
+        lines.append("  Rule: Sprint portions are max effort. Recovery portions should be controlled and easy.")
         return lines
 
     # Compute max possible reps for the main conditioning work time,
@@ -2556,11 +2552,9 @@ def build_conditioning_single_block(
 
         if not timed_reps_exact:
             lines.append("  As many reps as possible following the 1 rep guideline")
-    eq = _equipment_display(drill)
-    if eq:
-        lines.append(f"  Equipment: {eq}")
     if cue:
         lines.append(f"  Cues: {cue}")
+    lines.append("  Rule: Sprint portions are max effort. Recovery portions should be controlled and easy.")
     return lines
 
 
