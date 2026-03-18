@@ -2516,36 +2516,46 @@ def build_conditioning_single_block(
         rep_duration_sec = 60  # default: 1 rep ~ 60s (minute-based)
 
     reps = max(1, int(total_main_sec // max(1, rep_duration_sec)))
-    lines.append(f"  {reps} reps")
-    if mode == "bike":
-        lines.append("  Start new sprint on the minute.")
-    # Define a single rep based on drill
-    if drill_id == "CD_003":
-        lines.append("  1 rep = hill sprint up, walk down; hill broad jumps up, walk down; rest 30s.")
-    elif drill_id == "CD_002" or _is_hill_or_stairs_conditioning(drill):
-        lines.append("  1 rep = sprint the hill, walk back down, then rest 30s.")
-    elif drill_id == "CD_017":
-        lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
-    elif drill_id == "CD_007" and mode == "bike":
-        lines.append("  1 rep = 20s sprint / 40s rest.")
-    elif drill_id == "CD_019":
-        lines.append("  1 rep = complete the forward-lateral combo, then rest 30s.")
-    elif drill_id == "CD_021":
-        lines.append("  1 rep = complete the acceleration sprint, then rest 30s.")
-    elif drill_id == "CD_022":
-        lines.append("  1 rep = complete the lateral shuffle sprint, then rest 30s.")
-    elif drill_id == "CD_023":
-        lines.append("  1 rep = complete the multi-direction sprint, then rest 30s.")
-    elif wrp == "continuous":
-        # Override reps line for continuous work
-        lines[-2] = "  1 block"
-        lines[-1] = f"  1 block = {reps} min steady"
+
+    timed_reps_exact = (
+        drill_id in ("CD_017", "CD_007")
+        or (mode in ("treadmill", "bike") and "interval" in wrp)
+    )
+
+    if wrp == "continuous":
+        lines.append(f"  1 x {main_minutes} min steady")
     else:
-        # Default: do the drill, then rest remainder of the minute (unless treadmill/bike interval handled above)
-        if mode in ("treadmill", "bike") and "interval" in wrp:
+        if timed_reps_exact:
+            lines.append(f"  {reps} reps")
+            if mode == "bike":
+                lines.append("  Start new sprint on the minute.")
+
+        # Define a single rep based on drill
+        if drill_id == "CD_003":
+            lines.append("  1 rep = hill sprint up, walk down; hill broad jumps up, walk down; rest 30s.")
+        elif drill_id == "CD_002" or _is_hill_or_stairs_conditioning(drill):
+            lines.append("  1 rep = sprint the hill, walk back down, then rest 30s.")
+        elif drill_id == "CD_017":
+            lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
+        elif drill_id == "CD_007" and mode == "bike":
             lines.append("  1 rep = 20s sprint / 40s rest.")
+        elif drill_id == "CD_019":
+            lines.append("  1 rep = complete the forward-lateral combo, then rest 30s.")
+        elif drill_id == "CD_021":
+            lines.append("  1 rep = complete the acceleration sprint, then rest 30s.")
+        elif drill_id == "CD_022":
+            lines.append("  1 rep = complete the lateral shuffle sprint, then rest 30s.")
+        elif drill_id == "CD_023":
+            lines.append("  1 rep = complete the multi-direction sprint, then rest 30s.")
         else:
-            lines.append("  1 rep = complete the drill, then rest the remainder of the minute.")
+            # Default: do the drill, then rest remainder of the minute (unless treadmill/bike interval handled above)
+            if mode in ("treadmill", "bike") and "interval" in wrp:
+                lines.append("  1 rep = 20s sprint / 40s rest.")
+            else:
+                lines.append("  1 rep = complete the drill, then rest the remainder of the minute.")
+
+        if not timed_reps_exact:
+            lines.append("  As many reps as possible following the 1 rep guideline")
     eq = _equipment_display(drill)
     if eq:
         lines.append(f"  Equipment: {eq}")
