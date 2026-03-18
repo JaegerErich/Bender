@@ -2470,7 +2470,6 @@ def build_conditioning_single_block(
     if mode == "bike" and drill_id in ("CD_006", "CD_012"):
         # Bike pedal-counting intervals: 20s sprint to a pedal target, rest remainder of the minute.
         n = main_minutes
-        lines.append(f"  {n} reps")
         lines.append("  Pedal sprints: start each sprint with the minute; pedal hard until you hit the target pedal pushes; then pedal easy for the rest of the minute.")
         lines.append("  1 rep = sprint until reaching the target pedal pushes, then rest for the remainder of the minute.")
         lines.append("  Start new sprint on the minute.")
@@ -2519,10 +2518,16 @@ def build_conditioning_single_block(
     )
 
     if wrp == "continuous":
-        lines.append(f"  1 x {main_minutes} min steady")
+        # Shuttle runs are still communicated as minute-based reps (sprint + remainder rest).
+        if _is_shuttle_run_conditioning(drill):
+            lines.append(
+                "  1 rep = 20 yard shuttle sprint back and forth, then rest the remainder of the minute."
+            )
+            lines.append("  Start new sprint on the minute.")
+        else:
+            lines.append(f"  1 x {main_minutes} min steady")
     else:
         if timed_reps_exact:
-            lines.append(f"  {reps} reps")
             if mode == "bike":
                 lines.append("  Start new sprint on the minute.")
 
