@@ -1244,11 +1244,12 @@ def _video_marker_line(d: Dict[str, Any]) -> str:
 def format_drill(d: Dict[str, Any]) -> str:
     name = _display_name(d)
     did = norm(get(d, "id", ""))
-    equip = _equipment_display(d) or "None"
+    equip = _equipment_display(d)
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     line = (f"- {did} {name}".strip() if did else f"- {name}".strip())
-    line += f"\n  Equipment: {equip}"
+    if equip:
+        line += f"\n  Equipment: {equip}"
     if cues:
         line += f"\n  Cues: {cues}"
     if steps:
@@ -1305,8 +1306,9 @@ def build_skating_mechanics_sequential(
         steps = norm(get(d, "step_by_step", default=""))
         prefix = f"- {did} " if did else "- "
         lines.append(f"{prefix}{name} | {sets} sets × {reps} reps (~{rep_dur}s per rep)")
-        eq = _equipment_display(d) or "None"
-        lines.append(f"  Equipment: {eq}")
+        eq = _equipment_display(d)
+        if eq:
+            lines.append(f"  Equipment: {eq}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -2076,7 +2078,8 @@ def build_shooting_blocks_session(
         steps = norm(get(d, "step_by_step", ""))
         name = _display_name(d)
         line = f"- {name} | {sets} x {reps}"
-        line += f"\n  Equipment: {equip or 'None'}"
+        if equip:
+            line += f"\n  Equipment: {equip}"
         if cues:
             line += f"\n  Cues: {cues}"
         if steps:
@@ -2226,7 +2229,8 @@ def build_conditioning_block(drills: List[Dict[str, Any]], block_seconds: int) -
         out.append(
             f"  Time plan: ~{format_seconds_short(ramp)} ramp + {rounds} rounds of ({work}s work / {rest}s easy) (~{format_seconds_short(est)})"
         )
-        out.append(f"  Equipment: {equip or 'None'}")
+        if equip:
+            out.append(f"  Equipment: {equip}")
         if cues:
             out.append(f"  Cues: {cues}")
         if steps:
@@ -2460,6 +2464,7 @@ def build_conditioning_single_block(
     else:
         lines.append("- Warm-up: 5 min warm-up jog")
     lines.append(f"- {name}")
+    lines.append("Rule: Sprint portions are max effort. Recovery portions should be controlled and easy.")
 
     # Default sprinting/interval volume target: 10 minutes inside a 20-min conditioning session.
     # Reserve 5 min warm-up + 5 min mobility cooldown outside the main conditioning work.
@@ -2469,7 +2474,8 @@ def build_conditioning_single_block(
         # Bike pedal-counting intervals: 20s sprint to a pedal target, rest remainder of the minute.
         n = main_minutes
         lines.append(f"  {n} reps")
-        lines.append("  1 rep = 20s sprint to target pedals, rest remainder of the minute (on the minute).")
+        lines.append("  1 rep = sprint until reaching the target pedal pushes, then rest for the remainder of the minute.")
+        lines.append("  Start new sprint on the minute.")
         if drill_id == "CD_006":
             # CD_006: ladder/pyramid targets scaled to number of reps.
             full = [40, 60, 70, 75, 80, 80, 75, 70, 60, 40]  # 10 reps "full workout"
@@ -2487,14 +2493,32 @@ def build_conditioning_single_block(
             # CD_012: descending targets by 5 each rep, floor at 20.
             targets = [max(70 - 5 * i, 20) for i in range(n)]
             lines.append(f"  Targets: {', '.join(str(t) for t in targets)} pedal pushes")
-        eq = _equipment_display(drill) or "None"
-        lines.append(f"  Equipment: {eq}")
+        eq = _equipment_display(drill)
+        if eq:
+            lines.append(f"  Equipment: {eq}")
         if cue:
             lines.append(f"  Cues: {cue}")
         return lines
 
-    reps = main_minutes
+    # Compute max possible reps for the main conditioning work time,
+    # based on the rep/rest ratio described by this drill's "1 rep =" output.
+    total_main_sec = main_minutes * 60
+    def _work_sec(d: Dict[str, Any], fallback: int) -> int:
+        w = to_int(get(d, "default_duration_sec", fallback), fallback)
+        return fallback if w <= 0 else w
+
+    work_for_rest30 = _work_sec(drill, 30)
+    if drill_id in ("CD_002", "CD_003", "CD_019", "CD_021", "CD_022", "CD_023"):
+        rep_duration_sec = work_for_rest30 + 30  # drill + 30s rest
+    elif drill_id == "CD_017":
+        rep_duration_sec = 60  # 20/40 sprint interval
+    else:
+        rep_duration_sec = 60  # default: 1 rep ~ 60s (minute-based)
+
+    reps = max(1, int(total_main_sec // max(1, rep_duration_sec)))
     lines.append(f"  {reps} reps")
+    if mode == "bike":
+        lines.append("  Start new sprint on the minute.")
     # Define a single rep based on drill
     if drill_id == "CD_003":
         lines.append("  1 rep = hill sprint up, walk down; hill broad jumps up, walk down; rest 30s.")
@@ -2503,7 +2527,7 @@ def build_conditioning_single_block(
     elif drill_id == "CD_017":
         lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
     elif drill_id == "CD_007" and mode == "bike":
-        lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
+        lines.append("  1 rep = 20s sprint / 40s rest.")
     elif drill_id == "CD_019":
         lines.append("  1 rep = complete the forward-lateral combo, then rest 30s.")
     elif drill_id == "CD_021":
@@ -2519,11 +2543,12 @@ def build_conditioning_single_block(
     else:
         # Default: do the drill, then rest remainder of the minute (unless treadmill/bike interval handled above)
         if mode in ("treadmill", "bike") and "interval" in wrp:
-            lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
+            lines.append("  1 rep = 20s sprint / 40s rest.")
         else:
             lines.append("  1 rep = complete the drill, then rest the remainder of the minute.")
-    eq = _equipment_display(drill) or "None"
-    lines.append(f"  Equipment: {eq}")
+    eq = _equipment_display(drill)
+    if eq:
+        lines.append(f"  Equipment: {eq}")
     if cue:
         lines.append(f"  Cues: {cue}")
     return lines
@@ -2600,7 +2625,8 @@ def _append_gym_conditioning_and_mobility(
             steps = norm(get(d, "step_by_step", default=""))
             dur_label = "6 min" if norm(get(d, "id", "")) == "SMR_023" else "30–45s"
             lines.append(f"- {name} ({dur_label})")
-            lines.append(f"  Equipment: {equip or 'None'}")
+            if equip:
+                lines.append(f"  Equipment: {equip}")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
@@ -2734,7 +2760,8 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
             dur = 30
         lines.append(f"- {name} ({dur}s)")
         lines.append("  Guideline: hold positions up to 30 seconds per side if the stretch is one-sided.")
-        lines.append(f"  Equipment: {equip or 'None'}")
+        if equip:
+            lines.append(f"  Equipment: {equip}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
@@ -2987,8 +3014,9 @@ def build_mobility_recovery_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         lines.append(f"- {name} — {r} x {dur}s")
-        equip = _equipment_display(d) or "None"
-        lines.append(f"  Equipment: {equip}")
+        equip = _equipment_display(d)
+        if equip:
+            lines.append(f"  Equipment: {equip}")
         if cue:
             lines.append(f"  Cue: {cue}")
         vm = _video_marker_line(d)
@@ -3289,7 +3317,7 @@ def _apply_strength_emphasis_guardrails(
 def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: str, rest_sec: Optional[int] = None) -> str:
     name = _display_name(d)
     did = norm(get(d, "id", ""))
-    equip = _equipment_display(d) or "None"
+    equip = _equipment_display(d)
     cues = norm(get(d, "coaching_cues", default=""))
     steps = norm(get(d, "step_by_step", default=""))
     # Lateral Sled Drag: show step amount per side (e.g. "4 x 8 steps/side")
@@ -3315,7 +3343,8 @@ def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: 
     line = f"{prefix}{name} | {rx}".strip()
     if rest_sec:
         line += f" | Rest {rest_sec}s"
-    line += f"\n  Equipment: {equip}"
+    if equip:
+        line += f"\n  Equipment: {equip}"
     if cues:
         line += f"\n  Cues: {cues}"
     if steps:
@@ -4129,7 +4158,8 @@ def build_heavy_leg_session(
                 equip_s = _equipment_display(strength_d)
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
                 steps_s = norm(get(strength_d, "step_by_step", ""))
-                lines.append(f"  Equipment: {equip_s or 'None'}")
+                if equip_s:
+                    lines.append(f"  Equipment: {equip_s}")
                 if cues_s:
                     lines.append(f"  Cues: {cues_s}")
                 if steps_s:
@@ -4141,8 +4171,9 @@ def build_heavy_leg_session(
                 rep_unit = " steps/side" if norm(get(explosive_d, "id", "")) == "LS_118" else " reps"
                 lines.append(f"- {explosive_name} (bodyweight) | {rep_num}{rep_unit}")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
-                equip_e = _equipment_display(explosive_d) or "None"
-                lines.append(f"  Equipment: {equip_e}")
+                equip_e = _equipment_display(explosive_d)
+                if equip_e:
+                    lines.append(f"  Equipment: {equip_e}")
                 cues_e = norm(get(explosive_d, "coaching_cues", ""))
                 if cues_e:
                     lines.append(f"  Cues: {cues_e}")
@@ -5204,7 +5235,8 @@ def build_hockey_strength_session(
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
             lines.append(f"- {name} (30–45s)")
-            lines.append(f"  Equipment: {equip or 'None'}")
+                if equip:
+                    lines.append(f"  Equipment: {equip}")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
@@ -5846,9 +5878,11 @@ def generate_session(
             )
             lines.append("")
             lines.extend(cond_lines)
-            # Always add a 5-minute mobility cooldown circuit after conditioning
-            lines.append("")
-            lines.extend(build_conditioning_mobility_cooldown_5min(data.get("mobility", []) or [], age, rnd))
+            # Conditioning includes its own mobility cooldown circuit.
+            # If session is <15 min, skip mobility entirely (warm-up + conditioning only).
+            if minutes_raw >= 15:
+                lines.append("")
+                lines.extend(build_conditioning_mobility_cooldown_5min(data.get("mobility", []) or [], age, rnd))
             if minutes_raw > 25 and not ((cond_mode or "").strip().lower() == "surprise"):
                 lines.append("")
                 lines.append("(Conditioning capped at 25 min for quality)")
@@ -5856,6 +5890,9 @@ def generate_session(
 
         # Mobility — recovery session when mode is mobility/recovery
         if category == "mobility":
+            # When conditioning already includes mobility, don't add a second cooldown circuit.
+            if session_mode == "energy_systems":
+                continue
             minutes = max(1, seconds // 60)
             if session_mode in ("mobility", "recovery"):
                 mob_lines = build_mobility_recovery_session(
