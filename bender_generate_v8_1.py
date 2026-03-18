@@ -2461,7 +2461,9 @@ def build_conditioning_single_block(
         lines.append("- Warm-up: 5 min warm-up jog")
     lines.append(f"- {name}")
 
-    main_minutes = max(1, minutes - 5)
+    # Default sprinting/interval volume target: 10 minutes inside a 20-min conditioning session.
+    # Reserve 5 min warm-up + 5 min mobility cooldown outside the main conditioning work.
+    main_minutes = max(1, minutes - 10)
     if norm(get(drill, "id", "")) == "CD_003":
         # Hill Sprint + Broad Jump Combo: sprint + rest + broad jump + rest; repeat for half the time (longer cycle)
         lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
@@ -5770,6 +5772,13 @@ def generate_session(
             )
             lines.append("")
             lines.extend(cond_lines)
+            # Always add a 5-minute mobility cooldown after conditioning
+            mob_pool = data.get("mobility", []) or []
+            m = pick_mobility_drills(mob_pool, age, rnd, n=2, focus_rule=get_focus_rules(None, "mobility"))
+            mob_lines = build_mobility_cooldown_circuit(m, 5 * 60)
+            lines.append("")
+            lines.append("MOBILITY COOLDOWN (5 min)")
+            lines.extend(mob_lines)
             if minutes_raw > 25 and not ((cond_mode or "").strip().lower() == "surprise"):
                 lines.append("")
                 lines.append("(Conditioning capped at 25 min for quality)")
