@@ -35,7 +35,7 @@ MODE_SESSION_LEN_DEFAULTS: dict[str, int] = {
     "shooting": 45,
     "stickhandling": 45,
     "skills_only": 45,
-    "energy_systems": 25,
+    "energy_systems": 20,
     "mobility": 30,
 }
 

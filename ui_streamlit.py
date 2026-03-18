@@ -839,15 +839,20 @@ def _render_workout_overview_card(metadata: dict) -> None:
     mode = (meta.get("mode") or "").strip().lower()
     minutes = int(meta.get("minutes") or meta.get("len_min") or 0)
     xp_reward = _get_workout_card_xp_reward(meta)
-    difficulty_raw = meta.get("difficulty")
-    if difficulty_raw is not None:
-        try:
-            d = int(difficulty_raw)
-            difficulty_5 = max(1, min(5, d if d <= 5 else round(d / 2)))
-        except (TypeError, ValueError):
-            difficulty_5 = 3
+    difficulty_label = None
+    if mode in ("mobility", "recovery"):
+        difficulty_label = "Difficulty N/A"
     else:
-        difficulty_5 = 3
+        difficulty_raw = meta.get("difficulty")
+        if difficulty_raw is not None:
+            try:
+                d = int(difficulty_raw)
+                difficulty_5 = max(1, min(5, d if d <= 5 else round(d / 2)))
+            except (TypeError, ValueError):
+                difficulty_5 = 3
+        else:
+            difficulty_5 = 3
+        difficulty_label = f"Difficulty {difficulty_5}/5"
     bottom_left = _get_bottom_left_quadrant(meta)
     time_label = f"~{minutes} mins" if minutes > 0 else "—"
     xp_display = f"+{xp_reward} points" if xp_reward > 0 else "— points"
@@ -877,7 +882,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
             </div>
             <div style="{_q_style}{_q_style_r}">
                 <span style="{_icon_style}" aria-hidden="true">📊</span>
-                <span>Difficulty {difficulty_5}/5</span>
+                <span>{difficulty_label}</span>
             </div>
             <div style="{_q_style}{_q_style_b}">
                 <span style="{_icon_style}" aria-hidden="true">{_bl_icon}</span>
@@ -4170,7 +4175,7 @@ except (ImportError, KeyError, Exception):
         "energy_systems": "Conditioning",
         "mobility": "Mobility/Recovery",
     }
-    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 45, "shooting": 45, "stickhandling": 45, "skills_only": 45, "energy_systems": 25, "mobility": 30}
+    MODE_SESSION_LEN_DEFAULTS = {"performance": 60, "skating_mechanics": 45, "shooting": 45, "stickhandling": 45, "skills_only": 45, "energy_systems": 20, "mobility": 30}
     FREQUENCY_OPTIONS = ["As in plan", "1x/week", "2x/week", "3x/week", "4x/week", "5x/week", "6x/week", "7x/week"]
     WEEKDAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
@@ -4489,9 +4494,18 @@ def _render_training_session():
             minutes = st.slider("Session length (minutes)", 10, 120, _default_min, step=5, key=f"session_len_{effective_mode}")
             minutes = int(minutes)
 
-            rep_difficulty = st.slider("Difficulty (1–5)", 1, 5, 3, key="session_rep_difficulty", help="Session difficulty shown in the quadrant card (all modes). For Performance, also sets rep ranges: 1 = fewer reps, 5 = more reps.")
-            if effective_mode == "performance":
-                st.caption("Difficulty affects rep ranges: 1 = lower end (e.g. 3–4 reps for Power), 5 = higher end (e.g. 25 reps for Muscle Endurance).")
+            rep_difficulty = None
+            if effective_mode not in ("mobility", "recovery"):
+                rep_difficulty = st.slider(
+                    "Difficulty (1–5)",
+                    1,
+                    5,
+                    3,
+                    key="session_rep_difficulty",
+                    help="Session difficulty shown in the quadrant card. For Performance, also sets rep ranges: 1 = fewer reps, 5 = more reps.",
+                )
+                if effective_mode == "performance":
+                    st.caption("Difficulty affects rep ranges: 1 = lower end (e.g. 3–4 reps for Power), 5 = higher end (e.g. 25 reps for Muscle Endurance).")
 
             if effective_mode == "performance":
                 location = "gym"  # Performance always uses full gym flow (strength day, post-lift conditioning)
@@ -4609,7 +4623,7 @@ def _render_training_session():
                         "location": location,
                         "strength_day_type": _payload_strength_day,
                         "strength_emphasis": _payload_strength_emphasis,
-                        "rep_difficulty": int(rep_difficulty),
+                        "rep_difficulty": (int(rep_difficulty) if rep_difficulty is not None else None),
                         "skate_within_24h": skate_within_24h,
                         "conditioning": conditioning,
                         "conditioning_type": conditioning_type,
@@ -4659,7 +4673,9 @@ def _render_training_session():
                                 "equipment_used": _equip_used,
                             }
                             # Quadrant difficulty: prefer slider (rep_difficulty) for all modes, else from output
-                            if rep_difficulty is not None:
+                            if effective_mode in ("mobility", "recovery"):
+                                _meta["difficulty"] = None
+                            elif rep_difficulty is not None:
                                 _meta["difficulty"] = max(1, min(5, int(rep_difficulty)))
                             else:
                                 _diff_5 = re.search(r"Difficulty:\s*(\d+)/5\b", out_text or "")
