@@ -2612,6 +2612,7 @@ def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds:
     lines: List[str] = []
     lines.append(f"Format: {len(drills)} drills | {per_drill}s each | {rounds} rounds (~{format_seconds_short(per_drill * len(drills) * rounds)})")
     lines.append("Move slow. Nasal breathing. No forcing.")
+    lines.append("For each stretch, hold up to 30 seconds per side. If it can be done on either side, switch halfway or repeat on the other side.")
     for d in drills:
         lines.append(format_drill(d))
     return lines
@@ -2630,6 +2631,7 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
         lines.append(f"- {name} ({per // 60} min)")
+        lines.append("  Guideline: hold positions up to 30 seconds per side if the stretch is one-sided.")
         lines.append(f"  Equipment: {equip or 'None'}")
         if cues:
             lines.append(f"  Cues: {cues}")
