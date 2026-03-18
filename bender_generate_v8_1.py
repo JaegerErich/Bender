@@ -2468,7 +2468,8 @@ def build_conditioning_single_block(
     if mode == "bike" and drill_id in ("CD_006", "CD_012"):
         # Bike pedal-counting intervals: 20s sprint to a pedal target, rest remainder of the minute.
         n = main_minutes
-        lines.append(f"  {n} reps (on the minute): 20s sprint to target pedals, rest remainder of the minute.")
+        lines.append(f"  {n} reps")
+        lines.append("  1 rep = 20s sprint to target pedals, rest remainder of the minute (on the minute).")
         if drill_id == "CD_006":
             # CD_006: ladder/pyramid targets scaled to number of reps.
             full = [40, 60, 70, 75, 80, 80, 75, 70, 60, 40]  # 10 reps "full workout"
@@ -2491,26 +2492,36 @@ def build_conditioning_single_block(
         if cue:
             lines.append(f"  Cues: {cue}")
         return lines
-    if norm(get(drill, "id", "")) == "CD_003":
-        # Hill Sprint + Broad Jump Combo: sprint + rest + broad jump + rest; repeat for half the time (longer cycle)
-        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
-    elif _is_hill_or_stairs_conditioning(drill):
-        # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
-        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
-    elif norm(get(drill, "id", "")) == "CD_017":
-        # Curved treadmill: standardized 1-min intervals
-        lines.append(f"  {main_minutes} reps x 20s sprint / 40s rest (on the minute)")
-    elif _is_shuttle_run_conditioning(drill):
-        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
+
+    reps = main_minutes
+    lines.append(f"  {reps} reps")
+    # Define a single rep based on drill
+    if drill_id == "CD_003":
+        lines.append("  1 rep = hill sprint up, walk down; hill broad jumps up, walk down; rest 30s.")
+    elif drill_id == "CD_002" or _is_hill_or_stairs_conditioning(drill):
+        lines.append("  1 rep = sprint the hill, walk back down, then rest 30s.")
+    elif drill_id == "CD_017":
+        lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
+    elif drill_id == "CD_007" and mode == "bike":
+        lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
+    elif drill_id == "CD_019":
+        lines.append("  1 rep = complete the forward-lateral combo, then rest 30s.")
+    elif drill_id == "CD_021":
+        lines.append("  1 rep = complete the acceleration sprint, then rest 30s.")
+    elif drill_id == "CD_022":
+        lines.append("  1 rep = complete the lateral shuffle sprint, then rest 30s.")
+    elif drill_id == "CD_023":
+        lines.append("  1 rep = complete the multi-direction sprint, then rest 30s.")
     elif wrp == "continuous":
-        lines.append(f"  1 x {main_minutes} min steady")
+        # Override reps line for continuous work
+        lines[-2] = "  1 block"
+        lines[-1] = f"  1 block = {reps} min steady"
     else:
-        # Interval-style efforts: standardize to 20/40 for 1-minute reps when drill uses interval profiles.
-        if "interval" in wrp:
-            # Bike drills default to the same 20/40 unless using pedal-count targets above.
-            lines.append(f"  {main_minutes} reps x 20s sprint / 40s rest (on the minute)")
+        # Default: do the drill, then rest remainder of the minute (unless treadmill/bike interval handled above)
+        if mode in ("treadmill", "bike") and "interval" in wrp:
+            lines.append("  1 rep = 20s sprint / 40s rest (on the minute).")
         else:
-            lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
+            lines.append("  1 rep = complete the drill, then rest the remainder of the minute.")
     eq = _equipment_display(drill) or "None"
     lines.append(f"  Equipment: {eq}")
     if cue:
@@ -2659,6 +2670,41 @@ def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds:
     lines.append("Move slow. Nasal breathing. No forcing.")
     lines.append("For each stretch, hold up to 30 seconds per side. If it can be done on either side, switch halfway or repeat on the other side.")
     for d in drills:
+        lines.append(format_drill(d))
+    return lines
+
+
+def build_conditioning_mobility_cooldown_5min(
+    drills: List[Dict[str, Any]],
+    age: int,
+    rnd: random.Random,
+) -> List[str]:
+    """Conditioning always ends with a 5-minute mobility cooldown circuit."""
+    picked = pick_mobility_drills(drills or [], age, rnd, n=3, focus_rule=get_focus_rules(None, "mobility")) or []
+    if not picked:
+        return ["MOBILITY COOLDOWN CIRCUIT (5 min)", "- Perform 5 minutes of your preferred cooldown stretches."]
+
+    def _mobility_work_sec(d: Dict[str, Any]) -> int:
+        rid = norm(get(d, "id", ""))
+        name = _display_name(d).lower()
+        if rid == "SMR_018" or "seated box breathing" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 120), 120))
+        if rid == "SMR_023" or "full body foam roller sequence" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 300), 300))
+        return 30
+
+    total_target = 5 * 60
+    per_round = sum(_mobility_work_sec(d) for d in picked)
+    rounds = max(1, int(round(total_target / max(1, per_round))))
+    rounds = min(rounds, 6)
+    est = per_round * rounds
+
+    lines: List[str] = []
+    lines.append(f"MOBILITY COOLDOWN CIRCUIT (5 min)")
+    lines.append(f"Format: {len(picked)} drills | {rounds} rounds (~{format_seconds_short(est)})")
+    lines.append("Move slow. Nasal breathing. No forcing.")
+    lines.append("Hold up to 30 seconds per side. If it can be done on either side, switch halfway or repeat on the other side.")
+    for d in picked:
         lines.append(format_drill(d))
     return lines
 
@@ -5800,13 +5846,9 @@ def generate_session(
             )
             lines.append("")
             lines.extend(cond_lines)
-            # Always add a 5-minute mobility cooldown after conditioning
-            mob_pool = data.get("mobility", []) or []
-            m = pick_mobility_drills(mob_pool, age, rnd, n=2, focus_rule=get_focus_rules(None, "mobility"))
-            mob_lines = build_mobility_cooldown_circuit(m, 5 * 60)
+            # Always add a 5-minute mobility cooldown circuit after conditioning
             lines.append("")
-            lines.append("MOBILITY COOLDOWN (5 min)")
-            lines.extend(mob_lines)
+            lines.extend(build_conditioning_mobility_cooldown_5min(data.get("mobility", []) or [], age, rnd))
             if minutes_raw > 25 and not ((cond_mode or "").strip().lower() == "surprise"):
                 lines.append("")
                 lines.append("(Conditioning capped at 25 min for quality)")
