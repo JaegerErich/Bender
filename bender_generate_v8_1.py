@@ -1613,9 +1613,9 @@ def _stickhandling_difficulty_points(d: Dict[str, Any], assigned_time: float) ->
     return pts * assigned_time
 
 
-STICKHANDLING_WORK_SEC = 45
-STICKHANDLING_REST_SEC = 30
-STICKHANDLING_INTERVAL_SEC = STICKHANDLING_WORK_SEC + STICKHANDLING_REST_SEC  # 75s per rep
+STICKHANDLING_WORK_SEC = 30
+STICKHANDLING_REST_SEC = 20
+STICKHANDLING_INTERVAL_SEC = STICKHANDLING_WORK_SEC + STICKHANDLING_REST_SEC  # 50s per rep
 
 
 def build_stickhandling_blocks_session(
@@ -1629,13 +1629,13 @@ def build_stickhandling_blocks_session(
 ) -> List[str]:
     """
     Block-based stickhandling session: 4 blocks (Control, Quick Hands, Game Transfer, Decision),
-    time-based allocation with 45s work / 30s rest per rep, variety guardrails, difficulty rating.
+    time-based allocation with 30s work / 20s rest per rep, variety guardrails, difficulty rating.
     """
     pool = _filter_stickhandling_pool(drills, age, available_equipment, available_space)
     if not pool:
         if available_equipment:
             return ["BENDER_EQUIPMENT_REQUIRED", "Equipment is required."]
-        return [f"Stickhandling ({stickhandling_minutes} min)", "Timing format: 45s work / 30s rest per rep", "- [No matching drills found]"]
+        return [f"Stickhandling ({stickhandling_minutes} min)", "Timing format: 30s work / 20s rest per rep", "- [No matching drills found]"]
 
     total_sec = stickhandling_minutes * 60
     overhead_sec = max(60, round(total_sec * 0.10))
@@ -1727,7 +1727,7 @@ def build_stickhandling_blocks_session(
             g = _stickhandling_equipment_group(d)
             if g != "minimal":
                 active_equipment_groups.add(g)
-        # Each rep = 45s work + 30s rest; allocate block time across drills
+        # Each rep = 30s work + 20s rest; allocate block time across drills
         reps = max(2, round(sec / (len(drills_for_block) * STICKHANDLING_INTERVAL_SEC)))
         for d in drills_for_block:
             per_drill_total = reps * STICKHANDLING_INTERVAL_SEC  # work + rest
@@ -1768,6 +1768,7 @@ def build_stickhandling_blocks_session(
     lines: List[str] = []
     lines.append(f"Stickhandling ({stickhandling_minutes} min)")
     lines.append(f"Timing format: {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest per rep (~{total_min} min total)")
+    lines.append("If a drill is single-leg, switch legs halfway through each work interval.")
     for block, d, reps, assigned_time in result:
         name = _display_name(d)
         did = norm(get(d, "id", ""))
@@ -1775,7 +1776,9 @@ def build_stickhandling_blocks_session(
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
         prefix = f"- {did} " if did else "- "
-        lines.append(f"{prefix}{name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest")
+        one_leg = "one leg" in norm(get(d, "step_by_step", "")).lower()
+        switch_note = " (switch legs halfway)" if one_leg else ""
+        lines.append(f"{prefix}{name} | {reps} x {STICKHANDLING_WORK_SEC}s work / {STICKHANDLING_REST_SEC}s rest{switch_note}")
         eq = _stickhandling_special_equipment(d) or "Puck & stick"
         lines.append(f"  Equipment: {eq}")
         if cue:
@@ -2323,10 +2326,10 @@ def get_conditioning_modes_for_equipment(user_equipment: Optional[List[str]]) ->
     user_set = {norm(x).lower() for x in (user_equipment or []) if x}
     out: List[Tuple[str, str]] = []
     if not user_set:
-        out = [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill")]
+        out = [("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill")]
     else:
         if any("none" in u for u in user_set):
-            out.append(("field", "Field/No equipment"))
+            out.append(("cones", "Cones"))
         if any("cone" in u for u in user_set):
             out.append(("cones", "Cones"))
         if any("hill" in u for u in user_set):
@@ -2337,17 +2340,17 @@ def get_conditioning_modes_for_equipment(user_equipment: Optional[List[str]]) ->
             out.append(("bike", "Stationary Bike"))
         if any("treadmill" in u for u in user_set):
             out.append(("treadmill", "Treadmill"))
-        if any("box" in u for u in user_set) and ("field", "Field/No equipment") not in [(v, _) for v, _ in out]:
-            out.append(("field", "Field/No equipment"))
+        if any("box" in u for u in user_set) and ("cones", "Cones") not in [(v, _) for v, _ in out]:
+            out.append(("cones", "Cones"))
         if not out:
-            out = [("field", "Field/No equipment")]
+            out = [("cones", "Cones")]
     out.append(("surprise", "Surprise me"))
     return out
 
 
 def _conditioning_mode_match(d: Dict[str, Any], mode: str) -> bool:
-    """True if drill matches mode via equipment substring. mode: bike|treadmill|hill|cones|field.
-    For field: only drills with NO equipment (bodyweight/none) — never cones, bike, treadmill, etc."""
+    """True if drill matches mode via equipment substring. mode: bike|treadmill|hill|cones.
+    Cones includes both cone drills and no-equipment field drills."""
     eq = norm(get(d, "equipment", "")).lower()
     if mode == "bike":
         return "bike" in eq
@@ -2356,9 +2359,7 @@ def _conditioning_mode_match(d: Dict[str, Any], mode: str) -> bool:
     if mode == "hill":
         return "hill" in eq or "stair" in eq
     if mode == "cones":
-        return "cone" in eq
-    if mode == "field":
-        return equipment_ok(d, "none")  # Only bodyweight/no equipment; excludes cones, bike, treadmill, etc.
+        return ("cone" in eq) or equipment_ok(d, "none")
     return False
 
 
@@ -2397,10 +2398,9 @@ def build_conditioning_single_block(
     conditioning_effort: str,  # easy|hard|surprise
 ) -> List[str]:
     """
-    Single-block, time-capped conditioning. Picks 1 drill by mode (equipment) and effort.
-    minutes is capped to 25 by caller.
+    Single-block conditioning. Picks 1 drill by mode (equipment) and effort.
     """
-    minutes = min(minutes, 25)
+    minutes = max(1, int(minutes))
     total_sec = minutes * 60
     overhead_sec = max(60, round(total_sec * 0.10))
     block_sec = max(0, total_sec - overhead_sec)
@@ -2409,16 +2409,20 @@ def build_conditioning_single_block(
     pool = [d for d in pool if norm(get(d, "session_type", "")).lower() == "conditioning"]
 
     mode = (conditioning_mode or "surprise").strip().lower()
+    # Zone 2 rule: only allow Zone 2 aerobic base from Surprise me AND only when session length > 25 min.
+    allow_zone2 = (mode == "surprise" and minutes > 25)
+    if not allow_zone2:
+        pool = [d for d in pool if norm(get(d, "id", "")) != "CD_024"]
     if mode == "surprise":
         available = []
-        for m in ("bike", "treadmill", "hill", "cones", "field"):
+        for m in ("bike", "treadmill", "hill", "cones"):
             if any(_conditioning_mode_match(d, m) for d in pool):
                 available.append(m)
-        mode = rnd.choice(available) if available else "field"
+        mode = rnd.choice(available) if available else "cones"
 
     pool = [d for d in pool if _conditioning_mode_match(d, mode)]
     if not pool:
-        mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
+        mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones"}.get(mode, mode)
         return [
             f"Conditioning ({minutes} min) | {mode_label} | —",
             "- [No matching drills found for selected mode]",
@@ -2428,12 +2432,18 @@ def build_conditioning_single_block(
     if effort == "surprise":
         effort = rnd.choice(["easy", "medium", "hard"])
 
-    scored = [(d, _conditioning_effort_score(d, effort)) for d in pool]
-    scored.sort(key=lambda x: (-x[1], preference_score(x[0])))
-    best = [d for d, s in scored if s == scored[0][1]]
-    drill = rnd.choice(best) if len(best) > 1 else best[0]
+    # If user explicitly chose Surprise and asked for >25 minutes, force Zone 2 aerobic base run if available.
+    if allow_zone2:
+        z2 = [d for d in pool if norm(get(d, "id", "")) == "CD_024"]
+        drill = z2[0] if z2 else pool[0]
+        effort = "easy"
+    else:
+        scored = [(d, _conditioning_effort_score(d, effort)) for d in pool]
+        scored.sort(key=lambda x: (-x[1], preference_score(x[0])))
+        best = [d for d, s in scored if s == scored[0][1]]
+        drill = rnd.choice(best) if len(best) > 1 else best[0]
 
-    mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones", "field": "Field/No equipment"}.get(mode, mode)
+    mode_label = {"bike": "Bike", "treadmill": "Treadmill", "hill": "Hill", "cones": "Cones"}.get(mode, mode)
 
     name = _display_name(drill)
     cue = norm(get(drill, "coaching_cues", ""))
@@ -2441,44 +2451,31 @@ def build_conditioning_single_block(
 
     lines: List[str] = []
     lines.append(f"Conditioning ({minutes} min) | {mode_label}")
+    # Warm-up (always 5 minutes)
+    if mode in ("bike",):
+        lines.append("- Warm-up: 5 min easy spin")
+    elif mode in ("treadmill", "hill"):
+        lines.append("- Warm-up: 5 min easy jog")
+    else:
+        lines.append("- Warm-up: 5 min warm-up jog")
     lines.append(f"- {name}")
 
+    main_minutes = max(1, minutes - 5)
     if norm(get(drill, "id", "")) == "CD_003":
         # Hill Sprint + Broad Jump Combo: sprint + rest + broad jump + rest; repeat for half the time (longer cycle)
-        half_min = max(1, minutes // 2)
-        lines.append(f"  1 hill sprint, 30 seconds rest, 1 hill broad jumping, 30 sec rest — repeat for {half_min} min")
+        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif _is_hill_or_stairs_conditioning(drill):
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
-        lines.append(f"  1 hill sprint, 30s rest — repeat for {minutes} min")
+        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif norm(get(drill, "id", "")) == "CD_017":
         # Curved treadmill 1-min intervals: hard=30/30, medium=20/40, easy=15/45
-        if effort == "hard":
-            work, rest = 30, 30
-        elif effort == "medium":
-            work, rest = 20, 40
-        else:
-            work, rest = 15, 45
-        interval = work + rest
-        rounds = max(1, int(block_sec) // max(1, interval))
-        r_label = "round" if rounds == 1 else "rounds"
-        lines.append(f"  {rounds} {r_label} x {work}s sprint / {rest}s rest")
+        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif _is_shuttle_run_conditioning(drill):
-        lines.append(f"  1 shuttle run, 30s rest — repeat for {minutes} min")
+        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif wrp == "continuous":
-        work_min = round(block_sec / 60)
-        work_min = max(1, work_min)
-        lines.append(f"  1 x {work_min} min steady")
+        lines.append(f"  1 x {main_minutes} min steady")
     else:
-        work = to_int(get(drill, "default_duration_sec", 60), 60)
-        work = clamp(work, 10, 600)
-        if "short" in wrp or "interval_short" in wrp:
-            rest = work
-        else:
-            rest = 3 * work
-        interval = work + rest
-        rounds = max(1, int(block_sec) // max(1, interval))
-        r_label = "round" if rounds == 1 else "rounds"
-        lines.append(f"  {rounds} {r_label} x {work}s work / {rest}s rest")
+        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     eq = _equipment_display(drill) or "None"
     lines.append(f"  Equipment: {eq}")
     if cue:
@@ -3220,6 +3217,18 @@ def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: 
         reps_display = f"{reps_clean} steps/side" if "steps" not in reps_clean.lower() else reps_clean
     else:
         reps_display = reps or ""
+
+    # Performance unilateral lifts: keep reps as-is, but ensure it's clear this is per side.
+    # (Stickhandling has its own one-leg logic; do not enforce even reps here.)
+    def _is_true(v: Any) -> bool:
+        return str(v).strip().lower() in ("true", "1", "yes", "y")
+
+    is_unilateral = _is_true(get(d, "unilateral", False))
+    unilateral_note = ""
+    if is_unilateral and reps_display:
+        low = (reps_display or "").lower()
+        if "/side" not in low and "per side" not in low and "each side" not in low:
+            reps_display = f"{reps_display} /side"
     rx = f"{sets} x {reps_display}"
     prefix = f"- {did} " if did else "- "
     line = f"{prefix}{name} | {rx}".strip()
@@ -3230,6 +3239,8 @@ def format_strength_drill_with_prescription(d: Dict[str, Any], sets: Any, reps: 
         line += f"\n  Cues: {cues}"
     if steps:
         line += f"\n  Steps: {steps}"
+    if unilateral_note:
+        line += f"\n  Notes: {unilateral_note}"
     return line + _video_marker_line(d)
 
 
@@ -4033,6 +4044,7 @@ def build_heavy_leg_session(
                 rep_num = reps_c.split()[0] if reps_c else "6"
                 lines.append(f"- {strength_name} (DB or KB) | 3 x {rep_num} | Rest 90s")
                 lines.append("  Drop the weight after each set, do immediately after strength set.")
+                lines.append("  Each side.")
                 equip_s = _equipment_display(strength_d)
                 cues_s = norm(get(strength_d, "coaching_cues", ""))
                 steps_s = norm(get(strength_d, "step_by_step", ""))
@@ -5736,9 +5748,13 @@ def generate_session(
         # Energy Systems — single-block, time-capped (max 25 min)
         if category == "energy_systems":
             minutes_raw = max(1, seconds // 60)
-            minutes = min(minutes_raw, 25)
             cond_mode = kwargs.get("conditioning_mode", "surprise")
             cond_effort = kwargs.get("conditioning_effort", "surprise")
+            # Allow sessions >25 min only for Surprise me (Zone 2 aerobic base run).
+            if (cond_mode or "").strip().lower() == "surprise" and minutes_raw > 25:
+                minutes = minutes_raw
+            else:
+                minutes = min(minutes_raw, 25)
             cond_lines = build_conditioning_single_block(
                 drills=data.get("energy_systems", []),
                 minutes=minutes,
@@ -5749,7 +5765,7 @@ def generate_session(
             )
             lines.append("")
             lines.extend(cond_lines)
-            if minutes_raw > 25:
+            if minutes_raw > 25 and not ((cond_mode or "").strip().lower() == "surprise"):
                 lines.append("")
                 lines.append("(Conditioning capped at 25 min for quality)")
             continue

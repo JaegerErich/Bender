@@ -4518,7 +4518,11 @@ def _render_training_session():
                 prof_equip = (st.session_state.current_profile or {}).get("equipment") or []
                 _canonicalize = getattr(ENGINE, "canonicalize_equipment_list", None)
                 prof_equip_canonical = _canonicalize(prof_equip) if _canonicalize else prof_equip
-                cond_modes = getattr(ENGINE, "get_conditioning_modes_for_equipment", lambda x: [("field", "Field/No equipment"), ("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill"), ("surprise", "Surprise me")])(prof_equip_canonical)
+                cond_modes = getattr(
+                    ENGINE,
+                    "get_conditioning_modes_for_equipment",
+                    lambda x: [("cones", "Cones"), ("hill", "Hill"), ("bike", "Stationary Bike"), ("treadmill", "Treadmill"), ("surprise", "Surprise me")],
+                )(prof_equip_canonical)
                 mode_options = [label for _, label in cond_modes]
                 mode_values = [v for v, _ in cond_modes]
                 mode_idx = st.selectbox("Conditioning Mode", range(len(mode_options)), format_func=lambda i: mode_options[i], key="cond_mode")
