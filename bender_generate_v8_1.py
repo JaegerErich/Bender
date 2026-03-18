@@ -2331,7 +2331,8 @@ def get_conditioning_modes_for_equipment(user_equipment: Optional[List[str]]) ->
         if any("none" in u for u in user_set):
             out.append(("cones", "Cones"))
         if any("cone" in u for u in user_set):
-            out.append(("cones", "Cones"))
+            if ("cones", "Cones") not in out:
+                out.append(("cones", "Cones"))
         if any("hill" in u for u in user_set):
             out.append(("hill", "Hill"))
         if any("stair" in u for u in user_set) and ("hill", "Hill") not in out:
@@ -2468,14 +2469,18 @@ def build_conditioning_single_block(
         # Hill/stairs: 1 hill sprint, 30s rest, repeat for duration
         lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif norm(get(drill, "id", "")) == "CD_017":
-        # Curved treadmill 1-min intervals: hard=30/30, medium=20/40, easy=15/45
-        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
+        # Curved treadmill: standardized 1-min intervals
+        lines.append(f"  {main_minutes} reps x 20s sprint / 40s rest (on the minute)")
     elif _is_shuttle_run_conditioning(drill):
         lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     elif wrp == "continuous":
         lines.append(f"  1 x {main_minutes} min steady")
     else:
-        lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
+        # Interval-style efforts: standardize to 20/40 for 1-minute reps when drill uses interval profiles.
+        if "interval" in wrp:
+            lines.append(f"  {main_minutes} reps x 20s sprint / 40s rest (on the minute)")
+        else:
+            lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
     eq = _equipment_display(drill) or "None"
     lines.append(f"  Equipment: {eq}")
     if cue:
