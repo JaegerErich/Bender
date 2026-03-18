@@ -5235,8 +5235,8 @@ def build_hockey_strength_session(
             cues = norm(get(d, "coaching_cues", default=""))
             steps = norm(get(d, "step_by_step", default=""))
             lines.append(f"- {name} (30–45s)")
-                if equip:
-                    lines.append(f"  Equipment: {equip}")
+            if equip:
+                lines.append(f"  Equipment: {equip}")
             if cues:
                 lines.append(f"  Cues: {cues}")
             if steps:
