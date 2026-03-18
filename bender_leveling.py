@@ -6,23 +6,21 @@ Includes XP caps, workout-length scaling, daily category caps, and same-workout 
 from datetime import date, datetime, timedelta
 from typing import Any
 
-# --- Category XP weights (base XP at average duration) ---
-CATEGORY_XP = {
-    "puck_mastery": 30,
-    "skating_mechanics": 25,
-    "performance": 25,
-    "conditioning": 10,
-    "mobility": 10,
-}
-
-# --- Average workout duration by category (minutes) — full XP baseline ---
-CATEGORY_AVERAGE_MINUTES = {
+DEFAULT_MINUTES = {
     "puck_mastery": 45,
-    "skating_mechanics": 45,
     "performance": 60,
-    "conditioning": 15,
+    "skating_mechanics": 45,
+    "conditioning": 20,
     "mobility": 30,
     "mobility_recovery": 30,
+}
+
+DIFFICULTY_MULTIPLIERS = {
+    1: 0.8,
+    2: 0.9,
+    3: 1.0,
+    4: 1.1,
+    5: 1.2,
 }
 
 # Map session mode (from metadata) to our category key
@@ -102,22 +100,60 @@ def category_from_mode(mode: str) -> str | None:
 
 
 def xp_for_category(category: str) -> int:
-    """Base XP for this category (at average duration)."""
-    return CATEGORY_XP.get(category, 0)
+    """Legacy (points) accessor. Prefer calculate_base_workout_points()."""
+    return 30
 
 
 def get_category_average_minutes(category: str) -> int:
-    """Average workout duration for category (minutes). Full XP at this duration."""
-    return CATEGORY_AVERAGE_MINUTES.get(category, 45)
+    """Legacy accessor. Prefer get_default_minutes()."""
+    return int(DEFAULT_MINUTES.get(category, 45))
+
+
+def clamp(value: float, min_value: float, max_value: float) -> float:
+    return max(min_value, min(max_value, value))
+
+
+def get_default_minutes(category: str) -> int:
+    """Default duration (minutes) used for baseline points scaling."""
+    return int(DEFAULT_MINUTES.get(category, 45))
+
+
+def get_difficulty_multiplier(difficulty: Any) -> float:
+    """Difficulty multiplier for difficulty 1–5. Defaults to 1.0 (difficulty 3 baseline)."""
+    try:
+        d = int(difficulty)
+    except (TypeError, ValueError):
+        d = 3
+    return float(DIFFICULTY_MULTIPLIERS.get(d, 1.0))
+
+
+def calculate_base_workout_points(category: str, workout_minutes: float, difficulty: Any) -> int:
+    """
+    Baseline points model (before daily caps / repeats / multi-workout logic):
+      base = round(30 * time_multiplier * difficulty_multiplier)
+    time_multiplier = clamp(workout_minutes / default_minutes, 0.6, 1.4)
+    difficulty_multiplier: 1→0.8, 2→0.9, 3→1.0, 4→1.1, 5→1.2
+    """
+    default_minutes = get_default_minutes(category)
+    if default_minutes <= 0:
+        default_minutes = 45
+    try:
+        wm = float(workout_minutes)
+    except (TypeError, ValueError):
+        wm = 0.0
+    time_ratio = (wm / float(default_minutes)) if default_minutes else 1.0
+    time_multiplier = clamp(time_ratio, 0.6, 1.4)
+    difficulty_multiplier = get_difficulty_multiplier(difficulty)
+    pts = 30.0 * time_multiplier * difficulty_multiplier
+    return int(round(pts))
 
 
 def get_length_multiplier(category: str, completed_duration_minutes: float) -> float:
-    """Length multiplier: 0.5 to 1.5 based on duration vs category average."""
-    avg = get_category_average_minutes(category)
-    if avg <= 0:
-        return 1.0
-    ratio = completed_duration_minutes / avg
-    return max(0.5, min(1.5, ratio))
+    """
+    Legacy length multiplier (kept for compatibility with existing limiter system).
+    Baseline points already include a time multiplier, so keep this neutral at 1.0.
+    """
+    return 1.0
 
 
 def get_category_multiplier(category: str, workouts_today_in_category: int) -> float:
@@ -180,7 +216,7 @@ def calculate_workout_xp(
     """
     Returns (final_xp, feedback_message). Uses consistent rounding (int for XP).
     """
-    length_mult = get_length_multiplier(category, completed_duration_minutes)
+    length_mult = 1.0
     category_mult = get_category_multiplier(category, workouts_today_in_category)
     repeat_mult = get_repeat_multiplier(same_exact_workout_completed_within_24_hours)
     raw = base_xp * length_mult * category_mult * repeat_mult
@@ -192,8 +228,6 @@ def calculate_workout_xp(
         return (0.0, "0 points")
 
     reasons = []
-    if length_mult < 0.99:
-        reasons.append("Shorter workout duration adjusted points")
     if category_mult < 1.0 and category_mult > 0:
         reasons.append("Reduced points after optimal daily training volume")
     if repeat_mult < 1.0:
@@ -440,18 +474,18 @@ def apply_xp_and_leveling(profile: dict, metadata: dict) -> tuple[dict, int, str
     if not category:
         return (p, 0, feedback)
 
-    base_xp = xp_for_category(category)
+    completed_min = float(metadata.get("minutes") or metadata.get("len_min") or 0)
+    difficulty = metadata.get("difficulty")
+    base_xp = calculate_base_workout_points(category, completed_min, difficulty)
     if base_xp <= 0:
         return (p, 0, feedback)
-
-    completed_min = float(metadata.get("minutes") or metadata.get("len_min") or 0)
     hist = p.get("completion_history") or []
     workouts_today = _count_workouts_today_in_category(hist, category)
     workout_id = (metadata.get("workout_id") or "").strip()
     last_at = hist[-1].get("completed_at") if hist else ""
     same_in_24h = _same_workout_completed_within_24_hours(hist, workout_id, last_at or datetime.now().isoformat())
 
-    length_mult = get_length_multiplier(category, completed_min)
+    length_mult = 1.0
     category_mult = get_category_multiplier(category, workouts_today)
     repeat_mult = get_repeat_multiplier(same_in_24h)
 

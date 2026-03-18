@@ -625,7 +625,7 @@ MODE_LABELS = {
 }
 
 # Puck Mastery: clickable types (checkboxes). Workout displays only checked types.
-PUCK_MASTERY_OPTIONS = ["Shooting", "Stickhandling", "Passing"]  # Passing drills coming later
+PUCK_MASTERY_OPTIONS = ["Shooting", "Stickhandling", "Passing (coming soon)"]  # Passing drills coming later
 
 DISPLAY_MODES = [MODE_LABELS.get(m, m) for m in RAW_MODES]
 LABEL_TO_MODE = {MODE_LABELS.get(m, m): m for m in RAW_MODES}
@@ -776,30 +776,17 @@ def _get_training_focus_for_card(metadata: dict) -> str:
         return "Training"
 
 
-def _get_category_base_xp(category: str) -> float:
-    """Base XP for this category (at average duration)."""
-    values = {
-        "puck_mastery": 30,
-        "skating_mechanics": 25,
-        "performance": 25,
-        "conditioning": 10,
-        "mobility": 10,
-        "mobility_recovery": 10,
-    }
-    return values.get(category, 0)
-
-
-def _get_category_average_minutes(category: str) -> float:
-    """Average workout duration for category (minutes). 1.0x XP at this duration."""
+def _get_category_default_minutes(category: str) -> float:
+    """Default workout duration (minutes) used for baseline points scaling."""
     values = {
         "puck_mastery": 45,
-        "skating_mechanics": 45,
         "performance": 60,
-        "conditioning": 15,
+        "skating_mechanics": 45,
+        "conditioning": 20,
         "mobility": 30,
         "mobility_recovery": 30,
     }
-    return values.get(category, 45)
+    return float(values.get(category, 45))
 
 
 def _clamp(value: float, min_val: float, max_val: float) -> float:
@@ -807,17 +794,16 @@ def _clamp(value: float, min_val: float, max_val: float) -> float:
 
 
 def _get_estimated_preview_xp(category: str, estimated_duration_minutes: float) -> int:
-    """Time-adjusted estimated XP for workout card preview.
-    Under 10 min = 0 XP; at category average = 1.0x base; multiplier clamped 0.25–2.0."""
+    """Estimated points for workout card preview (baseline model only)."""
     if estimated_duration_minutes < 10:
         return 0
-    base_xp = _get_category_base_xp(category)
-    avg_minutes = _get_category_average_minutes(category)
-    if avg_minutes <= 0:
-        return round(base_xp)
-    length_ratio = estimated_duration_minutes / avg_minutes
-    length_multiplier = _clamp(length_ratio, 0.25, 2.0)
-    return round(base_xp * length_multiplier)
+    default_minutes = _get_category_default_minutes(category)
+    if default_minutes <= 0:
+        default_minutes = 45.0
+    time_ratio = estimated_duration_minutes / default_minutes
+    time_multiplier = _clamp(time_ratio, 0.6, 1.4)
+    # Preview fallback assumes difficulty=3 (1.0x)
+    return round(30.0 * time_multiplier)
 
 
 def _get_workout_card_xp_reward(metadata: dict) -> int:
@@ -828,7 +814,14 @@ def _get_workout_card_xp_reward(metadata: dict) -> int:
         if not category:
             return 0
         minutes = float(metadata.get("minutes") or metadata.get("len_min") or 0)
-        return _get_estimated_preview_xp(category, minutes)
+        # Match baseline leveling model (points) as closely as possible for the card preview.
+        # If difficulty is missing (e.g., Mobility/Recovery), treat it as difficulty 3 (1.0x).
+        try:
+            from bender_leveling import calculate_base_workout_points
+            difficulty = metadata.get("difficulty")
+            return int(calculate_base_workout_points(category, minutes, difficulty))
+        except Exception:
+            return _get_estimated_preview_xp(category, minutes)
     except Exception:
         return 0
 
@@ -4467,13 +4460,13 @@ def _render_training_session():
                 with _col_st:
                     puck_stickhandling = st.checkbox("Stickhandling", value=st.session_state.puck_include_stickhandling, key="puck_cb_stickhandling")
                 with _col_p:
-                    puck_passing = st.checkbox("Passing", value=st.session_state.puck_include_passing, key="puck_cb_passing")
+                    puck_passing = st.checkbox("Passing (coming soon)", value=st.session_state.puck_include_passing, key="puck_cb_passing")
                 st.session_state.puck_include_shooting = puck_shooting
                 st.session_state.puck_include_stickhandling = puck_stickhandling
                 st.session_state.puck_include_passing = puck_passing
                 _puck_checked = [b for b, lbl in [(puck_shooting, "shooting"), (puck_stickhandling, "stickhandling"), (puck_passing, "passing")] if b]
                 if not _puck_checked:
-                    st.warning("Select at least one: Shooting, Stickhandling, or Passing.")
+                    st.warning("Select at least one: Shooting, Stickhandling, or Passing (coming soon).")
                 # Derive effective_mode and time split for engine
                 if puck_shooting and puck_stickhandling and not puck_passing:
                     effective_mode = "skills_only"

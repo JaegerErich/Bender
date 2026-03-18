@@ -2607,10 +2607,23 @@ def build_mobility_cooldown_circuit(drills: List[Dict[str, Any]], block_seconds:
     else:
         rounds = 3
 
-    per_drill = max(30, min(60, (block_seconds // max(1, (len(drills) * rounds))) if rounds > 0 else 45))
+    def _mobility_work_sec(d: Dict[str, Any]) -> int:
+        """Mobility/recovery prescription: 30s per drill by default.
+        Exceptions: Seated Box Breathing and Full Body Foam Roller Sequence can be longer."""
+        rid = norm(get(d, "id", ""))
+        name = _display_name(d).lower()
+        if rid == "SMR_018" or "seated box breathing" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 120), 120))
+        if rid == "SMR_023" or "full body foam roller sequence" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 300), 300))
+        return 30
+
+    # 30s sets for all mobility drills (exceptions handled per-drill above)
+    per_drill = 30
 
     lines: List[str] = []
-    lines.append(f"Format: {len(drills)} drills | {per_drill}s each | {rounds} rounds (~{format_seconds_short(per_drill * len(drills) * rounds)})")
+    total_work = sum(_mobility_work_sec(d) for d in drills) * rounds
+    lines.append(f"Format: {len(drills)} drills | {per_drill}s each | {rounds} rounds (~{format_seconds_short(total_work)})")
     lines.append("Move slow. Nasal breathing. No forcing.")
     lines.append("For each stretch, hold up to 30 seconds per side. If it can be done on either side, switch halfway or repeat on the other side.")
     for d in drills:
@@ -2623,20 +2636,34 @@ def build_mobility_timed_session(drills: List[Dict[str, Any]], total_seconds: in
         return ["- Use your preferred mobility/reset routine for the time available."]
 
     n = len(drills)
-    per = max(120, total_seconds // max(1, n))
+    # Mobility timed sessions: keep work sets at 30s (exceptions can be longer).
+    # Use rounds to scale up to the time available.
+    per = 30
     lines: List[str] = []
+    lines.append("Format: 30s per drill (Seated Box Breathing / Foam Roller can be longer).")
     for d in drills:
         name = _display_name(d)
         equip = _equipment_display(d)
         cues = norm(get(d, "coaching_cues", default=""))
         steps = norm(get(d, "step_by_step", default=""))
-        lines.append(f"- {name} ({per // 60} min)")
+        rid = norm(get(d, "id", ""))
+        nlow = (name or "").lower()
+        if rid == "SMR_018" or "seated box breathing" in nlow:
+            dur = max(30, to_int(get(d, "default_duration_sec", 120), 120))
+        elif rid == "SMR_023" or "full body foam roller sequence" in nlow:
+            dur = max(30, to_int(get(d, "default_duration_sec", 300), 300))
+        else:
+            dur = 30
+        lines.append(f"- {name} ({dur}s)")
         lines.append("  Guideline: hold positions up to 30 seconds per side if the stretch is one-sided.")
         lines.append(f"  Equipment: {equip or 'None'}")
         if cues:
             lines.append(f"  Cues: {cues}")
         if steps:
             lines.append(f"  Steps: {steps}")
+        vm = _video_marker_line(d)
+        if vm:
+            lines.append(vm.strip())
     return lines
 
 
@@ -2817,15 +2844,26 @@ def build_mobility_recovery_session(
     work_sec = max(60, int(usable_sec * (1 - rest_pct)))
     rest_between_sec = 20  # 15–30s typical; use 20 for time estimate
 
+    def _mobility_work_sec(d: Dict[str, Any]) -> int:
+        """Mobility/recovery prescription: 30s sets for every drill except:
+        - Seated Box Breathing (SMR_018): allow longer (default 120s)
+        - Full Body Foam Roller Sequence (SMR_023): allow longer (default 300s+)"""
+        rid = norm(get(d, "id", ""))
+        name = _display_name(d).lower()
+        if rid == "SMR_018" or "seated box breathing" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 120), 120))
+        if rid == "SMR_023" or "full body foam roller sequence" in name:
+            return max(30, to_int(get(d, "default_duration_sec", 300), 300))
+        return 30
+
     def time_for_drills() -> int:
         t = 0
         for _, d in selected:
-            dur = max(30, to_int(get(d, "default_duration_sec", 60), 60))
             rid = norm(get(d, "id", ""))
             r = drill_rounds.get(rid, 1)
-            if _mobility_is_foam_roller(d):
-                r = min(r, 2)
-            t += r * dur
+            cap = 2 if _mobility_is_foam_roller(d) else 3
+            r = min(r, cap)
+            t += r * _mobility_work_sec(d)
         return t
 
     # Add rounds in priority: hips -> ankles -> flow -> breathing
@@ -2860,11 +2898,11 @@ def build_mobility_recovery_session(
 
     lines: List[str] = []
     lines.append("Mobility / Recovery (%d min)" % minutes)
-    lines.append("Format: Circuit — work each drill, rest 15–30s between drills, then repeat. Complete %d round(s)." % rounds_typical)
+    lines.append("Format: Circuit — 30s per drill (Box Breathing / Foam Roller can be longer). Rest 15–30s between drills, then repeat. Complete %d round(s)." % rounds_typical)
     lines.append("")
     for _, d in selected:
         name = _display_name(d)
-        dur = max(30, to_int(get(d, "default_duration_sec", 60), 60))
+        dur = _mobility_work_sec(d)
         rid = norm(get(d, "id", ""))
         r = min(drill_rounds.get(rid, 1), 2 if _mobility_is_foam_roller(d) else 3)
         cue = norm(get(d, "coaching_cues", ""))
@@ -2875,6 +2913,9 @@ def build_mobility_recovery_session(
         lines.append(f"  Equipment: {equip}")
         if cue:
             lines.append(f"  Cue: {cue}")
+        vm = _video_marker_line(d)
+        if vm:
+            lines.append(vm.strip())
     return lines
 
 
