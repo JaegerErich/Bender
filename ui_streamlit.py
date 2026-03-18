@@ -833,7 +833,7 @@ def _render_workout_overview_card(metadata: dict) -> None:
     minutes = int(meta.get("minutes") or meta.get("len_min") or 0)
     xp_reward = _get_workout_card_xp_reward(meta)
     difficulty_label = None
-    if mode in ("mobility", "recovery"):
+    if mode in ("mobility", "recovery", "energy_systems"):
         difficulty_label = "Difficulty N/A"
     else:
         difficulty_raw = meta.get("difficulty")
@@ -4488,7 +4488,7 @@ def _render_training_session():
             minutes = int(minutes)
 
             rep_difficulty = None
-            if effective_mode not in ("mobility", "recovery"):
+            if effective_mode not in ("mobility", "recovery", "energy_systems"):
                 rep_difficulty = st.slider(
                     "Difficulty (1–5)",
                     1,
@@ -4670,7 +4670,7 @@ def _render_training_session():
                                 "equipment_used": _equip_used,
                             }
                             # Quadrant difficulty: prefer slider (rep_difficulty) for all modes, else from output
-                            if effective_mode in ("mobility", "recovery"):
+                            if effective_mode in ("mobility", "recovery", "energy_systems"):
                                 _meta["difficulty"] = None
                             elif rep_difficulty is not None:
                                 _meta["difficulty"] = max(1, min(5, int(rep_difficulty)))

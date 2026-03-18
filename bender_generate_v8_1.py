@@ -2464,6 +2464,33 @@ def build_conditioning_single_block(
     # Default sprinting/interval volume target: 10 minutes inside a 20-min conditioning session.
     # Reserve 5 min warm-up + 5 min mobility cooldown outside the main conditioning work.
     main_minutes = max(1, minutes - 10)
+    drill_id = norm(get(drill, "id", ""))
+    if mode == "bike" and drill_id in ("CD_006", "CD_012"):
+        # Bike pedal-counting intervals: 20s sprint to a pedal target, rest remainder of the minute.
+        n = main_minutes
+        lines.append(f"  {n} reps (on the minute): 20s sprint to target pedals, rest remainder of the minute.")
+        if drill_id == "CD_006":
+            # CD_006: ladder/pyramid targets scaled to number of reps.
+            full = [40, 60, 70, 75, 80, 80, 75, 70, 60, 40]  # 10 reps "full workout"
+            if n <= 1:
+                targets = [full[0]]
+            else:
+                # Sample targets across the full curve so we always start/end low and peak in the middle.
+                idxs = [round(i * (len(full) - 1) / (n - 1)) for i in range(n)]
+                # Ensure indices are non-decreasing (guard against rounding collisions)
+                for i in range(1, len(idxs)):
+                    idxs[i] = max(idxs[i], idxs[i - 1])
+                targets = [full[min(len(full) - 1, j)] for j in idxs]
+            lines.append(f"  Targets: {', '.join(str(t) for t in targets)} pedal pushes")
+        else:
+            # CD_012: descending targets by 5 each rep, floor at 20.
+            targets = [max(70 - 5 * i, 20) for i in range(n)]
+            lines.append(f"  Targets: {', '.join(str(t) for t in targets)} pedal pushes")
+        eq = _equipment_display(drill) or "None"
+        lines.append(f"  Equipment: {eq}")
+        if cue:
+            lines.append(f"  Cues: {cue}")
+        return lines
     if norm(get(drill, "id", "")) == "CD_003":
         # Hill Sprint + Broad Jump Combo: sprint + rest + broad jump + rest; repeat for half the time (longer cycle)
         lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
@@ -2480,6 +2507,7 @@ def build_conditioning_single_block(
     else:
         # Interval-style efforts: standardize to 20/40 for 1-minute reps when drill uses interval profiles.
         if "interval" in wrp:
+            # Bike drills default to the same 20/40 unless using pedal-count targets above.
             lines.append(f"  {main_minutes} reps x 20s sprint / 40s rest (on the minute)")
         else:
             lines.append(f"  {main_minutes} reps: start each rep on the minute; rest the remainder of the minute.")
@@ -5505,8 +5533,8 @@ def generate_session(
 
     def _return_with_equipment(text: str):
         equip = extract_equipment_from_plan(text, data)
-        # Mobility/Recovery: do not show difficulty at all
-        if session_mode not in ("mobility", "recovery"):
+        # Mobility/Recovery/Conditioning: do not show difficulty at all
+        if session_mode not in ("mobility", "recovery", "energy_systems"):
             # Use slider (rep_difficulty) when provided; else from drill JSONs
             if rep_difficulty is not None and 1 <= rep_difficulty <= 5:
                 difficulty_5 = rep_difficulty
