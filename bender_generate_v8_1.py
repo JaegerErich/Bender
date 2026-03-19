@@ -2959,23 +2959,25 @@ def build_mobility_recovery_session(
     rest_between_sec = 20  # 15–30s typical; use 20 for time estimate
 
     def _mobility_work_sec(d: Dict[str, Any]) -> int:
-        """Mobility/recovery prescription: 30s sets for every drill except:
-        - Seated Box Breathing (SMR_018): allow longer (default 120s)
-        - Full Body Foam Roller Sequence (SMR_023): allow longer (default 300s+)"""
+        """Mobility/recovery prescription: cap work per rep at 30s.
+        Exception: Full Body Foam Roller Sequence (SMR_023) can be 300s."""
         rid = norm(get(d, "id", ""))
         name = _display_name(d).lower()
-        if rid == "SMR_018" or "seated box breathing" in name:
-            return max(30, to_int(get(d, "default_duration_sec", 120), 120))
         if rid == "SMR_023" or "full body foam roller sequence" in name:
-            return max(30, to_int(get(d, "default_duration_sec", 300), 300))
+            return 300
         return 30
+
+    def _mobility_side_switchable(d: Dict[str, Any]) -> bool:
+        """Heuristic: most hips/ankles/t-spine stretches are side-switchable."""
+        return _mobility_is_hips(d) or _mobility_is_ankles(d) or _mobility_is_tspine(d)
 
     def time_for_drills() -> int:
         t = 0
         for _, d in selected:
             rid = norm(get(d, "id", ""))
             r = drill_rounds.get(rid, 1)
-            cap = 2 if _mobility_is_foam_roller(d) else 3
+            # Keep side-switchable stretches at even-ish set counts.
+            cap = 2 if (_mobility_is_foam_roller(d) or _mobility_side_switchable(d)) else 3
             r = min(r, cap)
             t += r * _mobility_work_sec(d)
         return t
@@ -2986,10 +2988,7 @@ def build_mobility_recovery_session(
         added = False
         for cat in priority_order:
             for _, d in selected:
-                if _mobility_is_foam_roller(d):
-                    cap = 2
-                else:
-                    cap = 3
+                cap = 2 if (_mobility_is_foam_roller(d) or _mobility_side_switchable(d)) else 3
                 rid = norm(get(d, "id", ""))
                 if drill_rounds.get(rid, 1) >= cap:
                     continue
@@ -3008,17 +3007,23 @@ def build_mobility_recovery_session(
     rounds_typical = 1
     for _, d in selected:
         rid = norm(get(d, "id", ""))
-        rounds_typical = max(rounds_typical, min(drill_rounds.get(rid, 1), 2 if _mobility_is_foam_roller(d) else 3))
+        cap = 2 if (_mobility_is_foam_roller(d) or _mobility_side_switchable(d)) else 3
+        rounds_typical = max(rounds_typical, min(drill_rounds.get(rid, 1), cap))
 
     lines: List[str] = []
     lines.append("Mobility / Recovery (%d min)" % minutes)
-    lines.append("Format: Circuit — 30s per drill (Box Breathing / Foam Roller can be longer). Rest 15–30s between drills, then repeat. Complete %d round(s)." % rounds_typical)
+    lines.append(
+        "Format: Circuit — 30s per drill (Foam Roller can be longer). Rest 15–30s between drills, then repeat. Complete %d round(s)."
+        % rounds_typical
+    )
     lines.append("")
+    lines.append("If the stretch can be done on either side, switch sides on each rep (even set counts help).")
     for _, d in selected:
         name = _display_name(d)
         dur = _mobility_work_sec(d)
         rid = norm(get(d, "id", ""))
-        r = min(drill_rounds.get(rid, 1), 2 if _mobility_is_foam_roller(d) else 3)
+        cap = 2 if (_mobility_is_foam_roller(d) or _mobility_side_switchable(d)) else 3
+        r = min(drill_rounds.get(rid, 1), cap)
         cue = norm(get(d, "coaching_cues", ""))
         if cue and "," in cue:
             cue = cue.split(",")[0].strip()
